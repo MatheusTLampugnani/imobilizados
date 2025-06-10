@@ -1,0 +1,57 @@
+/* Estilo geral do corpo da página */
+body {
+  background-color: #f0f2f5; /* Um cinza bem claro */
+  color: #333;
+}
+
+/* Container principal da aplicação */
+.app-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 2rem 1rem;
+}
+
+/* Estilo do cabeçalho principal */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Espaço entre o ícone e o texto */
+  color: #1a2c50; /* Um azul escuro */
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 1rem;
+}
+
+.app-header-icon {
+  font-size: 2.5rem;
+}
+
+/* Card que envolve a tabela */
+.data-card {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden; /* Garante que os cantos da tabela fiquem arredondados */
+}
+
+/* Componente de carregamento (spinner) */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.spinner-border {
+    margin-right: 1rem;
+}
+
+/* Rodapé */
+.app-footer {
+  text-align: center;
+  margin-top: 3rem;
+  color: #888;
+  font-size: 0.9rem;
+}
