@@ -12,15 +12,14 @@ import ResultsDisplay from './components/ResultsDisplay';
 const API_URL = 'http://127.0.0.1:5000/api';
 
 function App() {
-  const [codigo, setCodigo] = useState('');
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isQrReaderOpen, setQrReaderOpen] = useState(false);
-
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
 
+  // Efeitos para carregar e salvar o inventário (sem alterações)
   useEffect(() => {
     try {
       const inventarioSalvo = localStorage.getItem('inventario');
@@ -41,9 +40,10 @@ function App() {
     }
   }, [inventario]);
 
-  const handleConsultar = async () => {
-    if (!codigo) {
-      setError('Por favor, digite um código ou escaneie um QR Code');
+  // Função centralizada para buscar dados, recebe o código como argumento
+  const handleCodeSubmit = async (code) => {
+    if (!code) {
+      setError('Por favor, forneça um código para consultar.');
       setResultado(null);
       return;
     }
@@ -53,18 +53,19 @@ function App() {
     setResultado(null);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const response = await axios.get(`${API_URL}/imobilizado/${codigo}`);
-      const dados = { codigo, ...response.data };
+      // Usando axios para a requisição
+      const response = await axios.get(`${API_URL}/imobilizado/${code}`);
+      const dados = { codigo: code, ...response.data };
       setResultado(dados);
       
-      if (inventarioAtivo && !inventario.some(item => item.codigo === codigo)) {
+      // Adiciona ao inventário se a função estiver ativa
+      if (inventarioAtivo && !inventario.some(item => item.codigo === code)) {
         setInventario(prevInventario => [...prevInventario, dados]);
       }
 
     } catch (err) {
       if (err.response && err.response.status === 404) {
-        setError(`Imobilizado ${codigo} não encontrado.`);
+        setError(`Imobilizado com código "${code}" não encontrado.`);
       } else {
         setError('Erro ao conectar com o servidor. Verifique se o backend está rodando.');
         console.error(err);
@@ -74,26 +75,23 @@ function App() {
     }
   };
   
+  // Função chamada pelo QrScanner
   const handleQrScan = (scannedCode) => {
-    setCodigo(scannedCode);
     setQrReaderOpen(false);
+    // Chama diretamente a função de busca após a leitura
+    handleCodeSubmit(scannedCode);
   };
   
-  useEffect(() => {
-    if (isQrReaderOpen === false && codigo && resultado?.codigo !== codigo) {
-        handleConsultar();
-    }
-  }, [isQrReaderOpen, codigo]);
+  // O useEffect para consulta automática foi REMOVIDO, pois a lógica agora é mais direta.
 
   return (
     <Container className="py-3">
       <Header />
       
       <main>
+        {/* InputArea agora recebe a nova função onCodeSubmit */}
         <InputArea 
-          codigo={codigo}
-          setCodigo={setCodigo}
-          onConsultar={handleConsultar}
+          onCodeSubmit={handleCodeSubmit}
           onQrClick={() => setQrReaderOpen(true)}
           isLoading={isLoading}
         />

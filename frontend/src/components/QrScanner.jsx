@@ -1,83 +1,80 @@
-import React, { useRef, useEffect, useState } from 'react';
-import jsQR from 'jsqr';
+import React, { useEffect, useState } from 'react';
 import { Modal, Button, Alert } from 'react-bootstrap';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const QrScanner = ({ onScan, onClose }) => {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const [scanResult, setScanResult] = useState(null);
   const [cameraError, setCameraError] = useState('');
-  let stream = null;
-  let animationFrameId = null;
 
   useEffect(() => {
-    const startCamera = async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
-        });
+    // ID único para o container do scanner, para evitar conflitos
+    const scannerContainerId = "qr-reader";
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.setAttribute('playsinline', true);
-          await videoRef.current.play();
-          animationFrameId = requestAnimationFrame(tick);
-        }
-      } catch (err) {
-        setCameraError('Não foi possível acessar a câmera. Verifique as permissões do navegador.');
+    const scanner = new Html5QrcodeScanner(
+      scannerContainerId,
+      {
+        qrbox: {
+          width: 250,
+          height: 250,
+        },
+        fps: 10, // Frames por segundo para a verificação
+      },
+      /* verbose= */ false
+    );
+
+    const onScanSuccess = (decodedText, decodedResult) => {
+      // Para evitar múltiplos scans, verificamos se já temos um resultado
+      if (!scanResult) {
+        setScanResult(decodedText);
+        onScan(decodedText.trim());
+        // A linha onClose() pode ser descomentada para fechar o modal automaticamente
+        // onClose();
       }
     };
 
-    const tick = () => {
-      if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
-        const canvas = canvasRef.current;
-        const video = videoRef.current;
-        const context = canvas.getContext('2d');
-
-        canvas.height = video.videoHeight;
-        canvas.width = video.videoWidth;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-        if (code) {
-          onScan(code.data.trim());
-        } else {
-          animationFrameId = requestAnimationFrame(tick);
-        }
-      } else {
-        animationFrameId = requestAnimationFrame(tick);
+    const onScanFailure = (error) => {
+      // Podemos ignorar a maioria dos erros, pois a biblioteca tenta ler continuamente.
+      // No entanto, é útil capturar erros de permissão da câmera.
+      if (error.toLowerCase().includes('permission denied') || error.toLowerCase().includes('notallowederror')) {
+        setCameraError('Acesso à câmera negado. Por favor, verifique as permissões do seu navegador.');
+        // Para o scanner se não houver permissão
+        scanner.clear().catch(err => console.error("Falha ao limpar o scanner após erro de permissão.", err));
       }
     };
 
-    startCamera();
+    // Inicia o scanner
+    scanner.render(onScanSuccess, onScanFailure);
 
+    // Função de limpeza para ser executada quando o componente for desmontado
     return () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (stream) stream.getTracks().forEach(track => track.stop());
+      // Garante que o scanner e a câmera sejam desligados ao fechar o modal
+      scanner.clear().catch(error => {
+        console.error("Falha ao limpar o scanner html5-qrcode.", error);
+      });
     };
-  }, [onScan]);
+  }, [onScan, scanResult]); // Dependências do useEffect
 
   return (
     <Modal show={true} onHide={onClose} centered size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>Ler QR Code</Modal.Title>
+        {/* Título mais genérico para incluir códigos de barras */}
+        <Modal.Title>Ler Código de Barras ou QR Code</Modal.Title>
       </Modal.Header>
       <Modal.Body className="text-center">
-        {cameraError ? (
-          <Alert variant="danger">{cameraError}</Alert>
-        ) : (
-          <div style={{ position: 'relative', width: '100%', paddingTop: '75%' /* 4:3 Aspect Ratio */ }}>
-            <video ref={videoRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: '8px' }} />
-             <div style={{
-                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                width: '60%', height: '60%', border: '2px solid white', borderRadius: '16px',
-                boxShadow: '0 0 0 4000px rgba(0, 0, 0, 0.5)'
-            }}></div>
-          </div>
+        {/* O container onde o scanner de vídeo será renderizado */}
+        <div id="qr-reader" style={{ width: '100%', borderRadius: '8px', overflow: 'hidden' }}></div>
+        
+        {cameraError && (
+          <Alert variant="danger" className="mt-3">{cameraError}</Alert>
         )}
-        <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
-        <p className="mt-3">Posicione o QR code no centro da tela.</p>
+
+        {scanResult ? (
+          <Alert variant="success" className="mt-3">
+            Código lido com sucesso: {scanResult}
+          </Alert>
+        ) : (
+          <p className="mt-3">Aponte a câmera para o código.</p>
+        )}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>
