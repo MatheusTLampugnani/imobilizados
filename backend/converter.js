@@ -75,7 +75,7 @@ function aguardarEntrada(pergunta) {
 async function processarDados() {
     const diretorioAtual = __dirname;
     
-    const nomeArquivoDados = "Relação imobilizados Rio Verde - 27_03_2025 (1).XLSX - Sheet1.csv";
+    const nomeArquivoDados = "imobilizados.csv";
     const caminhoArquivoDados = path.join(diretorioAtual, nomeArquivoDados);
     
     const nomeArquivoSaida = "dados_imobilizados_processados.json";
