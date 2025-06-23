@@ -1,15 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Form, InputGroup, Button, Spinner } from 'react-bootstrap';
-import { BsSearch } from 'react-icons/bs';
+import { BsSearch, BsQrCodeScan } from 'react-icons/bs';
 
-// Removida a prop 'onQrClick'
-const InputArea = ({ onCodeSubmit, isLoading }) => {
-  const [inputValue, setInputValue] = useState('');
+const InputArea = ({ codigo, setCodigo, onConsultar, onQrClick, isLoading }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!inputValue.trim()) return;
-    onCodeSubmit(inputValue.trim());
+    onConsultar();
   };
 
   return (
@@ -18,15 +15,12 @@ const InputArea = ({ onCodeSubmit, isLoading }) => {
         <Form.Control
           placeholder="Digite ou leia o código para consulta individual"
           aria-label="Código do ativo"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
           disabled={isLoading}
           autoFocus
         />
-        
-        {/* O BOTÃO DE LER QR CODE FOI REMOVIDO DAQUI */}
-
-        <Button variant="primary" type="submit" disabled={isLoading || !inputValue}>
+        <Button variant="primary" type="submit" disabled={isLoading || !codigo}>
           {isLoading ? (
             <Spinner as="span" animation="border" size="sm" />
           ) : (

@@ -1,107 +1,114 @@
-const express = require('express');
-const cors = require('cors');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const url = require('url');
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+// --- FUNÇÃO DE FORMATAÇÃO ---
+function formatarValor(valor, tipo = 'string') {
+    if (valor === null || valor === undefined || valor === '') return "";
+    const valorStr = String(valor).trim();
+    if (tipo === 'inteiro') return valorStr.replace(/\.0$/, '');
+    return valorStr;
+}
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// --- CARREGAMENTO E PROCESSAMENTO DOS DADOS (lógica mantida) ---
+let imobilizadosData = {};
+let inventoryCodeMap = {};
+const dataFilePath = path.join(__dirname, 'dados_imobilizados.json');
 
-// Variável global para armazenar os dados
-let dadosImobilizados = {};
+try {
+    if (fs.existsSync(dataFilePath)) {
+        const data = fs.readFileSync(dataFilePath, 'utf8');
+        imobilizadosData = JSON.parse(data);
+        console.log(`✅ Arquivo de dados carregado com ${Object.keys(imobilizadosData).length} imobilizados.`);
 
-/**
- * Carrega os dados do arquivo JSON para a memória.
- */
-function carregarDados() {
-    try {
-        const caminhoArquivo = path.join(__dirname, 'dados_imobilizados.json');
-        
-        if (!fs.existsSync(caminhoArquivo)) {
-            console.error("Erro: O arquivo 'dados_imobilizados.json' não foi encontrado.");
-            return;
-        }
-
-        const dadosRaw = fs.readFileSync(caminhoArquivo, 'utf8');
-        const dados = JSON.parse(dadosRaw);
-
-        if (Array.isArray(dados)) {
-            // Se os dados são um array, organiza por código
-            dadosImobilizados = {};
-            dados.forEach(item => {
-                const codigo = item.codigo || item.Codigo || item.CODIGO;
-                if (codigo) {
-                    const codigoStr = String(codigo);
-                    if (!dadosImobilizados[codigoStr]) {
-                        dadosImobilizados[codigoStr] = { itens: [] };
+        console.log('🔄 Criando mapa de busca por inventário...');
+        for (const imobilizadoCode in imobilizadosData) {
+            const asset = imobilizadosData[imobilizadoCode];
+            if (asset.itens && Array.isArray(asset.itens)) {
+                for (const subItem of asset.itens) {
+                    if (subItem.Inventário && subItem.Inventário.trim() !== '') {
+                        inventoryCodeMap[subItem.Inventário] = asset;
                     }
-                    dadosImobilizados[codigoStr].itens.push(item);
                 }
-            });
-        } else if (typeof dados === 'object' && dados !== null) {
-            // Se os dados já são um objeto, usa diretamente
-            dadosImobilizados = dados;
+            }
         }
+        console.log(`✅ Mapa de inventário criado com ${Object.keys(inventoryCodeMap).length} entradas.`);
+    } else {
+        console.error(`❌ ERRO: Arquivo 'dados_imobilizados.json' não encontrado.`);
+    }
+} catch (error) {
+    console.error(`❌ ERRO ao carregar dados: ${error.message}`);
+}
 
-        console.log("Dados carregados com sucesso.");
-    } catch (error) {
-        if (error instanceof SyntaxError) {
-            console.error("Erro: O arquivo JSON está mal formatado.");
-        } else {
-            console.error(`Ocorreu um erro inesperado ao carregar os dados: ${error.message}`);
-        }
+function handleApiRequest(req, res) {
+    const parsedUrl = url.parse(req.url, true);
+    const { codigo } = parsedUrl.query;
+    const codigoFormatado = formatarValor(codigo, 'inteiro');
+    let imobilizado = null;
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    if (!codigoFormatado) {
+        res.writeHead(400);
+        return res.end(JSON.stringify({ message: "Nenhum código foi fornecido." }));
+    }
+
+    imobilizado = inventoryCodeMap[codigoFormatado] || imobilizadosData[codigoFormatado];
+
+    if (imobilizado) {
+        const assetCode = Object.keys(imobilizadosData).find(key => imobilizadosData[key] === imobilizado);
+        const responseData = { codigo: assetCode, ...imobilizado };
+        res.writeHead(200);
+        res.end(JSON.stringify(responseData));
+    } else {
+        res.writeHead(404);
+        res.end(JSON.stringify({ message: 'Imobilizado ou Inventário não encontrado' }));
     }
 }
 
-/**
- * Endpoint para retornar os dados de um imobilizado específico.
- */
-app.get('/api/imobilizado/:codigo', (req, res) => {
-    const { codigo } = req.params;
-    const imobilizado = dadosImobilizados[codigo];
-    
-    if (!imobilizado) {
-        return res.status(404).json({
-            erro: `Imobilizado com código ${codigo} não encontrado.`
-        });
+function handleStaticFileRequest(req, res) {
+    const parsedUrl = url.parse(req.url);
+    let pathname = path.join(__dirname, '..', 'frontend', 'dist', parsedUrl.pathname);
+
+    if (fs.statSync(pathname).isDirectory()) {
+        pathname = path.join(pathname, 'index.html');
     }
-    
-    res.json(imobilizado);
-});
 
-/**
- * Endpoint para retornar todos os dados de imobilizados.
- */
-app.get('/api/imobilizados', (req, res) => {
-    res.json(dadosImobilizados);
-});
+    const ext = path.parse(pathname).ext;
+    const mimeMap = {
+        '.html': 'text/html',
+        '.js': 'text/javascript',
+        '.css': 'text/css',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+    };
 
-// Middleware de tratamento de erro 404
-app.use((req, res) => {
-    res.status(404).json({
-        erro: "Endpoint não encontrado."
+    fs.readFile(pathname, (err, data) => {
+        if (err) {
+            res.writeHead(404);
+            res.end(`Arquivo não encontrado: ${pathname}`);
+            return;
+        }
+        res.setHeader('Content-type', mimeMap[ext] || 'text/plain');
+        res.writeHead(200);
+        res.end(data);
     });
+}
+
+const server = http.createServer((req, res) => {
+    const parsedUrl = url.parse(req.url, true);
+
+    if (parsedUrl.pathname === '/api/imobilizado' && req.method === 'GET') {
+        handleApiRequest(req, res);
+    } else {
+        handleStaticFileRequest(req, res);
+    }
 });
 
-// Middleware de tratamento de erros gerais
-app.use((error, req, res, next) => {
-    console.error(error.stack);
-    res.status(500).json({
-        erro: "Erro interno do servidor."
-    });
+const port = 5000;
+server.listen(port, () => {
+    console.log(`🚀 Servidor nativo do Node.js rodando na porta ${port}.`);
+    console.log(`   Acesse o sistema em http://localhost:${port}`);
 });
-
-// Carrega os dados na inicialização
-carregarDados();
-
-// Inicia o servidor
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-    console.log(`API disponível em: http://localhost:${PORT}`);
-});
-
-module.exports = app;
-
