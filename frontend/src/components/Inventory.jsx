@@ -27,8 +27,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, isLoading })
     }
     const headers = [
         'codigo_imobilizado', 'sub_numero', 'data_incorporacao', 'descricao', 
-        'codigo_inventario', 'serie', 'centro_custo', 'denominacao_centro_custo', 
-        'classe_imobilizado', 'denominacao_classe', 'centro', 'local_instalacao', 'divisao'
+        'codigo_inventario', 'numero_serie', 'centro_custo'
     ];
     const csvRows = [];
 
@@ -36,18 +35,12 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, isLoading })
         ativo.itens.forEach(item => {
             const row = {
                 codigo_imobilizado: ativo.codigo,
-                sub_numero: item.Subnº,
+                sub_numero: item.Subnumero,
                 data_incorporacao: item.Data,
                 descricao: item.Descrição,
                 codigo_inventario: item.Inventário,
-                serie: item.Série,
+                numero_serie: item.Série,
                 centro_custo: item.CentroCusto,
-                denominacao_centro_custo: item.DenominacaoCentroCusto,
-                classe_imobilizado: item.ClasseImobilizado,
-                denominacao_classe: item.DenominacaoClasse,
-                centro: item.Centro,
-                local_instalacao: item.LocalInstalacao,
-                divisao: item.Divisao
             };
             csvRows.push(headers.map(fieldName => `"${row[fieldName] || ''}"`).join(';'));
         });
@@ -108,7 +101,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, isLoading })
                             <tr><td><strong>Nº DO INVENTÁRIO</strong></td><td>{item.Inventário || 'Sem número de inventário'}</td></tr>
                             <tr><td><strong>Nº DE SÉRIE</strong></td><td>{item.Série || 'Sem número de série'}</td></tr>
                             <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'Sem centro de custo'}</td></tr>
-                            <tr><td><strong>SUBNÚMERO</strong></td><td>{item.Subnº || 'Sem sub-numero'}</td></tr>
+                            <tr><td><strong>SUBNÚMERO</strong></td><td>{item.Subnumero}</td></tr>
                           </tbody>
                         </Table>
                       </Accordion.Body>
