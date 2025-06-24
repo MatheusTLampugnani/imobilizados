@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const http = require('http');
-const fs =require('fs');
+const fs = require('fs');
 const path = require('path');
 const url = require('url');
 const { createClient } = require('@supabase/supabase-js');
@@ -16,7 +16,6 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log('Conexão com o Supabase configurada.');
-
 
 function formatarValor(valor) {
     if (valor === null || valor === undefined || valor === '') return "";
@@ -41,45 +40,32 @@ async function handleApiRequest(req, res) {
         return res.end(JSON.stringify({ message: "Nenhum código foi fornecido." }));
     }
 
-    try {
-        let itensEncontrados = null;
-        const { data: inventarioResult, error: inventarioError } = await supabase
+    const searchByField = async (field, value) => {
+        const { data, error } = await supabase
             .from('imobilizados')
             .select('*')
-            .eq('codigo_inventario', codigoFormatado);
+            .eq(field, value);
+        if (error) throw error;
+        return data;
+    };
 
-        if (inventarioError) throw inventarioError;
+    try {
+        let itensEncontrados = await searchByField('codigo_inventario', codigoFormatado);
 
-        if (inventarioResult && inventarioResult.length > 0) {
-            itensEncontrados = inventarioResult;
-        } else {
-            const { data: serieResult, error: serieError } = await supabase
-                .from('imobilizados')
-                .select('*')
-                .eq('numero_serie', codigoFormatado);
-            
-            if (serieError) throw serieError;
-
-            if (serieResult && serieResult.length > 0) {
-                itensEncontrados = serieResult;
-            } else {
-                const { data: imobilizadoResult, error: imobilizadoError } = await supabase
-                    .from('imobilizados')
-                    .select('*')
-                    .eq('codigo_imobilizado', codigoFormatado);
-
-                if (imobilizadoError) throw imobilizadoError;
-                itensEncontrados = imobilizadoResult;
-            }
+        if (!itensEncontrados || itensEncontrados.length === 0) {
+            itensEncontrados = await searchByField('numero_serie', codigoFormatado);
+        }
+        
+        if (!itensEncontrados || itensEncontrados.length === 0) {
+            itensEncontrados = await searchByField('codigo_imobilizado', codigoFormatado);
         }
 
         if (itensEncontrados && itensEncontrados.length > 0) {
             const imobilizadoPrincipalCodigo = itensEncontrados[0].codigo_imobilizado;
-            
             const responseData = {
-                codigo: imobilizadoPrincipalCodigo,
+                codigo_imobilizado: imobilizadoPrincipalCodigo,
                 itens: itensEncontrados.map(item => ({
-                    "Subnumero": item.sub_numero,
+                    "Subnº": item.sub_numero,
                     "Data": item.data_incorporacao,
                     "Descrição": item.descricao,
                     "Inventário": item.codigo_inventario,
@@ -111,9 +97,12 @@ function handleStaticFileRequest(req, res) {
             const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
             fs.readFile(indexPath, (indexErr, indexData) => {
                 if(indexErr) {
-                    res.writeHead(404); res.end(`Frontend não encontrado.`);
+                    res.writeHead(404);
+                    res.end(`Frontend não encontrado no caminho esperado.`);
                 } else {
-                    res.setHeader('Content-type', 'text/html'); res.writeHead(200); res.end(indexData);
+                    res.setHeader('Content-type', 'text/html');
+                    res.writeHead(200);
+                    res.end(indexData);
                 }
             });
             return;
@@ -127,10 +116,12 @@ function handleStaticFileRequest(req, res) {
 
         fs.readFile(pathname, (fileErr, data) => {
             if (fileErr) {
-                res.writeHead(500); res.end(`Erro ao ler arquivo.`);
+                res.writeHead(500);
+                res.end(`Erro ao ler arquivo.`);
             } else {
                 res.setHeader('Content-type', mimeMap[ext] || 'text/plain');
-                res.writeHead(200); res.end(data);
+                res.writeHead(200);
+                res.end(data);
             }
         });
     });
@@ -145,7 +136,7 @@ const server = http.createServer((req, res) => {
     }
 });
 
-const port = 5000;
+const port = process.env.PORT || 5000;
 server.listen(port, () => {
     console.log(`Servidor com Supabase rodando na porta ${port}.`);
 });

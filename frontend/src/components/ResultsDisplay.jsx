@@ -22,14 +22,14 @@ const ResultsDisplay = ({ isLoading, error, resultado }) => {
   return (
     <Card className="mt-4">
       <Card.Header as="h5">
-        CÓDIGO DO IMOBILIZADO: {resultado.imobilizado}
+        CÓDIGO DO IMOBILIZADO: {resultado.codigo_imobilizado}
       </Card.Header>
       <Card.Body>
         <Accordion defaultActiveKey="0" alwaysOpen className="mt-3">
-          {resultado.itens.map((item, index) => (
-            <Accordion.Item eventKey={index.toString()} key={index}>
+          {resultado.itens.map((item) => (
+            <Accordion.Item eventKey={item.Subnº} key={item.Subnº}>
               <Accordion.Header>
-                Item {index + 1}: {item.Descrição || 'Sem descrição'}
+                Item: {item.Descrição || 'Sem descrição'}
               </Accordion.Header>
               <Accordion.Body>
                 <Table striped bordered hover responsive size="sm">
@@ -39,7 +39,7 @@ const ResultsDisplay = ({ isLoading, error, resultado }) => {
                     <tr><td><strong>Nº DO INVENTÁRIO</strong></td><td>{item.Inventário || 'N/A'}</td></tr>
                     <tr><td><strong>Nº DE SÉRIE</strong></td><td>{item.Série || 'N/A'}</td></tr>
                     <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'N/A'}</td></tr>
-                    <tr><td><strong>SUBNÚMERO</strong></td><td>{item.Subnumero}</td></tr>
+                    <tr><td><strong>SUBNÚMERO</strong></td><td>{item["Subnº"] || 'N/A'}</td></tr>
                   </tbody>
                 </Table>
               </Accordion.Body>
