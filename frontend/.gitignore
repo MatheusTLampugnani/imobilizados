@@ -1,20 +1,4 @@
-# Arquivos de Ambiente e Variáveis Sensíveis
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.*.local
-*.pem
-*.key
-
-# Dependências de Gerenciadores de Pacotes
-/node_modules
-/bower_components
-/vendor
-/jspm_packages
-
-# Arquivos de Log
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -23,62 +7,18 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Arquivos de Build e Produção
-/dist
-/build
-/public/build
-/public/hot
-/.out
-/.next
-/coverage
-/reports
+node_modules
+dist
+dist-ssr
+*.local
 
-# Arquivos Temporários e de Cache
-*.tmp
-*.cache
-*.swp
-*~
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Arquivos de Configuração de Editores e IDEs
-.idea/
+# Editor directories and files
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
 !.vscode/extensions.json
-*.sublime-project
-*.sublime-workspace
+.idea
+.DS_Store
 *.suo
-*.user
-*.userosscache
-*.sln.docstates
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-/venv
-/virtualenv
-/env
-pip-wheel-metadata/
-.pytest_cache/
-
-# Sass
-.sass-cache/
-
-# Arquivos de upload locais
-/public/uploads
-
-# Arquivos de banco de dados SQLite
-*.sqlite3
-*.db3
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
