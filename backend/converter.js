@@ -3,7 +3,6 @@ const path = require('path');
 const csv = require('csv-parser');
 const readline = require('readline');
 
-// As funções formatarValor, formatarData e aguardarEntrada continuam as mesmas...
 function formatarValor(valor, tipo = 'string') {
     if (valor === null || valor === undefined || valor === '') return "";
     const valorStr = String(valor).trim();
@@ -31,13 +30,13 @@ function aguardarEntrada(pergunta) {
 
 async function processarDados() {
     const diretorioAtual = __dirname;
-    const nomeArquivoDados = "imobilizados.csv"; // Verifique se o nome está correto
+    const nomeArquivoDados = "imobilizados.csv";
     const caminhoArquivoDados = path.join(diretorioAtual, nomeArquivoDados);
     const nomeArquivoSaida = "dados_imobilizados.json";
     const caminhoArquivoSaida = path.join(diretorioAtual, nomeArquivoSaida);
 
     if (!fs.existsSync(caminhoArquivoDados)) {
-        console.log(`❌ ERRO: Arquivo '${nomeArquivoDados}' não encontrado!`);
+        console.log(`ERRO: Arquivo '${nomeArquivoDados}' não encontrado!`);
         await aguardarEntrada("\nPressione Enter para sair...");
         process.exit(1);
     }
@@ -53,7 +52,6 @@ async function processarDados() {
             fs.createReadStream(caminhoArquivoDados)
                 .pipe(csv({ separator: ';' }))
                 .on('data', (row) => {
-                    // AJUSTE: A chave será sempre o código do imobilizado
                     const codigoImobilizado = formatarValor(row['Imobilizado'], 'inteiro');
                     
                     if (!codigoImobilizado || !row['Denominação do imobilizado'] || !row['Centro custo']) {
@@ -71,8 +69,7 @@ async function processarDados() {
                         "Link": `https://videplast.com.br/consulta-imobilizado?id=${codigoImobilizado}`,
                         "QRCODE": ""
                     };
-                    
-                    // Usa apenas o código do imobilizado para agrupar
+
                     if (!dadosFinais[codigoImobilizado]) {
                         dadosFinais[codigoImobilizado] = { "itens": [] };
                     }
@@ -85,12 +82,12 @@ async function processarDados() {
         
         fs.writeFileSync(caminhoArquivoSaida, JSON.stringify(dadosFinais, null, 4), 'utf8');
         
-        console.log("\n✅ Processamento Concluído!");
-        console.log(`👉 Total de códigos de imobilizado únicos: ${Object.keys(dadosFinais).length}`);
-        console.log(`🚀 Arquivo JSON gerado em: ${caminhoArquivoSaida}`);
+        console.log("\nProcessamento Concluído!");
+        console.log(`Total de códigos de imobilizado únicos: ${Object.keys(dadosFinais).length}`);
+        console.log(`Arquivo JSON gerado em: ${caminhoArquivoSaida}`);
         
     } catch (error) {
-        console.log("\n❌ Erro no processamento:", error.message);
+        console.log("\n\ Erro no processamento:", error.message);
     } finally {
         await aguardarEntrada("\nPressione Enter para sair...");
     }

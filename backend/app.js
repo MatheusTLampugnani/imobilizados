@@ -1,4 +1,3 @@
-// Carrega as variáveis de ambiente do arquivo .env
 require('dotenv').config();
 
 const http = require('http');
@@ -7,7 +6,6 @@ const path = require('path');
 const url = require('url');
 const { createClient } = require('@supabase/supabase-js');
 
-// --- INICIALIZAÇÃO DO SUPABASE ---
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 
