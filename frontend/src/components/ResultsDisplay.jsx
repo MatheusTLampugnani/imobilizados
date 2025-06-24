@@ -39,7 +39,7 @@ const ResultsDisplay = ({ isLoading, error, resultado }) => {
                     <tr><td><strong>Nº DO INVENTÁRIO</strong></td><td>{item.Inventário || 'N/A'}</td></tr>
                     <tr><td><strong>Nº DE SÉRIE</strong></td><td>{item.Série || 'N/A'}</td></tr>
                     <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'N/A'}</td></tr>
-                    <tr><td><strong>SUBNÚMERO</strong></td><td>{item["Subnº"] || 'N/A'}</td></tr>
+                    <tr><td><strong>SUBNÚMERO</strong></td><td>{item.Subnº}</td></tr>
                   </tbody>
                 </Table>
               </Accordion.Body>
