@@ -22,31 +22,24 @@ const ResultsDisplay = ({ isLoading, error, resultado }) => {
   return (
     <Card className="mt-4">
       <Card.Header as="h5">
-        Informações do Imobilizado: {resultado.codigo}
+        CÓDIGO DO IMOBILIZADO: {resultado.imobilizado}
       </Card.Header>
       <Card.Body>
-        <Card.Title>Total de Itens: {resultado.itens.length}</Card.Title>
         <Accordion defaultActiveKey="0" alwaysOpen className="mt-3">
           {resultado.itens.map((item, index) => (
             <Accordion.Item eventKey={index.toString()} key={index}>
               <Accordion.Header>
-                Item {item.Número || index + 1}: {item.Descrição || 'Sem descrição'}
+                Item {index + 1}: {item.Descrição || 'Sem descrição'}
               </Accordion.Header>
               <Accordion.Body>
                 <Table striped bordered hover responsive size="sm">
                   <tbody>
-                    <tr>
-                      <td style={{ width: '30%' }}><strong>Descrição</strong></td>
-                      <td>{item.Descrição || 'N/A'}</td>
-                    </tr>
-                    <tr>
-                      <td><strong>Data</strong></td>
-                      <td>{item.Data || 'N/A'}</td>
-                    </tr>
-                    {item.Inventário && <tr><td><strong>Inventário</strong></td><td>{item.Inventário}</td></tr>}
-                    {item.Série && <tr><td><strong>Série</strong></td><td>{item.Série}</td></tr>}
-                    {item['Centro Custo'] && <tr><td><strong>Centro de Custo</strong></td><td>{item['Centro Custo']}</td></tr>}
-                    {item['Subnº'] && <tr><td><strong>Subnúmero</strong></td><td>{item['Subnº']}</td></tr>}
+                    <tr><td style={{ width: '30%' }}><strong>DESCRIÇÃO</strong></td><td>{item.Descrição || 'N/A'}</td></tr>
+                    <tr><td><strong>DATA DE INCORPORAÇÃO</strong></td><td>{item.Data || 'N/A'}</td></tr>
+                    <tr><td><strong>Nº DO INVENTÁRIO</strong></td><td>{item.Inventário || 'N/A'}</td></tr>
+                    <tr><td><strong>Nº DE SÉRIE</strong></td><td>{item.Série || 'N/A'}</td></tr>
+                    <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'N/A'}</td></tr>
+                    <tr><td><strong>SUBNÚMERO</strong></td><td>{item.Subnumero}</td></tr>
                   </tbody>
                 </Table>
               </Accordion.Body>

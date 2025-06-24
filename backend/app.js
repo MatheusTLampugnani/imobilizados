@@ -1,51 +1,39 @@
+// Carrega as variáveis de ambiente do arquivo .env
+require('dotenv').config();
+
 const http = require('http');
-const fs = require('fs');
+const fs =require('fs');
 const path = require('path');
 const url = require('url');
+const { createClient } = require('@supabase/supabase-js');
 
-// --- FUNÇÃO DE FORMATAÇÃO ---
-function formatarValor(valor, tipo = 'string') {
+// --- INICIALIZAÇÃO DO SUPABASE ---
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error("ERRO: As variáveis de ambiente SUPABASE_URL e SUPABASE_KEY não foram definidas.");
+    process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+console.log('Conexão com o Supabase configurada.');
+
+
+function formatarValor(valor) {
     if (valor === null || valor === undefined || valor === '') return "";
-    const valorStr = String(valor).trim();
-    if (tipo === 'inteiro') return valorStr.replace(/\.0$/, '');
+    let valorStr = String(valor).trim();
+    valorStr = valorStr.replace(/\.0$/, '');
+    if (valorStr.startsWith('0') && valorStr.length > 1) {
+        return valorStr.replace(/^0+/, '');
+    }
     return valorStr;
 }
 
-// --- CARREGAMENTO E PROCESSAMENTO DOS DADOS (lógica mantida) ---
-let imobilizadosData = {};
-let inventoryCodeMap = {};
-const dataFilePath = path.join(__dirname, 'dados_imobilizados.json');
-
-try {
-    if (fs.existsSync(dataFilePath)) {
-        const data = fs.readFileSync(dataFilePath, 'utf8');
-        imobilizadosData = JSON.parse(data);
-        console.log(`✅ Arquivo de dados carregado com ${Object.keys(imobilizadosData).length} imobilizados.`);
-
-        console.log('🔄 Criando mapa de busca por inventário...');
-        for (const imobilizadoCode in imobilizadosData) {
-            const asset = imobilizadosData[imobilizadoCode];
-            if (asset.itens && Array.isArray(asset.itens)) {
-                for (const subItem of asset.itens) {
-                    if (subItem.Inventário && subItem.Inventário.trim() !== '') {
-                        inventoryCodeMap[subItem.Inventário] = asset;
-                    }
-                }
-            }
-        }
-        console.log(`✅ Mapa de inventário criado com ${Object.keys(inventoryCodeMap).length} entradas.`);
-    } else {
-        console.error(`❌ ERRO: Arquivo 'dados_imobilizados.json' não encontrado.`);
-    }
-} catch (error) {
-    console.error(`❌ ERRO ao carregar dados: ${error.message}`);
-}
-
-function handleApiRequest(req, res) {
+async function handleApiRequest(req, res) {
     const parsedUrl = url.parse(req.url, true);
     const { codigo } = parsedUrl.query;
-    const codigoFormatado = formatarValor(codigo, 'inteiro');
-    let imobilizado = null;
+    const codigoFormatado = formatarValor(codigo);
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -55,16 +43,64 @@ function handleApiRequest(req, res) {
         return res.end(JSON.stringify({ message: "Nenhum código foi fornecido." }));
     }
 
-    imobilizado = inventoryCodeMap[codigoFormatado] || imobilizadosData[codigoFormatado];
+    try {
+        let itensEncontrados = null;
+        const { data: inventarioResult, error: inventarioError } = await supabase
+            .from('imobilizados')
+            .select('*')
+            .eq('codigo_inventario', codigoFormatado);
 
-    if (imobilizado) {
-        const assetCode = Object.keys(imobilizadosData).find(key => imobilizadosData[key] === imobilizado);
-        const responseData = { codigo: assetCode, ...imobilizado };
-        res.writeHead(200);
-        res.end(JSON.stringify(responseData));
-    } else {
-        res.writeHead(404);
-        res.end(JSON.stringify({ message: 'Imobilizado ou Inventário não encontrado' }));
+        if (inventarioError) throw inventarioError;
+
+        if (inventarioResult && inventarioResult.length > 0) {
+            itensEncontrados = inventarioResult;
+        } else {
+            const { data: serieResult, error: serieError } = await supabase
+                .from('imobilizados')
+                .select('*')
+                .eq('numero_serie', codigoFormatado);
+            
+            if (serieError) throw serieError;
+
+            if (serieResult && serieResult.length > 0) {
+                itensEncontrados = serieResult;
+            } else {
+                const { data: imobilizadoResult, error: imobilizadoError } = await supabase
+                    .from('imobilizados')
+                    .select('*')
+                    .eq('codigo_imobilizado', codigoFormatado);
+
+                if (imobilizadoError) throw imobilizadoError;
+                itensEncontrados = imobilizadoResult;
+            }
+        }
+
+        if (itensEncontrados && itensEncontrados.length > 0) {
+            const imobilizadoPrincipalCodigo = itensEncontrados[0].codigo_imobilizado;
+            
+            const responseData = {
+                codigo: imobilizadoPrincipalCodigo,
+                itens: itensEncontrados.map(item => ({
+                    "Subnumero": item.sub_numero,
+                    "Data": item.data_incorporacao,
+                    "Descrição": item.descricao,
+                    "Inventário": item.codigo_inventario,
+                    "Série": item.numero_serie,
+                    "CentroCusto": item.centro_custo,
+                }))
+            };
+            res.writeHead(200);
+            return res.end(JSON.stringify(responseData));
+        } else {
+            res.writeHead(404);
+            return res.end(JSON.stringify({ message: 'Imobilizado, Inventário ou Nº de Série não encontrado' }));
+        }
+
+    } catch (dbError) {
+        console.error('--- ERRO NA CONSULTA AO SUPABASE ---');
+        console.error(dbError);
+        res.writeHead(500);
+        return res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
     }
 }
 
@@ -72,34 +108,38 @@ function handleStaticFileRequest(req, res) {
     const parsedUrl = url.parse(req.url);
     let pathname = path.join(__dirname, '..', 'frontend', 'dist', parsedUrl.pathname);
 
-    if (fs.statSync(pathname).isDirectory()) {
-        pathname = path.join(pathname, 'index.html');
-    }
-
-    const ext = path.parse(pathname).ext;
-    const mimeMap = {
-        '.html': 'text/html',
-        '.js': 'text/javascript',
-        '.css': 'text/css',
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-    };
-
-    fs.readFile(pathname, (err, data) => {
-        if (err) {
-            res.writeHead(404);
-            res.end(`Arquivo não encontrado: ${pathname}`);
+    fs.stat(pathname, (err, stat) => {
+        if (err || !stat.isFile()) {
+            const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
+            fs.readFile(indexPath, (indexErr, indexData) => {
+                if(indexErr) {
+                    res.writeHead(404); res.end(`Frontend não encontrado.`);
+                } else {
+                    res.setHeader('Content-type', 'text/html'); res.writeHead(200); res.end(indexData);
+                }
+            });
             return;
         }
-        res.setHeader('Content-type', mimeMap[ext] || 'text/plain');
-        res.writeHead(200);
-        res.end(data);
+
+        const ext = path.parse(pathname).ext;
+        const mimeMap = {
+            '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+            '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml'
+        };
+
+        fs.readFile(pathname, (fileErr, data) => {
+            if (fileErr) {
+                res.writeHead(500); res.end(`Erro ao ler arquivo.`);
+            } else {
+                res.setHeader('Content-type', mimeMap[ext] || 'text/plain');
+                res.writeHead(200); res.end(data);
+            }
+        });
     });
 }
 
 const server = http.createServer((req, res) => {
     const parsedUrl = url.parse(req.url, true);
-
     if (parsedUrl.pathname === '/api/imobilizado' && req.method === 'GET') {
         handleApiRequest(req, res);
     } else {
@@ -109,6 +149,5 @@ const server = http.createServer((req, res) => {
 
 const port = 5000;
 server.listen(port, () => {
-    console.log(`🚀 Servidor nativo do Node.js rodando na porta ${port}.`);
-    console.log(`   Acesse o sistema em http://localhost:${port}`);
+    console.log(`Servidor com Supabase rodando na porta ${port}.`);
 });

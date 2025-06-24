@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
-// 1. Adicione Accordion e Table aos imports do react-bootstrap
 import { Card, Button, Accordion, Table, CloseButton } from 'react-bootstrap';
 import { FaFileCsv, FaTrash, FaPlus } from 'react-icons/fa';
-
 import BatchScannerModal from './BatchScannerModal';
 
 const Inventory = ({ inventario, setInventario, onClose, onAddItem, isLoading }) => {
   const [isScannerOpen, setScannerOpen] = useState(false);
 
-  // As funções de controle do inventário permanecem as mesmas
   const handleRemoveItem = (codigo) => {
     setInventario(inventario.filter(item => item.codigo !== codigo));
   };
@@ -18,20 +15,44 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, isLoading })
   };
 
   const handleClearInventory = () => {
-    if (window.confirm('Tem certeza que deseja limpar todos os itens do inventário? Esta ação não pode ser desfeita.')) {
+    if (window.confirm('Tem certeza que deseja limpar todos os itens do inventário?')) {
       setInventario([]);
     }
   };
 
   const handleExportCSV = () => {
     if (inventario.length === 0) {
-      alert('O inventário está vazio. Adicione itens antes de exportar.');
+      alert('O inventário está vazio.');
       return;
     }
-    const headers = ['codigo', 'descricao', 'centro_custo', 'localizacao', 'classe_ativo'];
-    const csvRows = inventario.map(item =>
-      headers.map(fieldName => `"${item[fieldName] || ''}"`).join(';')
-    );
+    const headers = [
+        'codigo_imobilizado', 'sub_numero', 'data_incorporacao', 'descricao', 
+        'codigo_inventario', 'serie', 'centro_custo', 'denominacao_centro_custo', 
+        'classe_imobilizado', 'denominacao_classe', 'centro', 'local_instalacao', 'divisao'
+    ];
+    const csvRows = [];
+
+    inventario.forEach(ativo => {
+        ativo.itens.forEach(item => {
+            const row = {
+                codigo_imobilizado: ativo.codigo,
+                sub_numero: item.Subnº,
+                data_incorporacao: item.Data,
+                descricao: item.Descrição,
+                codigo_inventario: item.Inventário,
+                serie: item.Série,
+                centro_custo: item.CentroCusto,
+                denominacao_centro_custo: item.DenominacaoCentroCusto,
+                classe_imobilizado: item.ClasseImobilizado,
+                denominacao_classe: item.DenominacaoClasse,
+                centro: item.Centro,
+                local_instalacao: item.LocalInstalacao,
+                divisao: item.Divisao
+            };
+            csvRows.push(headers.map(fieldName => `"${row[fieldName] || ''}"`).join(';'));
+        });
+    });
+
     const csvString = [headers.join(';'), ...csvRows].join('\n');
     const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -62,43 +83,32 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, isLoading })
             </Button>
           </div>
           <hr />
-
-          {/* 2. Lógica de exibição atualizada */}
           {inventario.length === 0 ? (
             <p className="text-center text-muted">O inventário está vazio.</p>
           ) : (
-            // Mapeia cada imobilizado do inventário para um Card de detalhes
-            inventario.map((ativo, index) => (
-              <Card key={`${ativo.codigo}-${index}`} className="mb-3">
+            inventario.map((ativo) => (
+              <Card key={ativo.codigo} className="mb-3">
                 <Card.Header className="d-flex justify-content-between align-items-center bg-light">
-                  <strong>Imobilizado: {ativo.codigo}</strong>
+                  <strong>CÓDIGO DO IMOBILIZADO: {ativo.codigo}</strong>
                   <Button variant="outline-danger" size="sm" onClick={() => handleRemoveItem(ativo.codigo)}>
-                    Remover do Inventário
+                    Remover
                   </Button>
                 </Card.Header>
                 <Accordion defaultActiveKey="0" alwaysOpen>
-                  {/* Mapeia os sub-itens de cada imobilizado para um Acordeão */}
-                  {ativo.itens.map((subItem, subItemIndex) => (
+                  {ativo.itens.map((item, subItemIndex) => (
                     <Accordion.Item eventKey={subItemIndex.toString()} key={subItemIndex}>
                       <Accordion.Header>
-                        Item {subItem.Número || subItemIndex + 1}: {subItem.Descrição || 'Sem descrição'}
+                        Item {subItemIndex + 1}: {item.Descrição || 'Sem descrição'}
                       </Accordion.Header>
                       <Accordion.Body>
-                        {/* Tabela com os detalhes, igual à da tela de consulta */}
                         <Table striped bordered hover responsive size="sm">
                           <tbody>
-                            <tr>
-                              <td style={{ width: '30%' }}><strong>Descrição</strong></td>
-                              <td>{subItem.Descrição || 'N/A'}</td>
-                            </tr>
-                            <tr>
-                              <td><strong>Data</strong></td>
-                              <td>{subItem.Data || 'N/A'}</td>
-                            </tr>
-                            {subItem.Inventário && <tr><td><strong>Inventário</strong></td><td>{subItem.Inventário}</td></tr>}
-                            {subItem.Série && <tr><td><strong>Série</strong></td><td>{subItem.Série}</td></tr>}
-                            {subItem['Centro Custo'] && <tr><td><strong>Centro de Custo</strong></td><td>{subItem['Centro Custo']}</td></tr>}
-                            {subItem['Subnº'] && <tr><td><strong>Subnúmero</strong></td><td>{subItem['Subnº']}</td></tr>}
+                            <tr><td style={{ width: '30%' }}><strong>DESCRIÇÃO</strong></td><td>{item.Descrição || 'N/A'}</td></tr>
+                            <tr><td><strong>DATA DE INCORPORAÇÃO</strong></td><td>{item.Data}</td></tr>
+                            <tr><td><strong>Nº DO INVENTÁRIO</strong></td><td>{item.Inventário || 'Sem número de inventário'}</td></tr>
+                            <tr><td><strong>Nº DE SÉRIE</strong></td><td>{item.Série || 'Sem número de série'}</td></tr>
+                            <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'Sem centro de custo'}</td></tr>
+                            <tr><td><strong>SUBNÚMERO</strong></td><td>{item.Subnº || 'Sem sub-numero'}</td></tr>
                           </tbody>
                         </Table>
                       </Accordion.Body>
@@ -113,7 +123,6 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, isLoading })
           Total de imobilizados: {inventario.length}
         </Card.Footer>
       </Card>
-
       {isScannerOpen && (
         <BatchScannerModal
           show={isScannerOpen}

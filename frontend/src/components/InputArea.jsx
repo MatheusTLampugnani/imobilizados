@@ -2,7 +2,7 @@ import React from 'react';
 import { Form, InputGroup, Button, Spinner } from 'react-bootstrap';
 import { BsSearch, BsQrCodeScan } from 'react-icons/bs';
 
-const InputArea = ({ codigo, setCodigo, onConsultar, onQrClick, isLoading }) => {
+const InputArea = ({ codigo, setCodigo, onConsultar, isLoading }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -13,6 +13,7 @@ const InputArea = ({ codigo, setCodigo, onConsultar, onQrClick, isLoading }) => 
     <Form onSubmit={handleSubmit} className="mb-4">
       <InputGroup>
         <Form.Control
+          type="text"
           placeholder="Digite ou leia o código para consulta individual"
           aria-label="Código do ativo"
           value={codigo}
