@@ -1,4 +1,4 @@
-# 📦 Sistema de Consulta e Inventário de Imobilizados
+# Sistema de Consulta e Inventário de Imobilizados
 
 Este projeto é uma aplicação web completa desenvolvida, com o objetivo de facilitar a **consulta e o inventário de ativos imobilizados**. A solução possui frontend em **React** e backend em **Node.js**, utilizando o **Supabase** como banco de dados.
 

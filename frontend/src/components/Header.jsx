@@ -1,13 +1,14 @@
 import React from 'react';
-import logo from '../assets/videplast-brand.png';
-import { Image } from 'react-bootstrap';
+import videplastLogo from '../assets/videplast-brand.png';
 
 const Header = () => {
   return (
-    <header className="text-center p-3 mb-4 border-bottom">
-      <Image src={logo} alt="videplast-logo" height="100" className="mb-3" />
-      <h1 className="display-5">Consulta de Imobilizados</h1>
-      <p className="text-muted">Videplast Rio Verde</p>
+    <header className="app-header text-center">
+      <img src={videplastLogo} alt="Logo Videplast" className="logo" />
+      <h1 className="h2 fw-bold text-dark mt-3">Consulta de Imobilizados</h1>
+      <p className="lead text-secondary">
+        Busque por código do imobilizado, nº de inventário ou nº de série.
+      </p>
     </header>
   );
 };

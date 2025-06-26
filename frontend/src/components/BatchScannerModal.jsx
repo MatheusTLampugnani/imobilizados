@@ -5,22 +5,20 @@ const BatchScannerModal = ({ show, onScan, onClose, isAddingItem }) => {
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
 
-  // Este efeito garante que o campo de texto seja focado sempre que o modal abrir
-  // ou após uma leitura ser concluída.
   useEffect(() => {
     if (show) {
       const timer = setTimeout(() => {
         inputRef.current?.focus();
-      }, 100); // Pequeno delay para garantir que o modal está visível
+      }, 100);
       return () => clearTimeout(timer);
     }
-  }, [show, isAddingItem]); // Roda quando o modal abre e quando o estado de 'loading' muda
+  }, [show, isAddingItem]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
     if (inputValue.trim() && !isAddingItem) {
       onScan(inputValue.trim());
-      setInputValue(''); // Limpa o campo para a próxima leitura
+      setInputValue('');
     }
   };
 
@@ -41,7 +39,6 @@ const BatchScannerModal = ({ show, onScan, onClose, isAddingItem }) => {
             autoFocus
             disabled={isAddingItem}
           />
-          {/* Um botão de submit não é necessário, pois o "Enter" do leitor já aciona o formulário */}
         </Form>
       </Modal.Body>
       <Modal.Footer>

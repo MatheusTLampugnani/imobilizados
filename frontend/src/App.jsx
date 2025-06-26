@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Button } from 'react-bootstrap';
+import { Container, Button, Card } from 'react-bootstrap';
 import Header from './components/Header';
 import InputArea from './components/InputArea';
-import QrScanner from './components/QrScanner';
 import Inventory from './components/Inventory';
 import ResultsDisplay from './components/ResultsDisplay';
 
@@ -14,8 +13,6 @@ function App() {
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isQrReaderOpen, setQrReaderOpen] = useState(false);
-
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
 
@@ -26,80 +23,65 @@ function App() {
         setInventario(JSON.parse(inventarioSalvo));
       }
     } catch (e) {
-      console.error("Erro ao carregar inventário do localStorage:", e);
-      setInventario([]);
+      console.error("Erro ao carregar inventário:", e);
     }
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('inventario', JSON.stringify(inventario));
-    } catch(e) {
-      console.error("Erro ao salvar inventário no localStorage:", e);
-    }
+    localStorage.setItem('inventario', JSON.stringify(inventario));
   }, [inventario]);
 
   const handleCodeSearch = async (codeToSearch) => {
     if (!codeToSearch || codeToSearch.trim() === '') {
-      setError('Por favor, digite um código ou escaneie um QR Code');
+      setError('Por favor, digite ou escaneie um código.');
       setResultado(null);
-      return;
+      return false;
     }
-
     setIsLoading(true);
     setError('');
-    setResultado(null);
 
     try {
       const response = await axios.get(`${API_URL}/imobilizado?codigo=${codeToSearch}`);
-      const dados = { ...response.data };
-      setResultado(dados);
+      const dados = response.data;
       
-      if (inventarioAtivo && !inventario.some(item => item.codigo === dados.codigo)) {
+      setResultado({
+        codigo_imobilizado: dados.codigo_imobilizado,
+        itens: dados.itens
+      });
+      
+      if (inventarioAtivo && !inventario.some(item => item.codigo_imobilizado === dados.codigo_imobilizado)) {
         setInventario(prevInventario => [dados, ...prevInventario]);
       }
-
+      return true;
     } catch (err) {
-      if (err.response && err.response.status === 404) {
-        setError(`Imobilizado ${codeToSearch} não encontrado.`);
-      } else {
-        setError('Erro ao conectar com o servidor. Verifique se o backend está rodando.');
-        console.error(err);
-      }
+      setError(err.response?.status === 404 ? `Imobilizado ${codeToSearch} não encontrado.` : 'Erro ao conectar ao servidor.');
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
-  
-  const handleQrScan = (scannedCode) => {
-    setCodigo(scannedCode);
-    setQrReaderOpen(false);
-    handleCodeSearch(scannedCode);
-  };
 
   return (
-    <Container className="py-3">
+    <Container className="app-container">
       <Header />
-      
       <main>
-        <InputArea 
-          codigo={codigo}
-          setCodigo={setCodigo}
-          onConsultar={() => handleCodeSearch(codigo)}
-          onQrClick={() => setQrReaderOpen(true)}
-          isLoading={isLoading}
-        />
+        <Card className="border-0 mb-4">
+          <Card.Body className="p-4">
+            <InputArea 
+              codigo={codigo}
+              setCodigo={setCodigo}
+              onConsultar={() => handleCodeSearch(codigo)}
+              isLoading={isLoading}
+            />
+          </Card.Body>
+        </Card>
 
-        <ResultsDisplay
-          isLoading={isLoading}
-          error={error}
-          resultado={resultado}
-        />
+        <ResultsDisplay isLoading={isLoading} error={error} resultado={resultado} />
 
         <div className="d-grid gap-2 mt-4">
           {!inventarioAtivo && (
-            <Button variant="outline-primary" size="lg" onClick={() => setInventarioAtivo(true)}>
-              📋 Iniciar Inventário
+            <Button variant="danger" size="lg" onClick={() => setInventarioAtivo(true)}>
+              Iniciar Inventário
             </Button>
           )}
         </div>
@@ -110,17 +92,9 @@ function App() {
             setInventario={setInventario}
             onClose={() => setInventarioAtivo(false)}
             onAddItem={handleCodeSearch}
-            isLoading={isLoading}
           />
         )}
       </main>
-
-      {isQrReaderOpen && (
-        <QrScanner
-          onScan={handleQrScan}
-          onClose={() => setQrReaderOpen(false)}
-        />
-      )}
       
       <footer className="text-center text-muted mt-5 border-top pt-3">
         <p>&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados | Desenvolvido para Videplast</p>

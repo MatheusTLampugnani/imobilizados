@@ -1,32 +1,25 @@
 import React from 'react';
-import { Form, InputGroup, Button, Spinner } from 'react-bootstrap';
-import { BsSearch, BsQrCodeScan } from 'react-icons/bs';
+import { Form, Button, InputGroup } from 'react-bootstrap';
 
 const InputArea = ({ codigo, setCodigo, onConsultar, isLoading }) => {
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
     onConsultar();
   };
 
   return (
-    <Form onSubmit={handleSubmit} className="mb-4">
-      <InputGroup>
+    <Form onSubmit={handleFormSubmit}>
+      <InputGroup size="lg">
         <Form.Control
           type="text"
-          placeholder="Digite ou leia o código para consulta individual"
-          aria-label="Código do ativo"
+          placeholder="Digite o código do ativo..."
           value={codigo}
           onChange={(e) => setCodigo(e.target.value)}
-          disabled={isLoading}
+          aria-label="Código do imobilizado"
           autoFocus
         />
-        <Button variant="primary" type="submit" disabled={isLoading || !codigo}>
-          {isLoading ? (
-            <Spinner as="span" animation="border" size="sm" />
-          ) : (
-            <BsSearch />
-          )}
+        <Button type="submit" variant="danger" disabled={isLoading}>
+          {isLoading ? 'Buscando...' : 'Consultar'}
         </Button>
       </InputGroup>
     </Form>
