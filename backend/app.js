@@ -60,6 +60,10 @@ async function handleApiRequest(req, res) {
             itensEncontrados = await searchByField('codigo_imobilizado', codigoFormatado);
         }
 
+        if (!itensEncontrados || itensEncontrados.length === 0) {
+            itensEncontrados = await searchByField('centro_custo', codigoFormatado);
+        }
+
         if (itensEncontrados && itensEncontrados.length > 0) {
             const imobilizadoPrincipalCodigo = itensEncontrados[0].codigo_imobilizado;
             const responseData = {
