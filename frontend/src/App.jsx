@@ -5,6 +5,7 @@ import Header from './components/Header';
 import InputArea from './components/InputArea';
 import Inventory from './components/Inventory';
 import ResultsDisplay from './components/ResultsDisplay';
+import ReportModal from './components/ReportModal';
 
 const API_URL = 'http://127.0.0.1:5000/api';
 
@@ -15,6 +16,7 @@ function App() {
   const [error, setError] = useState('');
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     try {
@@ -33,7 +35,7 @@ function App() {
 
   const handleCodeSearch = async (codeToSearch) => {
     if (!codeToSearch || codeToSearch.trim() === '') {
-      setError('Por favor, digite ou escaneie um código.');
+      setError('Por favor, digite um código.');
       setResultado(null);
       return false;
     }
@@ -78,12 +80,13 @@ function App() {
 
         <ResultsDisplay isLoading={isLoading} error={error} resultado={resultado} />
 
-        <div className="d-grid gap-2 mt-4">
-          {!inventarioAtivo && (
+        <div className="d-grid gap-2 mt-4 d-sm-flex justify-content-sm-center">
             <Button variant="danger" size="lg" onClick={() => setInventarioAtivo(true)}>
               Iniciar Inventário
             </Button>
-          )}
+            <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
+              Gerar Relatório PDF
+            </Button>
         </div>
 
         {inventarioAtivo && (
@@ -95,6 +98,8 @@ function App() {
           />
         )}
       </main>
+
+      {showReportModal && <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} />}
       
       <footer className="text-center text-muted mt-5 border-top pt-3">
         <p>&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados | Desenvolvido para Videplast</p>

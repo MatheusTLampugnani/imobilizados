@@ -35,11 +35,11 @@ const ResultsDisplay = ({ isLoading, error, resultado }) => {
                 <Table striped bordered hover responsive size="sm">
                   <tbody>
                     <tr><td style={{ width: '30%' }}><strong>DESCRIÇÃO</strong></td><td>{item.Descrição || 'N/A'}</td></tr>
-                    <tr><td><strong>DATA</strong></td><td>{item.Data || 'N/A'}</td></tr>
+                    <tr><td><strong>DATA INCOMPORAÇÃO</strong></td><td>{item.Data || 'N/A'}</td></tr>
                     <tr><td><strong>INVENTÁRIO</strong></td><td>{item.Inventário || 'N/A'}</td></tr>
-                    <tr><td><strong>SÉRIE</strong></td><td>{item.Série || 'N/A'}</td></tr>
+                    <tr><td><strong>NUMERO DE SÉRIE</strong></td><td>{item.Série || 'N/A'}</td></tr>
                     <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'N/A'}</td></tr>
-                    <tr><td><strong>SUBNÚMERO</strong></td><td>{item.Subnº}</td></tr>
+                    <tr><td><strong>SUB NÚMERO</strong></td><td>{item.Subnº}</td></tr>
                   </tbody>
                 </Table>
               </Accordion.Body>
