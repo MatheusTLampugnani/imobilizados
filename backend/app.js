@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 const { createClient } = require('@supabase/supabase-js');
-const PDFDocument = require('pdfkit');
+const { handlePdfReportRequest } = require('./utils/geradorPDF.js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
@@ -56,17 +56,18 @@ async function handleApiRequest(req, res) {
         if (!itensEncontrados || itensEncontrados.length === 0) {
             itensEncontrados = await searchByField('centro_custo', codigoFormatado);
         }
-        
 
         if (itensEncontrados && itensEncontrados.length > 0) {
             const imobilizadoPrincipalCodigo = itensEncontrados[0].codigo_imobilizado;
             const responseData = {
                 codigo_imobilizado: imobilizadoPrincipalCodigo,
                 itens: itensEncontrados.map(item => ({
+                    id: item.id,
                     "Subnº": item.sub_numero,
                     "Data": item.data_incorporacao,
                     "Descrição": item.descricao,
                     "Inventário": item.codigo_inventario,
+                    "Inventário_Antigo": item.codigo_inventario_antigo,
                     "Série": item.numero_serie,
                     "CentroCusto": item.centro_custo,
                 }))
@@ -84,66 +85,64 @@ async function handleApiRequest(req, res) {
     }
 }
 
-async function handlePdfReportRequest(req, res) {
-    // CORREÇÃO: Adicione o cabeçalho CORS no início da função
+async function handleUpdateInventoryRequest(req, res) {
+    // --- INÍCIO DA CORREÇÃO ---
+    // Define os cabeçalhos que permitem a comunicação entre origens diferentes
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    const parsedUrl = url.parse(req.url, true);
-    const { centro_custo } = parsedUrl.query;
-
-    if (!centro_custo) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ message: "Centro de custo não fornecido." }));
+    // Responde com sucesso à requisição de "sondagem" (preflight) do navegador
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204); // Status "No Content"
+        res.end();
+        return;
     }
-    
-    const centroCustoNumerico = parseInt(centro_custo, 10);
+    // --- FIM DA CORREÇÃO ---
 
-    try {
-        const { data, error } = await supabase
-            .from('imobilizados')
-            .select('*')
-            .eq('centro_custo', centroCustoNumerico) 
-            .order('codigo_imobilizado', { ascending: true })
-            .order('sub_numero', { ascending: true });
+    let body = '';
+    req.on('data', chunk => {
+        body += chunk.toString();
+    });
 
-        if (error) throw error;
+    req.on('end', async () => {
+        try {
+            const { itemId, newInventoryCode } = JSON.parse(body);
+            const newCodeNumeric = parseInt(newInventoryCode, 10);
 
-        if (!data || data.length === 0) {
-            res.writeHead(404, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ message: `Nenhum imobilizado encontrado para o Centro de Custo ${centro_custo}.` }));
+            if (!itemId || isNaN(newCodeNumeric)) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                return res.end(JSON.stringify({ message: 'Dados inválidos fornecidos.' }));
+            }
+
+            const { data: currentItem, error: fetchError } = await supabase
+                .from('imobilizados')
+                .select('codigo_inventario')
+                .eq('id', itemId)
+                .single();
+
+            if (fetchError) throw fetchError;
+
+            const { error: updateError } = await supabase
+                .from('imobilizados')
+                .update({ 
+                    codigo_inventario: newCodeNumeric,
+                    codigo_inventario_antigo: currentItem.codigo_inventario
+                })
+                .eq('id', itemId);
+
+            if (updateError) throw updateError;
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Inventário atualizado com sucesso!' }));
+
+        } catch(error) {
+            console.error("ERRO AO ATUALIZAR INVENTÁRIO: ", error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: `Erro no servidor: ${error.message}`}));
         }
-
-        const doc = new PDFDocument({ margin: 50, size: 'A4' });
-        const filename = `Relatorio_Imobilizados_CC_${centro_custo}.pdf`;
-
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        
-        doc.pipe(res);
-
-        doc.fontSize(18).text(`Relatório de Imobilizados`, { align: 'center' });
-        doc.fontSize(14).text(`Centro de Custo: ${centro_custo}`, { align: 'center' });
-        doc.moveDown(2);
-
-        data.forEach(item => {
-            doc.fontSize(12).font('Helvetica-Bold').text(`Cód. Imobilizado: ${item.codigo_imobilizado} | Subnº: ${item.sub_numero}`);
-            doc.font('Helvetica').fontSize(10);
-            doc.text(`Descrição: ${item.descricao || 'N/A'}`);
-            doc.text(`Nº Inventário: ${item.codigo_inventario || 'N/A'}`);
-            doc.text(`Nº Série: ${item.numero_serie || 'N/A'}`);
-            doc.text(`Data Incorporação: ${item.data_incorporacao || 'N/A'}`);
-            doc.moveDown();
-        });
-
-        doc.end();
-
-    } catch (dbError) {
-        console.error('ERRO AO GERAR PDF:', dbError);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
-    }
+    });
 }
-
 
 function handleStaticFileRequest(req, res) {
     const parsedUrl = url.parse(req.url);
@@ -180,6 +179,18 @@ function handleStaticFileRequest(req, res) {
 }
 
 const server = http.createServer((req, res) => {
+    // --- INÍCIO DA CORREÇÃO DEFINITIVA DE CORS ---
+    // Define os cabeçalhos para TODAS as respostas
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // Se for uma requisição pre-flight (OPTIONS), responda imediatamente com sucesso.
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204); // Status "No Content"
+        res.end();
+        return;
+    }
     const parsedUrl = url.parse(req.url, true);
 
     if (req.method === 'GET' && parsedUrl.pathname === '/api/imobilizado') {
@@ -190,8 +201,13 @@ const server = http.createServer((req, res) => {
         return handlePdfReportRequest(req, res);
     }
     
+    if (req.method === 'PUT' && parsedUrl.pathname === '/api/imobilizado/update-inventory') {
+        return handleUpdateInventoryRequest(req, res);
+    }
+    
     handleStaticFileRequest(req, res);
 });
+
 
 const port = process.env.PORT || 5000;
 server.listen(port, () => {

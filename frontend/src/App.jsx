@@ -33,6 +33,11 @@ function App() {
     localStorage.setItem('inventario', JSON.stringify(inventario));
   }, [inventario]);
 
+  const formatarCodigo = (valor) => {
+    if (!valor) return "";
+    return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
+  }
+
   const handleCodeSearch = async (codeToSearch) => {
     if (!codeToSearch || codeToSearch.trim() === '') {
       setError('Por favor, digite um código.');
@@ -51,8 +56,18 @@ function App() {
         itens: dados.itens
       });
       
-      if (inventarioAtivo && !inventario.some(item => item.codigo_imobilizado === dados.codigo_imobilizado)) {
-        setInventario(prevInventario => [dados, ...prevInventario]);
+      if (inventarioAtivo) {
+        const codigoFormatado = formatarCodigo(codeToSearch);
+        const itemEscaneado = dados.itens.find(item => 
+            formatarCodigo(item.Inventário) === codigoFormatado || 
+            formatarCodigo(item.Série) === codigoFormatado ||
+            formatarCodigo(dados.codigo_imobilizado) === codigoFormatado
+        );
+        const itemParaAdicionar = itemEscaneado || dados.itens[0];
+
+        if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
+            setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
+        }
       }
       return true;
     } catch (err) {
@@ -60,6 +75,12 @@ function App() {
       return false;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const refreshData = () => {
+    if (codigo) {
+        handleCodeSearch(codigo);
     }
   };
 
@@ -78,14 +99,19 @@ function App() {
           </Card.Body>
         </Card>
 
-        <ResultsDisplay isLoading={isLoading} error={error} resultado={resultado} />
+        <ResultsDisplay 
+            isLoading={isLoading} 
+            error={error} 
+            resultado={resultado}
+            onRefresh={refreshData} 
+        />
 
         <div className="d-grid gap-2 mt-4 d-sm-flex justify-content-sm-center">
             <Button variant="danger" size="lg" onClick={() => setInventarioAtivo(true)}>
-              Iniciar Inventário
+              📋 Iniciar Inventário
             </Button>
             <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
-              Gerar Relatório PDF
+              📄 Gerar Relatório PDF
             </Button>
         </div>
 

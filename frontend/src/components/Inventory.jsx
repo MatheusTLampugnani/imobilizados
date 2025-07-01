@@ -27,27 +27,25 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem }) => {
   };
 
   const exportToCSV = () => {
-    let csvContent = "data:text/csv;charset=utf-8,Codigo do Imobilizado;Subn;Descricao;Data de Incorporacao;N do Inventario;N de Serie;Centro de Custo\n";
+    // A exportação agora itera sobre a lista de itens individuais
+    let csvContent = "data:text/csv;charset=utf-8,Inventário;Subnº;Descrição;Data;Série;Centro de Custo\n";
     
-    inventario.forEach(imobilizado => {
-      imobilizado.itens.forEach(item => {
+    inventario.forEach(item => {
         const row = [
-          imobilizado.codigo_imobilizado,
+          item.Inventário,
           item["Subnº"],
           `"${item.Descrição || ''}"`,
           item.Data,
-          item.Inventário,
           item.Série,
           item.CentroCusto
         ].join(";");
         csvContent += row + "\r\n";
-      });
     });
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "inventario_imobilizados.csv");
+    link.setAttribute("download", "inventario.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -57,7 +55,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem }) => {
     <>
       <Modal show={true} onHide={onClose} centered size="xl" backdrop="static">
         <Modal.Header closeButton className="bg-dark text-white">
-          <Modal.Title>Inventário de Ativos</Modal.Title>
+          <Modal.Title>📋 Inventário de Ativos</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="text-center mb-3">
@@ -69,13 +67,14 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem }) => {
           </div>
           <ListGroup variant="flush">
             {inventario.length > 0 ? (
-              inventario.map((imobilizado, index) => (
-                 <ListGroup.Item key={index} className="d-flex justify-content-between align-items-center">
+              inventario.map((item) => (
+                 // CORREÇÃO: Usa o 'id' único do item como chave
+                 <ListGroup.Item key={item.id} className="d-flex justify-content-between align-items-center">
                    <div className="ms-2 me-auto">
-                     <div className="fw-bold">Cód: {imobilizado.codigo_imobilizado}</div>
-                     {imobilizado.itens[0]?.Descrição || 'Item sem descrição'}
+                     <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
+                     {item.Descrição || 'Item sem descrição'}
                    </div>
-                   <Badge bg="danger" pill>{imobilizado.itens.length}</Badge>
+                   <Badge bg="danger" pill>ID: {item.id}</Badge>
                  </ListGroup.Item>
               ))
             ) : (
@@ -91,7 +90,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem }) => {
                 <BoxArrowUpRight /> Exportar CSV
             </Button>
             <Button variant="danger" onClick={() => setIsScanning(true)}>
-                <QrCodeScan /> Escanear Itens
+                <QrCodeScan /> Escanear Itens em Lote
             </Button>
             <Button variant="secondary" onClick={onClose}>Fechar</Button>
         </Modal.Footer>

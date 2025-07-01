@@ -1,7 +1,26 @@
-import React from 'react';
-import { Card, Spinner, Alert, Accordion, Table } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Card, Spinner, Alert, Accordion, Table, Button } from 'react-bootstrap';
+import EditInventoryModal from './EditInventoryModal';
 
-const ResultsDisplay = ({ isLoading, error, resultado }) => {
+const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+
+  const handleEditClick = (item) => {
+    setEditingItem(item);
+    setShowEditModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowEditModal(false);
+    setEditingItem(null);
+  };
+
+  const handleUpdateSuccess = () => {
+    handleCloseModal();
+    onRefresh();
+  };
+
   if (isLoading) {
     return (
       <div className="text-center my-4">
@@ -20,34 +39,51 @@ const ResultsDisplay = ({ isLoading, error, resultado }) => {
   }
 
   return (
-    <Card className="mt-4 shadow-sm border-0">
-      <Card.Header as="h5" className="bg-danger text-white">
-        CÓDIGO DO IMOBILIZADO: {resultado.codigo_imobilizado}
-      </Card.Header>
-      <Card.Body>
-        <Accordion defaultActiveKey="0" alwaysOpen className="mt-2">
-          {resultado.itens.map((item) => (
-            <Accordion.Item eventKey={item['Subnº']} key={item['Subnº']}>
-              <Accordion.Header>
-                Item (Subnº {item['Subnº']}): {item.Descrição || 'Sem descrição'}
-              </Accordion.Header>
-              <Accordion.Body>
-                <Table striped bordered hover responsive size="sm">
-                  <tbody>
-                    <tr><td style={{ width: '30%' }}><strong>DESCRIÇÃO</strong></td><td>{item.Descrição || 'N/A'}</td></tr>
-                    <tr><td><strong>DATA INCOMPORAÇÃO</strong></td><td>{item.Data || 'N/A'}</td></tr>
-                    <tr><td><strong>INVENTÁRIO</strong></td><td>{item.Inventário || 'N/A'}</td></tr>
-                    <tr><td><strong>NUMERO DE SÉRIE</strong></td><td>{item.Série || 'N/A'}</td></tr>
-                    <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'N/A'}</td></tr>
-                    <tr><td><strong>SUB NÚMERO</strong></td><td>{item.Subnº}</td></tr>
-                  </tbody>
-                </Table>
-              </Accordion.Body>
-            </Accordion.Item>
-          ))}
-        </Accordion>
-      </Card.Body>
-    </Card>
+    <>
+      <Card className="mt-4 shadow-sm border-0">
+        <Card.Header as="h5" className="bg-danger text-white">
+          CÓDIGO DO IMOBILIZADO: {resultado.codigo_imobilizado}
+        </Card.Header>
+        <Card.Body>
+          <Accordion defaultActiveKey={resultado.itens[0]?.id.toString()} alwaysOpen className="mt-2">
+            {resultado.itens.map((item) => (
+              <Accordion.Item eventKey={item.id.toString()} key={item.id}>
+                <Accordion.Header>
+                  Item (Subnº {item['Subnº']}): {item.Descrição || 'Sem descrição'}
+                </Accordion.Header>
+                <Accordion.Body>
+                  <Table striped bordered hover responsive size="sm">
+                    <tbody>
+                      <tr><td style={{ width: '30%' }}><strong>DESCRIÇÃO</strong></td><td>{item.Descrição || 'N/A'}</td></tr>
+                      <tr><td><strong>DATA INCORPORAÇÃO</strong></td><td>{item.Data || 'N/A'}</td></tr>
+                      <tr><td><strong>INVENTÁRIO</strong></td><td>{item.Inventário || 'N/A'}</td></tr>
+                      <tr><td><strong>INVENTÁRIO ANTIGO</strong></td><td>{item.Inventário_Antigo || 'N/A'}</td></tr>
+                      <tr><td><strong>NÚMERO DE SÉRIE</strong></td><td>{item.Série || 'N/A'}</td></tr>
+                      <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'N/A'}</td></tr>
+                      <tr><td><strong>SUB NÚMERO</strong></td><td>{item['Subnº'] || 'N/A'}</td></tr>
+                    </tbody>
+                  </Table>
+                  <div className="text-end mt-2">
+                    <Button variant="outline-danger" size="sm" onClick={() => handleEditClick(item)}>
+                      Editar Inventário
+                    </Button>
+                  </div>
+                </Accordion.Body>
+              </Accordion.Item>
+            ))}
+          </Accordion>
+        </Card.Body>
+      </Card>
+
+      {editingItem && (
+        <EditInventoryModal
+          show={showEditModal}
+          onClose={handleCloseModal}
+          item={editingItem}
+          onUpdateSuccess={handleUpdateSuccess}
+        />
+      )}
+    </>
   );
 };
 
