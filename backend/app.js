@@ -1,5 +1,7 @@
 require('dotenv').config();
-const express = require('express'); 
+const express = require('express');
+const cors = require('cors');
+const app = express();
 const http = require('http' );
 const fs = require('fs');
 const path = require('path');
@@ -8,8 +10,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { handlePdfReportRequest } = require('./utils/geradorPDF.js');
 const { handleCsvReportRequest } = require('./utils/geradorCSV.js'); // <-- Importa o gerador CSV
 
-const app = express(); // <<<--- CORREÇÃO: 'app' é definido aqui, antes de ser usado.
-app.use(cors());
+app.use(cors()); // Esta linha agora está correta
 app.use(express.json());
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -181,7 +182,7 @@ const server = http.createServer((req, res ) => {
     handleStaticFileRequest(req, res);
 });
 
-const port = process.env.PORT || 5000;
-server.listen(port, () => {
-    console.log(`Servidor com Supabase rodando na porta ${port}.`);
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
