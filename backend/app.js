@@ -7,13 +7,9 @@ const { createClient } = require('@supabase/supabase-js');
 const { handlePdfReportRequest } = require('./utils/geradorPDF.js');
 const { handleCsvReportRequest } = require('./utils/geradorCSV.js'); // <-- Importa o gerador CSV
 
-const corsOptions = {
-  origin: process.env.CLIENT_URL, // A URL do seu frontend no Vercel/Render
-  optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
+const app = express(); // <<<--- CORREÇÃO: 'app' é definido aqui, antes de ser usado.
+app.use(cors());
 app.use(express.json());
-
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
