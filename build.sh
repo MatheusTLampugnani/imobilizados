@@ -11,9 +11,9 @@ npm install
 npm run build
 cd ..
 
-# Instala as dependências do Backend
+# Instala as dependências do Backend com Clean Install
 echo "Instalando dependências do backend..."
 cd backend
-npm install
+npm ci
 
 echo "Build concluído com sucesso!"
