@@ -4,7 +4,9 @@
   "description": "Backend para o sistema de consulta de imobilizados.",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "build":"npm install",
+    "start": "node app.js",
+    "test":"echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
