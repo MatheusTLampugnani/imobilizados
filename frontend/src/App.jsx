@@ -7,7 +7,7 @@ import Inventory from './components/Inventory';
 import ResultsDisplay from './components/ResultsDisplay';
 import ReportModal from './components/ReportModal';
 
-const API_URL = 'http://127.0.0.1:5000/api';
+const API_URL = 'https://imobilizados.onrender.com/api';
 
 function App() {
   const [codigo, setCodigo] = useState('');
