@@ -5,9 +5,8 @@ const path = require('path');
 const url = require('url');
 const { createClient } = require('@supabase/supabase-js');
 
-// 1. IMPORTAR OS DOIS GERADORES DE RELATÓRIO
 const { handlePdfReportRequest } = require('./utils/geradorPDF.js');
-const { handleCsvReportRequest } = require('./utils/geradorCSV.js'); // <-- Importa o gerador CSV
+const { handleCsvReportRequest } = require('./utils/geradorCSV.js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
@@ -20,7 +19,6 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log('Conexão com o Supabase configurada.');
 
-// --- SUAS FUNÇÕES EXISTENTES (devem permanecer no arquivo) ---
 function formatarValor(valor) {
     if (valor === null || valor === undefined || valor === '') return "";
     let valorStr = String(valor).trim().replace(/\.0$/, '');
