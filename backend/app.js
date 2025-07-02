@@ -31,6 +31,7 @@ app.get('/api', (req, res) => {
 });
 
 app.get('/api/imobilizado', async (req, res) => {
+    console.log(`[LOG DE TESTE] Rota /api/imobilizado foi chamada com o código: ${req.query.codigo}`);
     const { codigo } = req.query;
     const codigoFormatado = formatarValor(codigo);
 
@@ -67,6 +68,8 @@ app.get('/api/imobilizado', async (req, res) => {
                     "CentroCusto": item.centro_custo,
                 }))
             };
+            return res.status(200).json(responseData);
+        } if (itensEncontrados && itensEncontrados.length > 0) {
             return res.status(200).json(responseData);
         } else {
             return res.status(404).json({ message: 'Imobilizado, Inventário ou Nº de Série não encontrado' });
