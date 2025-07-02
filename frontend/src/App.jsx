@@ -108,10 +108,10 @@ function App() {
 
         <div className="d-grid gap-2 mt-4 d-sm-flex justify-content-sm-center">
             <Button variant="danger" size="lg" onClick={() => setInventarioAtivo(true)}>
-              📋 Iniciar Inventário
+              Iniciar Inventário
             </Button>
             <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
-              📄 Gerar Relatórios
+              Gerar Relatórios
             </Button>
         </div>
 
