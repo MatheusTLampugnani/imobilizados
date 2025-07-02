@@ -111,7 +111,7 @@ function App() {
               📋 Iniciar Inventário
             </Button>
             <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
-              📄 Gerar Relatório PDF
+              📄 Gerar Relatórios
             </Button>
         </div>
 

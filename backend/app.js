@@ -1,10 +1,13 @@
 require('dotenv').config();
-const http = require('http');
+const http = require('http' );
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
 const { createClient } = require('@supabase/supabase-js');
+
+// 1. IMPORTAR OS DOIS GERADORES DE RELATÓRIO
 const { handlePdfReportRequest } = require('./utils/geradorPDF.js');
+const { handleCsvReportRequest } = require('./utils/geradorCSV.js'); // <-- Importa o gerador CSV
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
@@ -17,6 +20,7 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log('Conexão com o Supabase configurada.');
 
+// --- SUAS FUNÇÕES EXISTENTES (devem permanecer no arquivo) ---
 function formatarValor(valor) {
     if (valor === null || valor === undefined || valor === '') return "";
     let valorStr = String(valor).trim().replace(/\.0$/, '');
@@ -31,11 +35,8 @@ async function handleApiRequest(req, res) {
     const { codigo } = parsedUrl.query;
     const codigoFormatado = formatarValor(codigo);
 
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-
     if (!codigoFormatado) {
-        res.writeHead(400);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ message: "Nenhum código foi fornecido." }));
     }
 
@@ -62,80 +63,42 @@ async function handleApiRequest(req, res) {
             const responseData = {
                 codigo_imobilizado: imobilizadoPrincipalCodigo,
                 itens: itensEncontrados.map(item => ({
-                    id: item.id,
-                    "Subnº": item.sub_numero,
-                    "Data": item.data_incorporacao,
-                    "Descrição": item.descricao,
-                    "Inventário": item.codigo_inventario,
-                    "Inventário_Antigo": item.codigo_inventario_antigo,
-                    "Série": item.numero_serie,
+                    id: item.id, "Subnº": item.sub_numero, "Data": item.data_incorporacao,
+                    "Descrição": item.descricao, "Inventário": item.codigo_inventario,
+                    "Inventário_Antigo": item.codigo_inventario_antigo, "Série": item.numero_serie,
                     "CentroCusto": item.centro_custo,
                 }))
             };
-            res.writeHead(200);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify(responseData));
         } else {
-            res.writeHead(404);
+            res.writeHead(404, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({ message: 'Imobilizado, Inventário ou Nº de Série não encontrado' }));
         }
     } catch (dbError) {
         console.error('--- ERRO NA CONSULTA AO SUPABASE ---', dbError);
-        res.writeHead(500);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
     }
 }
 
 async function handleUpdateInventoryRequest(req, res) {
-    // --- INÍCIO DA CORREÇÃO ---
-    // Define os cabeçalhos que permitem a comunicação entre origens diferentes
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    // Responde com sucesso à requisição de "sondagem" (preflight) do navegador
-    if (req.method === 'OPTIONS') {
-        res.writeHead(204); // Status "No Content"
-        res.end();
-        return;
-    }
-    // --- FIM DA CORREÇÃO ---
-
     let body = '';
-    req.on('data', chunk => {
-        body += chunk.toString();
-    });
-
+    req.on('data', chunk => { body += chunk.toString(); });
     req.on('end', async () => {
         try {
             const { itemId, newInventoryCode } = JSON.parse(body);
             const newCodeNumeric = parseInt(newInventoryCode, 10);
-
             if (!itemId || isNaN(newCodeNumeric)) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
                 return res.end(JSON.stringify({ message: 'Dados inválidos fornecidos.' }));
             }
-
-            const { data: currentItem, error: fetchError } = await supabase
-                .from('imobilizados')
-                .select('codigo_inventario')
-                .eq('id', itemId)
-                .single();
-
+            const { data: currentItem, error: fetchError } = await supabase.from('imobilizados').select('codigo_inventario').eq('id', itemId).single();
             if (fetchError) throw fetchError;
-
-            const { error: updateError } = await supabase
-                .from('imobilizados')
-                .update({ 
-                    codigo_inventario: newCodeNumeric,
-                    codigo_inventario_antigo: currentItem.codigo_inventario
-                })
-                .eq('id', itemId);
-
+            const { error: updateError } = await supabase.from('imobilizados').update({ codigo_inventario: newCodeNumeric, codigo_inventario_antigo: currentItem.codigo_inventario }).eq('id', itemId);
             if (updateError) throw updateError;
-            
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ message: 'Inventário atualizado com sucesso!' }));
-
         } catch(error) {
             console.error("ERRO AO ATUALIZAR INVENTÁRIO: ", error);
             res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -147,7 +110,6 @@ async function handleUpdateInventoryRequest(req, res) {
 function handleStaticFileRequest(req, res) {
     const parsedUrl = url.parse(req.url);
     let pathname = path.join(__dirname, '..', 'frontend', 'dist', parsedUrl.pathname);
-
     fs.stat(pathname, (err, stat) => {
         if (err || !stat.isFile()) {
             const indexPath = path.join(__dirname, '..', 'frontend', 'dist', 'index.html');
@@ -160,13 +122,8 @@ function handleStaticFileRequest(req, res) {
             });
             return;
         }
-
         const ext = path.parse(pathname).ext;
-        const mimeMap = {
-            '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-            '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml'
-        };
-
+        const mimeMap = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml' };
         fs.readFile(pathname, (fileErr, data) => {
             if (fileErr) {
                 res.writeHead(500); res.end(`Erro ao ler arquivo.`);
@@ -178,36 +135,43 @@ function handleStaticFileRequest(req, res) {
     });
 }
 
-const server = http.createServer((req, res) => {
-    // --- INÍCIO DA CORREÇÃO DEFINITIVA DE CORS ---
-    // Define os cabeçalhos para TODAS as respostas
+// 2. ATUALIZAR O SERVIDOR PARA LIDAR COM AS NOVAS ROTAS
+const server = http.createServer((req, res ) => {
+    // Configurações de CORS para todas as rotas
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    // Se for uma requisição pre-flight (OPTIONS), responda imediatamente com sucesso.
+    // Resposta para requisições pre-flight (OPTIONS) do navegador
     if (req.method === 'OPTIONS') {
-        res.writeHead(204); // Status "No Content"
+        res.writeHead(204);
         res.end();
         return;
     }
+    
     const parsedUrl = url.parse(req.url, true);
+    const { pathname } = parsedUrl;
 
-    if (req.method === 'GET' && parsedUrl.pathname === '/api/imobilizado') {
+    // --- ROTEAMENTO DA API ---
+    if (req.method === 'GET' && pathname === '/api/imobilizado') {
         return handleApiRequest(req, res);
     }
     
-    if (req.method === 'GET' && parsedUrl.pathname === '/api/report/pdf') {
-        return handlePdfReportRequest(req, res);
+    if (req.method === 'GET' && pathname === '/api/report/pdf') {
+        return handlePdfReportRequest(req, res); // <-- Chama o gerador de PDF
     }
     
-    if (req.method === 'PUT' && parsedUrl.pathname === '/api/imobilizado/update-inventory') {
+    if (req.method === 'GET' && pathname === '/api/report/csv') {
+        return handleCsvReportRequest(req, res); // <-- Chama o gerador de CSV
+    }
+    
+    if (req.method === 'PUT' && pathname === '/api/imobilizado/update-inventory') {
         return handleUpdateInventoryRequest(req, res);
     }
     
+    // Se não for nenhuma rota da API, serve os arquivos do frontend
     handleStaticFileRequest(req, res);
 });
-
 
 const port = process.env.PORT || 5000;
 server.listen(port, () => {

@@ -4,33 +4,42 @@ import axios from 'axios';
 
 const API_URL = 'http://127.0.0.1:5000/api';
 
-const ReportModal = ({ show, onClose }) => {
+const ReportModal = ({ show, onClose } ) => {
   const [centroCusto, setCentroCusto] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(null); // Pode ser 'pdf', 'csv' ou null
   const [error, setError] = useState('');
 
-  const handleGenerate = async () => {
+  // Função genérica para gerar o relatório
+  const handleGenerate = async (format) => {
     if (!centroCusto) {
       setError('Por favor, insira um centro de custo.');
       return;
     }
-    setIsGenerating(true);
+    setIsGenerating(format); // Define qual formato está sendo gerado (ex: 'pdf')
     setError('');
 
     try {
-      const response = await axios.get(`${API_URL}/report/pdf?centro_custo=${centroCusto}`, {
-        responseType: 'blob',
+      // A URL e o nome do arquivo mudam com base no formato
+      const endpoint = `${API_URL}/report/${format}?centro_custo=${centroCusto}`;
+      const fileName = `Relatorio_CC_${centroCusto}.${format}`;
+
+      const response = await axios.get(endpoint, {
+        responseType: 'blob', // Essencial para o download de arquivos
       });
 
+      // Lógica para criar e acionar o link de download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Relatorio_CC_${centroCusto}.pdf`);
+      link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
       
-      onClose();
+      // Limpeza
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      onClose(); // Fecha o modal após o sucesso
 
     } catch (err) {
       if (err.response?.status === 404) {
@@ -39,17 +48,25 @@ const ReportModal = ({ show, onClose }) => {
         setError('Erro ao gerar o relatório. Tente novamente.');
       }
     } finally {
-      setIsGenerating(false);
+      setIsGenerating(null); // Reseta o estado de geração
     }
   };
 
+  // Limpa o estado quando o modal é fechado
+  const handleClose = () => {
+    setCentroCusto('');
+    setError('');
+    setIsGenerating(null);
+    onClose();
+  };
+
   return (
-    <Modal show={show} onHide={onClose} centered>
+    <Modal show={show} onHide={handleClose} centered>
       <Modal.Header closeButton>
         <Modal.Title>Gerar Relatório de Imobilizados</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p>Digite o Centro de Custo para gerar o relatório em PDF.</p>
+        <p>Digite o Centro de Custo para gerar o relatório.</p>
         <Form.Control
           type="text"
           value={centroCusto}
@@ -60,11 +77,30 @@ const ReportModal = ({ show, onClose }) => {
         {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="secondary" onClick={handleClose}>
           Cancelar
         </Button>
-        <Button variant="danger" onClick={handleGenerate} disabled={isGenerating}>
-          {isGenerating ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar PDF'}
+        
+        {/* Botão para gerar CSV */}
+        <Button 
+          variant="success" 
+          onClick={() => handleGenerate('csv')} 
+          disabled={isGenerating !== null}
+        >
+          {isGenerating === 'csv' 
+            ? <Spinner as="span" animation="border" size="sm" /> 
+            : 'Gerar CSV'}
+        </Button>
+
+        {/* Botão para gerar PDF */}
+        <Button 
+          variant="danger" 
+          onClick={() => handleGenerate('pdf')} 
+          disabled={isGenerating !== null}
+        >
+          {isGenerating === 'pdf' 
+            ? <Spinner as="span" animation="border" size="sm" /> 
+            : 'Gerar PDF'}
         </Button>
       </Modal.Footer>
     </Modal>
