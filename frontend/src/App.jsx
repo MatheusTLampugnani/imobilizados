@@ -41,7 +41,11 @@ function App() {
     return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
   }
 
-  const handleCodeSearch = async (codeToSearch) => {
+const handleCodeSearch = async (codeToSearch) => {
+    if (isLoading) {
+      return; 
+    }
+
     if (!codeToSearch || codeToSearch.trim() === '') {
       setError('Por favor, digite um código.');
       setResultado(null);
@@ -50,7 +54,6 @@ function App() {
     
     setIsLoading(true);
     setError('');
-    setResultado(null);
 
     try {
       const response = await axios.get(`${API_URL}/imobilizado?codigo=${codeToSearch}`);
@@ -66,7 +69,7 @@ function App() {
       });
       
       if (inventarioAtivo) {
-        if (dados.itens.length > 0) {
+        if (dados.itens && dados.itens.length > 0) {
             const codigoFormatado = formatarCodigo(codeToSearch);
             const itemEscaneado = dados.itens.find(item => 
                 formatarCodigo(item.Inventário) === codigoFormatado || 
@@ -81,9 +84,7 @@ function App() {
         }
       }
     } catch (err) {
-
       setResultado(null);
-      
       const errorMessage = err.response?.status === 404 
         ? `Imobilizado ${codeToSearch} não encontrado.` 
         : (err.response?.data?.message || 'Erro ao conectar ao servidor. Verifique sua conexão.');
@@ -92,6 +93,7 @@ function App() {
       setIsLoading(false);
     }
   };
+
 
   const refreshData = () => {
     if (codigo) {
