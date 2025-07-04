@@ -1,33 +1,29 @@
 import React, { useState } from 'react';
 import { Modal, Form, Button, Spinner, Alert } from 'react-bootstrap';
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api';
+import { API_URL } from '../apiConfig';
 
 const ReportModal = ({ show, onClose } ) => {
   const [centroCusto, setCentroCusto] = useState('');
-  const [isGenerating, setIsGenerating] = useState(null); // Pode ser 'pdf', 'csv' ou null
+  const [isGenerating, setIsGenerating] = useState(null);
   const [error, setError] = useState('');
 
-  // Função genérica para gerar o relatório
   const handleGenerate = async (format) => {
     if (!centroCusto) {
       setError('Por favor, insira um centro de custo.');
       return;
     }
-    setIsGenerating(format); // Define qual formato está sendo gerado (ex: 'pdf')
+    setIsGenerating(format);
     setError('');
 
     try {
-      // A URL e o nome do arquivo mudam com base no formato
       const endpoint = `${API_URL}/report/${format}?centro_custo=${centroCusto}`;
       const fileName = `Relatorio_CC_${centroCusto}.${format}`;
 
       const response = await axios.get(endpoint, {
-        responseType: 'blob', // Essencial para o download de arquivos
+        responseType: 'blob',
       });
 
-      // Lógica para criar e acionar o link de download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -35,11 +31,10 @@ const ReportModal = ({ show, onClose } ) => {
       document.body.appendChild(link);
       link.click();
       
-      // Limpeza
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      onClose(); // Fecha o modal após o sucesso
+      onClose();
 
     } catch (err) {
       if (err.response?.status === 404) {
@@ -48,11 +43,10 @@ const ReportModal = ({ show, onClose } ) => {
         setError('Erro ao gerar o relatório. Tente novamente.');
       }
     } finally {
-      setIsGenerating(null); // Reseta o estado de geração
+      setIsGenerating(null);
     }
   };
 
-  // Limpa o estado quando o modal é fechado
   const handleClose = () => {
     setCentroCusto('');
     setError('');
@@ -80,8 +74,6 @@ const ReportModal = ({ show, onClose } ) => {
         <Button variant="secondary" onClick={handleClose}>
           Cancelar
         </Button>
-        
-        {/* Botão para gerar CSV */}
         <Button 
           variant="success" 
           onClick={() => handleGenerate('csv')} 
@@ -91,8 +83,6 @@ const ReportModal = ({ show, onClose } ) => {
             ? <Spinner as="span" animation="border" size="sm" /> 
             : 'Gerar CSV'}
         </Button>
-
-        {/* Botão para gerar PDF */}
         <Button 
           variant="danger" 
           onClick={() => handleGenerate('pdf')} 
