@@ -16,7 +16,7 @@ function App() {
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
   const [showReportModal, setShowReportModal] = useState(false);
-  
+
   useEffect(() => {
     try {
       const inventarioSalvo = localStorage.getItem('inventario');
@@ -81,6 +81,9 @@ function App() {
         }
       }
     } catch (err) {
+
+      setResultado(null);
+      
       const errorMessage = err.response?.status === 404 
         ? `Imobilizado ${codeToSearch} não encontrado.` 
         : (err.response?.data?.message || 'Erro ao conectar ao servidor. Verifique sua conexão.');
