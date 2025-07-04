@@ -16,7 +16,7 @@ function App() {
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
   const [showReportModal, setShowReportModal] = useState(false);
-
+  
   useEffect(() => {
     try {
       const inventarioSalvo = localStorage.getItem('inventario');
@@ -24,12 +24,16 @@ function App() {
         setInventario(JSON.parse(inventarioSalvo));
       }
     } catch (e) {
-      console.error("Erro ao carregar inventário:", e);
+      console.error("Erro ao carregar inventário do localStorage:", e);
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('inventario', JSON.stringify(inventario));
+    try {
+        localStorage.setItem('inventario', JSON.stringify(inventario));
+    } catch (e) {
+        console.error("Erro ao salvar inventário no localStorage:", e);
+    }
   }, [inventario]);
 
   const formatarCodigo = (valor) => {
@@ -41,22 +45,28 @@ function App() {
     if (!codeToSearch || codeToSearch.trim() === '') {
       setError('Por favor, digite um código.');
       setResultado(null);
-      return false;
+      return;
     }
+    
     setIsLoading(true);
     setError('');
+    setResultado(null);
 
     try {
       const response = await axios.get(`${API_URL}/imobilizado?codigo=${codeToSearch}`);
       const dados = response.data;
       
+      if (!dados || !dados.itens) {
+        throw new Error("A resposta do servidor não continha os dados esperados.");
+      }
+
       setResultado({
         codigo_imobilizado: dados.codigo_imobilizado,
         itens: dados.itens
       });
       
       if (inventarioAtivo) {
-        if (dados.itens && dados.itens.length > 0) {
+        if (dados.itens.length > 0) {
             const codigoFormatado = formatarCodigo(codeToSearch);
             const itemEscaneado = dados.itens.find(item => 
                 formatarCodigo(item.Inventário) === codigoFormatado || 
@@ -70,10 +80,11 @@ function App() {
             }
         }
       }
-      return true;
     } catch (err) {
-      setError(err.response?.status === 404 ? `Imobilizado ${codeToSearch} não encontrado.` : 'Erro ao conectar ao servidor.');
-      return false;
+      const errorMessage = err.response?.status === 404 
+        ? `Imobilizado ${codeToSearch} não encontrado.` 
+        : (err.response?.data?.message || 'Erro ao conectar ao servidor. Verifique sua conexão.');
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
