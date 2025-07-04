@@ -56,16 +56,18 @@ function App() {
       });
       
       if (inventarioAtivo) {
-        const codigoFormatado = formatarCodigo(codeToSearch);
-        const itemEscaneado = dados.itens.find(item => 
-            formatarCodigo(item.Inventário) === codigoFormatado || 
-            formatarCodigo(item.Série) === codigoFormatado ||
-            formatarCodigo(dados.codigo_imobilizado) === codigoFormatado
-        );
-        const itemParaAdicionar = itemEscaneado || dados.itens[0];
-
-        if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
-            setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
+        if (dados.itens && dados.itens.length > 0) {
+            const codigoFormatado = formatarCodigo(codeToSearch);
+            const itemEscaneado = dados.itens.find(item => 
+                formatarCodigo(item.Inventário) === codigoFormatado || 
+                formatarCodigo(item.Série) === codigoFormatado ||
+                formatarCodigo(dados.codigo_imobilizado) === codigoFormatado
+            );
+            const itemParaAdicionar = itemEscaneado || dados.itens[0];
+            
+            if (itemParaAdicionar && !inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
+                setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
+            }
         }
       }
       return true;
