@@ -1,32 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Button, ListGroup, Badge, Alert } from 'react-bootstrap';
+import { Modal, Button, ListGroup, Badge, Alert, Spinner } from 'react-bootstrap';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, inventoryCc }) => {
   const [missingItems, setMissingItems] = useState([]);
   const [wrongCcItems, setWrongCcItems] = useState([]);
+  const [isGenerating, setIsGenerating] = useState(null);
 
   useEffect(() => {
     if (show) {
       const formatCode = (item) => String(item.Inventário || item.Série || item.codigo_imobilizado || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
-
-      // Conjunto de IDs dos itens coletados para busca rápida
       const collectedIds = new Set(collectedItems.map(item => formatCode(item)));
 
-      // 1. Itens Faltantes: Estão nos esperados, mas não foram coletados
       const missing = expectedItems.filter(expectedItem => {
         const expectedCode = formatCode(expectedItem);
         return !collectedIds.has(expectedCode);
       });
       setMissingItems(missing);
 
-      // 2. Itens em CC Errado: Foram coletados, mas o Centro de Custo é diferente do inventário atual
       const wrongCc = collectedItems.filter(collectedItem => {
-        // Normaliza o centro de custo para comparação
         const collectedCc = String(collectedItem.CentroCusto || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
         const currentInventoryCc = String(inventoryCc || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
         
-        // Verifica se o item coletado está na lista de itens esperados para o CC atual
-        // E se o centro de custo do item coletado é diferente do centro de custo do inventário
         const isExpectedForCurrentCc = expectedItems.some(expectedItem => 
             formatCode(expectedItem) === formatCode(collectedItem) && 
             String(expectedItem.CentroCusto || '').trim().replace(/\.0$/, '').replace(/^0+/, '') === currentInventoryCc
@@ -37,6 +33,78 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
       setWrongCcItems(wrongCc);
     }
   }, [show, collectedItems, expectedItems, inventoryCc]);
+
+  const handleGenerateReport = async (format) => {
+    setIsGenerating(format);
+    await new Promise(resolve => setTimeout(resolve, 50)); // Pequeno delay para UI atualizar
+
+    const doc = new jsPDF();
+    const tableRows = [];
+    const tableColumns = ["Status", "Plaqueta", "Subnº", "Descrição", "Centro de Custo"];
+
+    // Adiciona um título ao documento
+    doc.setFontSize(18);
+    doc.text(`Relatório de Divergências - CC: ${inventoryCc}`, 14, 22);
+    doc.setFontSize(11);
+
+    missingItems.forEach(item => {
+        tableRows.push([
+            "Faltante",
+            item.Inventário || 'N/A',
+            item['Subnº'] || 'N/A',
+            item.Descrição || 'Sem descrição',
+            item.CentroCusto || 'N/A'
+        ]);
+    });
+
+    wrongCcItems.forEach(item => {
+        tableRows.push([
+            "CC Errado",
+            item.Inventário || 'N/A',
+            item['Subnº'] || 'N/A',
+            item.Descrição || 'Sem descrição',
+            item.CentroCusto || 'N/A'
+        ]);
+    });
+    
+    if (format === 'pdf') {
+        doc.autoTable(tableColumns, tableRows, {
+            startY: 30,
+            didDrawCell: (data) => {
+                const status = data.row.raw[0];
+                if (status === 'Faltante') {
+                    doc.setFillColor(255, 235, 238); // Vermelho claro
+                } else if (status === 'CC Errado') {
+                    doc.setFillColor(255, 248, 225); // Amarelo claro
+                }
+            },
+            styles: {
+                fillColor: [255, 255, 255] // Cor de preenchimento padrão (branco)
+            },
+            headStyles: {
+                fillColor: [52, 58, 64], // Cabeçalho escuro
+                textColor: [255, 255, 255]
+            }
+        });
+        doc.save(`Relatorio_Divergencias_CC_${inventoryCc}.pdf`);
+    }
+
+    if (format === 'csv') {
+        let csvContent = "data:text/csv;charset=utf-8," 
+            + tableColumns.join(";") + "\n" 
+            + tableRows.map(e => e.join(";")).join("\n");
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Relatorio_Divergencias_CC_${inventoryCc}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    setIsGenerating(null);
+  };
 
   return (
     <Modal show={show} onHide={onClose} centered size="xl" backdrop="static">
@@ -84,6 +152,22 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>Fechar Relatório</Button>
+        
+        {/* === BOTÕES NOVOS === */}
+        <Button 
+          variant="success" 
+          onClick={() => handleGenerateReport('csv')} 
+          disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0)}
+        >
+          {isGenerating === 'csv' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar CSV'}
+        </Button>
+        <Button 
+          variant="danger" 
+          onClick={() => handleGenerateReport('pdf')} 
+          disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0)}
+        >
+          {isGenerating === 'pdf' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar PDF'}
+        </Button>
       </Modal.Footer>
     </Modal>
   );
