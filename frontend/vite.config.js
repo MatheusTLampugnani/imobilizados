@@ -22,17 +22,17 @@ export default defineConfig({
         icons: [
           {
             src: 'videplast_logo.png', // Lembre-se: este arquivo deve estar em /frontend/public
-            sizes: '192x192',
+            sizes: '512x512',
             type: 'image/png',
           },
           {
             src: 'videplast_logo.png', // Lembre-se: este arquivo deve estar em /frontend/public
-            sizes: '192x192',
+            sizes: '512x512',
             type: 'image/png',
           },
           {
             src: 'videplast_logo.png',
-            sizes: '192x192',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
           }
