@@ -3,7 +3,7 @@ import { Modal, Button, ListGroup, Alert, Spinner } from 'react-bootstrap';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, inventoryCc }) => {
+const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, expectedItems, inventoryCc }) => {
   const [missingItems, setMissingItems] = useState([]);
   const [wrongCcItems, setWrongCcItems] = useState([]);
   const [isGenerating, setIsGenerating] = useState(null);
@@ -136,7 +136,7 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
           <Button variant="secondary" onClick={onFinishAndReset}>
             Voltar ao Início
           </Button>
-          <Button variant="secondary" onClick={onClose}>Retornar ao inventario</Button>
+          <Button variant="outline-secondary" onClick={onClose}>Retornar ao inventario</Button>
           <Button 
               variant="success" 
               onClick={() => handleGenerateReport('csv')} 
