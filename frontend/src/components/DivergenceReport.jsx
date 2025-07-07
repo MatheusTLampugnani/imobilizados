@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Button, ListGroup, Alert, Spinner } from 'react-bootstrap';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, inventoryCc }) => {
   const [missingItems, setMissingItems] = useState([]);
@@ -9,7 +9,6 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
   const [isGenerating, setIsGenerating] = useState(null);
 
   useEffect(() => {
-    // A lógica para calcular as divergências permanece a mesma
     if (show) {
       const formatCode = (item) => String(item.Inventário || item.Série || item.codigo_imobilizado || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
       const collectedIds = new Set(collectedItems.map(item => formatCode(item)));
@@ -20,18 +19,18 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
       const wrongCc = collectedItems.filter(collectedItem => {
         const collectedCc = String(collectedItem.CentroCusto || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
         const currentInventoryCc = String(inventoryCc || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
-        const isExpectedForCurrentCc = expectedItems.some(expectedItem => formatCode(expectedItem) === formatCode(collectedItem) && String(expectedItem.CentroCusto || '').trim().replace(/\.0$/, '').replace(/^0+/, '') === currentInventoryCc);
+        const isExpectedForCurrentCc = expectedItems.some(expectedItem => 
+            formatCode(expectedItem) === formatCode(collectedItem) && 
+            String(expectedItem.CentroCusto || '').trim().replace(/\.0$/, '').replace(/^0+/, '') === currentInventoryCc
+        );
         return !isExpectedForCurrentCc && collectedCc !== currentInventoryCc;
       });
       setWrongCcItems(wrongCc);
     }
   }, [show, collectedItems, expectedItems, inventoryCc]);
 
-  // ✅ FUNÇÃO DE GERAR RELATÓRIO CORRIGIDA COM TRY...CATCH...FINALLY
   const handleGenerateReport = async (format) => {
     setIsGenerating(format);
-    
-    // Pequeno delay para garantir que o spinner apareça na tela antes de começar o processamento pesado
     await new Promise(resolve => setTimeout(resolve, 50)); 
 
     try {
@@ -51,16 +50,22 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
         doc.setFontSize(18);
         doc.text(`Relatório de Divergências - CC: ${inventoryCc}`, 14, 22);
         
-        doc.autoTable(tableColumns, tableRows, {
+        autoTable(doc, {
+          head: [tableColumns],
+          body: tableRows,
           startY: 30,
           didDrawCell: (data) => {
             const status = data.row.raw[0];
-            if (status === 'Faltante') doc.setFillColor(255, 235, 238); // Vermelho claro
-            else if (status === 'CC Errado') doc.setFillColor(255, 248, 225); // Amarelo claro
+            if (status === 'Faltante') {
+                doc.setFillColor(255, 235, 238); // Vermelho claro
+            } else if (status === 'CC Errado') {
+                doc.setFillColor(255, 248, 225); // Amarelo claro
+            }
           },
-          styles: { fillColor: [255, 255, 255] },
+          styles: { fillColor: [255, 255, 255] }, // Cor de preenchimento padrão
           headStyles: { fillColor: [52, 58, 64], textColor: [255, 255, 255] }
         });
+
         doc.save(`Relatorio_Divergencias_CC_${inventoryCc}.pdf`);
       }
 
@@ -78,76 +83,72 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
         document.body.removeChild(link);
       }
     } catch (error) {
-      // Se um erro ocorrer, ele será mostrado no console
       console.error("Erro ao gerar relatório:", error);
       alert("Ocorreu um erro ao gerar o relatório. Verifique o console para mais detalhes.");
     } finally {
-      // O finally garante que esta linha SEMPRE será executada, mesmo se ocorrer um erro
       setIsGenerating(null);
     }
   };
 
-  // O JSX do seu componente permanece o mesmo
   return (
     <Modal show={show} onHide={onClose} centered size="xl" backdrop="static">
-      <Modal.Header closeButton className="bg-dark text-white">
-        <Modal.Title>📊 Relatório de Divergências do Inventário</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        {/* ... (código da exibição das listas, sem alterações) ... */}
-        {missingItems.length === 0 && wrongCcItems.length === 0 && (
-          <Alert variant="success" className="text-center">
-            🎉 Nenhuma divergência encontrada! Inventário perfeito para o Centro de Custo {inventoryCc}.
-          </Alert>
-        )}
-        {missingItems.length > 0 && (
-          <div className="mb-4">
-            <h5>❌ Itens Faltantes ({missingItems.length})</h5>
-            <p className="text-muted">Estes itens deveriam estar no Centro de Custo {inventoryCc}, mas não foram coletados:</p>
-            <ListGroup>
-              {missingItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} variant="danger">
-                  <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
-                  <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
-                  <div>Centro de Custo Esperado: {item.CentroCusto || 'N/A'}</div>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          </div>
-        )}
-        {wrongCcItems.length > 0 && (
-          <div>
-            <h5>⚠️ Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
-            <p className="text-muted">Estes itens foram coletados, mas pertencem a um Centro de Custo diferente de {inventoryCc}:</p>
-            <ListGroup>
-              {wrongCcItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} variant="warning">
-                  <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
-                  <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
-                  <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          </div>
-        )}
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>Fechar Relatório</Button>
-        <Button 
-          variant="success" 
-          onClick={() => handleGenerateReport('csv')} 
-          disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0)}
-        >
-          {isGenerating === 'csv' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar CSV'}
-        </Button>
-        <Button 
-          variant="danger" 
-          onClick={() => handleGenerateReport('pdf')} 
-          disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0)}
-        >
-          {isGenerating === 'pdf' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar PDF'}
-        </Button>
-      </Modal.Footer>
+        <Modal.Header closeButton className="bg-dark text-white">
+            <Modal.Title>📊 Relatório de Divergências do Inventário</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+            {missingItems.length === 0 && wrongCcItems.length === 0 && (
+                <Alert variant="success" className="text-center">
+                    🎉 Nenhuma divergência encontrada! Inventário perfeito para o Centro de Custo {inventoryCc}.
+                </Alert>
+            )}
+            {missingItems.length > 0 && (
+                <div className="mb-4">
+                    <h5>❌ Itens Faltantes ({missingItems.length})</h5>
+                    <p className="text-muted">Estes itens deveriam estar no Centro de Custo {inventoryCc}, mas não foram coletados:</p>
+                    <ListGroup>
+                        {missingItems.map((item, index) => (
+                            <ListGroup.Item key={item.id || index} variant="danger">
+                                <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
+                                <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+                                <div>Centro de Custo Esperado: {item.CentroCusto || 'N/A'}</div>
+                            </ListGroup.Item>
+                        ))}
+                    </ListGroup>
+                </div>
+            )}
+            {wrongCcItems.length > 0 && (
+                <div>
+                    <h5>⚠️ Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
+                    <p className="text-muted">Estes itens foram coletados, mas pertencem a um Centro de Custo diferente de {inventoryCc}:</p>
+                    <ListGroup>
+                        {wrongCcItems.map((item, index) => (
+                            <ListGroup.Item key={item.id || index} variant="warning">
+                                <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
+                                <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+                                <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
+                            </ListGroup.Item>
+                        ))}
+                    </ListGroup>
+                </div>
+            )}
+        </Modal.Body>
+        <Modal.Footer>
+            <Button variant="secondary" onClick={onClose}>Fechar Relatório</Button>
+            <Button 
+                variant="success" 
+                onClick={() => handleGenerateReport('csv')} 
+                disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0)}
+            >
+                {isGenerating === 'csv' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar CSV'}
+            </Button>
+            <Button 
+                variant="danger" 
+                onClick={() => handleGenerateReport('pdf')} 
+                disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0)}
+            >
+                {isGenerating === 'pdf' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar PDF'}
+            </Button>
+        </Modal.Footer>
     </Modal>
   );
 };
