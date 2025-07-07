@@ -133,7 +133,7 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
             )}
         </Modal.Body>
         <Modal.Footer>
-            <Button variant="secondary" onClick={onClose}>Fechar Relatório</Button>
+            <Button variant="secondary" onClick={onClose}>Retornar ao inventario</Button>
             <Button 
                 variant="success" 
                 onClick={() => handleGenerateReport('csv')} 

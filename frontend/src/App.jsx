@@ -123,7 +123,7 @@ function App() {
     <Container>
       <Header />
       <main>
-        <Card className="border-0 mb-4">
+        <Card>
           <Card.Body className="p-4">
             <InputArea 
               codigo={codigo}

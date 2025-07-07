@@ -86,9 +86,6 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
             <Button variant="outline-secondary" onClick={() => setInventario([])} disabled={inventario.length === 0}>
                 <Trash /> Limpar Lista
             </Button>
-            <Button variant="success" onClick={exportToCSV} disabled={inventario.length === 0}>
-                <BoxArrowUpRight /> Exportar CSV
-            </Button>
             <Button variant="danger" onClick={() => setIsScanning(true)}>
                 <QrCodeScan /> Escanear Itens em Lote
             </Button>
