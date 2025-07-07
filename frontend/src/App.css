@@ -50,13 +50,6 @@ h1, .h1 {
     border-radius: 0.5rem;
   }
 }
-.table-container {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border: 1px solid #dee2e6;
-  border-radius: 0.375rem;
-  margin-top: 1.5rem;
-}
 
 .results-table {
   min-width: 700px; /* Força a tabela a ser larga, ativando a rolagem */
