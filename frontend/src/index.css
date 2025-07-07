@@ -13,6 +13,7 @@ body {
 .app-header .logo {
   max-width: 250px;
   margin-bottom: 1.5rem;
+  margin-top: 20;
 }
 .accordion-header .accordion-button {
   font-weight: 500;
