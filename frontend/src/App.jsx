@@ -109,7 +109,7 @@ function App() {
 
   return (
     <div className="app-wrapper">
-      <Container className="app-container">
+      <Container>
         <Header/>
           <InputArea 
             codigo={codigo}
