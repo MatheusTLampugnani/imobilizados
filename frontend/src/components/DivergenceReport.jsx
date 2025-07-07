@@ -134,7 +134,7 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={onFinishAndReset}>
-            Finalizar e Voltar ao Início
+            Voltar ao Início
           </Button>
           <Button variant="secondary" onClick={onClose}>Retornar ao inventario</Button>
           <Button 
