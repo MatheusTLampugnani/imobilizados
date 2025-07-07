@@ -120,7 +120,7 @@ function App() {
   };
 
   return (
-    <Container className="app-container">
+    <Container>
       <Header />
       <main>
         <Card className="border-0 mb-4">
@@ -183,8 +183,8 @@ function App() {
         />
       )}
 
-      <footer className="app-footer">
-        <p className="mb-0">&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados</p>
+      <footer className="text-center text-muted mt-5 border-top pt-3">
+        <p>&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados | Desenvolvido para Videplast</p>
       </footer>
     </Container>
   );
