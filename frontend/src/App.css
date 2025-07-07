@@ -3,13 +3,6 @@ html, body, #root {
   background-color: #f0f2f5;
 }
 
-.app-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-top: 1.5rem;
-  padding-bottom: 2rem;
-}
-
 h1, .h1 {
   font-size: 1.8rem; /* Título principal menor em celulares */
 }
