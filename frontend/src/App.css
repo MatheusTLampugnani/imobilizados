@@ -1,6 +1,6 @@
-body, #root {
-  background-color: #f8f9fa;
-  min-height: 100vh;
+html, body, #root {
+  height: 100%;
+  background-color: #f0f2f5;
 }
 
 .app-container {
@@ -86,4 +86,24 @@ h5, .h5 {
   .modal-footer .btn {
     flex-grow: 0; /* Botões voltam ao normal em telas maiores */
   }
+}
+
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%; /* Garante que o wrapper ocupe pelo menos a altura total da tela */
+}
+
+.app-content {
+  flex: 1 0 auto; /* Permite que este elemento cresça e ocupe o espaço disponível */
+}
+
+.app-footer {
+  flex-shrink: 0; /* Impede que o footer encolha */
+  width: 100%;
+  text-align: center;
+  padding: 1.5rem;
+  background-color: #f0f2f5;
+  border-top: 1px solid #dee2e6;
+  color: #6c757d;
 }
