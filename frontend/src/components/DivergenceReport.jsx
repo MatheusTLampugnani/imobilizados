@@ -34,7 +34,7 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
     await new Promise(resolve => setTimeout(resolve, 50)); 
 
     try {
-      const tableColumns = ["Status", "Plaqueta", "Subnº", "Descrição", "Centro de Custo"];
+      const tableColumns = ["Status", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
       const tableRows = [];
 
       missingItems.forEach(item => {
@@ -54,16 +54,16 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
           head: [tableColumns],
           body: tableRows,
           startY: 30,
-          didDrawCell: (data) => {
-            const status = data.row.raw[0];
+          willDrawCell: (data) => {
+            const status = data.row.raw[0]; 
+
             if (status === 'Faltante') {
-                doc.setFillColor(255, 235, 238); // Vermelho claro
+              data.cell.styles.fillColor = '#fde2e4'; // Um tom de vermelho bem claro
             } else if (status === 'CC Errado') {
-                doc.setFillColor(255, 248, 225); // Amarelo claro
+              data.cell.styles.fillColor = '#fff1c7'; // Um tom de amarelo bem claro
             }
           },
-          styles: { fillColor: [255, 255, 255] }, // Cor de preenchimento padrão
-          headStyles: { fillColor: [52, 58, 64], textColor: [255, 255, 255] }
+          headStyles: { fillColor: [41, 46, 51], textColor: [255, 255, 255] }
         });
 
         doc.save(`Relatorio_Divergencias_CC_${inventoryCc}.pdf`);
