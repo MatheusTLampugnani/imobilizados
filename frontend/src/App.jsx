@@ -110,7 +110,7 @@ function App() {
   return (
     <div className="app-wrapper">
       <main className="app-content">
-        <Container className="app-container">
+        <Container>
           <Header />
           <div className="main-content-area">
             <InputArea 
