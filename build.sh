@@ -1,19 +1,12 @@
-#!/usr/bin/env bash
-# exit on error
 set -o errexit
 
-echo "Iniciando o build..."
+# --- Build do Frontend ---
+echo "Instalando dependências e buildando o frontend..."
+npm install --prefix frontend
+npm run build --prefix frontend
 
-# Instala e constrói o Frontend
-echo "Construindo o frontend..."
-cd frontend
-npm install
-npm run build
-cd ..
+# --- Build do Backend ---
+echo "Instalando as dependências do backend..."
+npm install --prefix backend
 
-# Instala as dependências do Backend com Clean Install
-echo "Instalando dependências do backend..."
-cd backend
-npm ci
-
-echo "Build concluído com sucesso!"
+echo "Build finalizado com sucesso!"

@@ -109,10 +109,15 @@ app.get('/api/report/pdf', handlePdfReportRequest);
 app.get('/api/report/csv', handleCsvReportRequest);
 
 const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
+
 app.use(express.static(frontendDistPath));
 
 app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendDistPath, 'index.html'));
+    res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
+        if (err) {
+            res.status(500).send(err);
+        }
+    });
 });
 
 const PORT = process.env.PORT || 3001;
