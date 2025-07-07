@@ -161,12 +161,6 @@ function App() {
         )}
       </main>
 
-      {/* Renderização dos Modais */}
-      <CcInputModal 
-        show={showCcInputModal}
-        onClose={() => setShowCcInputModal(false)}
-        onConfirm={handleStartInventory}
-      />
       {showReportModal && <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} />}
       {showDivergenceReport && (
         <DivergenceReport
