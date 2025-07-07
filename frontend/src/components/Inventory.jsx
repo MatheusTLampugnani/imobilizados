@@ -27,7 +27,6 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
   };
 
   const exportToCSV = () => {
-    // A exportação agora itera sobre a lista de itens individuais
     let csvContent = "data:text/csv;charset=utf-8,Inventário;Subnº;Descrição;Data;Série;Centro de Custo\n";
     
     inventario.forEach(item => {
@@ -68,7 +67,6 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           <ListGroup variant="flush">
             {inventario.length > 0 ? (
               inventario.map((item) => (
-                 // CORREÇÃO: Usa o 'id' único do item como chave
                  <ListGroup.Item key={item.id} className="d-flex justify-content-between align-items-center">
                    <div className="ms-2 me-auto">
                      <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
