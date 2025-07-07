@@ -112,6 +112,14 @@ function App() {
     }
   };
 
+  const handleFinishAndReset = () => {
+    setShowDivergenceReport(false);
+    setInventarioAtivo(false);
+    setInventario([]);
+    setExpectedItems([]);
+    setInventarioCentroCusto('');
+    setResultado(null);
+  };
 
   const refreshData = () => {
     if (codigo) {
@@ -177,6 +185,7 @@ function App() {
         <DivergenceReport
           show={showDivergenceReport}
           onClose={() => setShowDivergenceReport(false)}
+          onFinishAndReset={handleFinishAndReset}
           collectedItems={inventario}
           expectedItems={expectedItems}
           inventoryCc={inventarioCentroCusto}
