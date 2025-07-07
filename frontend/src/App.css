@@ -1,6 +1,5 @@
  html, body, #root {
-   height: 100%;
-   background-color: #f0f2f5; /* Cor de fundo suave para a página inteira */
+   height: 100%; /* Cor de fundo suave para a página inteira */
  }
 
  .app-wrapper {
@@ -18,7 +17,6 @@
    width: 100%;
    text-align: center;
    padding: 1.5rem;
-   background-color: #f0f2f5;
    border-top: 1px solid #dee2e6;
    color: #6c757d;
  }
@@ -27,7 +25,6 @@
    max-width: 960px;
    margin: 0 auto;
    padding: 1rem;
-   background-color: white; /* Opcional: Se quiser um fundo branco no container */
    border-radius: 0.75rem; /* Opcional: Bordas arredondadas no container */
    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Opcional: Sombra no container */
  }
@@ -50,7 +47,6 @@
  .table-container {
    overflow-x: auto;
    -webkit-overflow-scrolling: touch;
-   border: 1px solid #dee2e6;
    border-radius: 0.375rem;
    margin-top: 1.5rem;
  }
