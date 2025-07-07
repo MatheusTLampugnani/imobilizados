@@ -108,8 +108,8 @@ function App() {
   };
 
   return (
-    <div className="app-wrapper">
-      <main className="app-content">
+    <div >
+      <main>
         <Container>
           <Header />
           <div className="main-content-area">
