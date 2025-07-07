@@ -108,9 +108,9 @@ function App() {
   };
 
   return (
-    <div >
-      <main>
-        <Container>
+    <div className="app-wrapper">
+      <main className="app-content">
+        <Container className="app-container">
           <Header />
           <div className="main-content-area">
             <InputArea 
@@ -126,7 +126,6 @@ function App() {
               onRefresh={refreshData} 
             />
           </div>
-
           <div className="main-actions-container">
               <Button variant="danger" size="lg" onClick={() => {
                 const cc = prompt("Por favor, digite o Centro de Custo para iniciar o inventário:");
@@ -171,7 +170,7 @@ function App() {
       )}
 
       <footer className="app-footer">
-        <p className="mb-0">&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados</p>
+        <p className="mb-0">&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados | Desenvolvido para Videplast</p>
       </footer>
     </div>
   );
