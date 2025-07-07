@@ -1,57 +1,96 @@
-/* Estilo geral do corpo da página */
-body {
-  background-color: #f0f2f5; /* Um cinza bem claro */
-  color: #333;
-}
+ html, body, #root {
+   height: 100%; /* Cor de fundo suave para a página inteira */
+ }
 
-/* Container principal da aplicação */
-.app-container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 2rem 1rem;
-}
+ .app-wrapper {
+   display: flex;
+   flex-direction: column;
+   min-height: 100%; /* Garante que o wrapper ocupe pelo menos a altura total da tela */
+ }
 
-/* Estilo do cabeçalho principal */
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem; /* Espaço entre o ícone e o texto */
-  color: #1a2c50; /* Um azul escuro */
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #dee2e6;
-  padding-bottom: 1rem;
-}
+ .app-content {
+   flex: 1 0 auto;
+ }
 
-.app-header-icon {
-  font-size: 2.5rem;
-}
+ .app-footer {
+   flex-shrink: 0;
+   width: 100%;
+   text-align: center;
+   padding: 1.5rem;
+   color: #6c757d;
+ }
 
-/* Card que envolve a tabela */
-.data-card {
-  border: none;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden; /* Garante que os cantos da tabela fiquem arredondados */
-}
+ .app-container {
+   max-width: 960px;
+   margin: 0 auto;
+   padding: 1rem;
+   border-radius: 0.75rem; /* Opcional: Bordas arredondadas no container */
+   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Opcional: Sombra no container */
+ }
+ @media (min-width: 768px) {
+   .app-container {
+     padding-top: 2rem;
+     padding-bottom: 2rem;
+   }
+ }
 
-/* Componente de carregamento (spinner) */
-.loading-spinner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 300px;
-  font-size: 1.2rem;
-  color: #555;
-}
+ h1, .h1 {
+   font-size: 1.75rem;
+ }
+ @media (min-width: 768px) {
+   h1, .h1 {
+     font-size: 2.25rem;
+   }
+ }
 
-.spinner-border {
-    margin-right: 1rem;
-}
+ .table-container {
+   overflow-x: auto;
+   -webkit-overflow-scrolling: touch;
+   border-radius: 0.375rem;
+   margin-top: 1.5rem;
+ }
 
-/* Rodapé */
-.app-footer {
-  text-align: center;
-  margin-top: 3rem;
-  color: #888;
-  font-size: 0.9rem;
-}
+ .results-table {
+   min-width: 700px; /* Força a tabela a ser larga, ativando a rolagem */
+   margin-bottom: 0;
+ }
+ @media (max-width: 767px) {
+   .results-table {
+     font-size: 0.8rem;
+   }
+   .results-table th, .results-table td {
+     padding: 0.5rem 0.4rem;
+     white-space: nowrap;
+   }
+ }
+
+ .main-actions-container {
+   display: grid;
+   gap: 0.75rem;
+   margin-top: 1.5rem; /* Adiciona espaço acima dos botões */
+ }
+ @media (min-width: 768px) {
+   .main-actions-container {
+     display: flex;
+     justify-content: center;
+     gap: 1rem;
+   }
+ }
+
+.modal-footer {
+   display: flex;
+   flex-wrap: wrap;
+   justify-content: flex-end;
+   gap: 0.5rem;
+ }
+
+ .modal-footer .btn {
+   flex-grow: 1; /* Botões ocupam todo o espaço no mobile */
+ }
+
+ @media (min-width: 576px) {
+   .modal-footer .btn {
+     flex-grow: 0; /* Botões voltam ao tamanho normal em telas maiores */
+   }
+ }
+ 

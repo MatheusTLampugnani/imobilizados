@@ -3,7 +3,7 @@ import { Modal, Button, ListGroup, Alert, Spinner } from 'react-bootstrap';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, inventoryCc }) => {
+const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, expectedItems, inventoryCc }) => {
   const [missingItems, setMissingItems] = useState([]);
   const [wrongCcItems, setWrongCcItems] = useState([]);
   const [isGenerating, setIsGenerating] = useState(null);
@@ -93,17 +93,17 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
   return (
     <Modal show={show} onHide={onClose} centered size="xl" backdrop="static">
         <Modal.Header closeButton className="bg-dark text-white">
-            <Modal.Title>📊 Relatório de Divergências do Inventário</Modal.Title>
+            <Modal.Title>Relatório de Divergências do Inventário</Modal.Title>
         </Modal.Header>
         <Modal.Body>
             {missingItems.length === 0 && wrongCcItems.length === 0 && (
                 <Alert variant="success" className="text-center">
-                    🎉 Nenhuma divergência encontrada! Inventário perfeito para o Centro de Custo {inventoryCc}.
+                    Nenhuma divergência encontrada! Inventário perfeito para o Centro de Custo {inventoryCc}.
                 </Alert>
             )}
             {missingItems.length > 0 && (
                 <div className="mb-4">
-                    <h5>❌ Itens Faltantes ({missingItems.length})</h5>
+                    <h5>Itens Faltantes ({missingItems.length})</h5>
                     <p className="text-muted">Estes itens deveriam estar no Centro de Custo {inventoryCc}, mas não foram coletados:</p>
                     <ListGroup>
                         {missingItems.map((item, index) => (
@@ -118,7 +118,7 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
             )}
             {wrongCcItems.length > 0 && (
                 <div>
-                    <h5>⚠️ Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
+                    <h5>Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
                     <p className="text-muted">Estes itens foram coletados, mas pertencem a um Centro de Custo diferente de {inventoryCc}:</p>
                     <ListGroup>
                         {wrongCcItems.map((item, index) => (
@@ -133,21 +133,24 @@ const DivergenceReport = ({ show, onClose, collectedItems, expectedItems, invent
             )}
         </Modal.Body>
         <Modal.Footer>
-            <Button variant="secondary" onClick={onClose}>Fechar Relatório</Button>
-            <Button 
-                variant="success" 
-                onClick={() => handleGenerateReport('csv')} 
-                disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0)}
-            >
-                {isGenerating === 'csv' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar CSV'}
-            </Button>
-            <Button 
-                variant="danger" 
-                onClick={() => handleGenerateReport('pdf')} 
-                disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0)}
-            >
-                {isGenerating === 'pdf' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar PDF'}
-            </Button>
+          <Button variant="secondary" onClick={onFinishAndReset}>
+            Voltar ao Início
+          </Button>
+          <Button variant="outline-secondary" onClick={onClose}>Retornar ao inventario</Button>
+          <Button 
+              variant="success" 
+              onClick={() => handleGenerateReport('csv')} 
+              disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0)}
+          >
+              {isGenerating === 'csv' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar CSV'}
+          </Button>
+          <Button 
+              variant="danger" 
+              onClick={() => handleGenerateReport('pdf')} 
+              disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0)}
+          >
+              {isGenerating === 'pdf' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar PDF'}
+          </Button>
         </Modal.Footer>
     </Modal>
   );
