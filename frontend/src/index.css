@@ -11,9 +11,11 @@ body {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 .app-header .logo {
-  max-width: 250px;
-  margin-bottom: 1.5rem;
-  margin-top: 20;
+  max-width: 450px;
+  margin-top: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 1.5rem; 
 }
 .accordion-header .accordion-button {
   font-weight: 500;
