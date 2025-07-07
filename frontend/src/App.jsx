@@ -124,7 +124,7 @@ function App() {
       <Header />
       <main>
         <Card>
-          <Card.Body className="p-4">
+          <Card.Body>
             <InputArea 
               codigo={codigo}
               setCodigo={setCodigo}
