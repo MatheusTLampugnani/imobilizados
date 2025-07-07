@@ -1,61 +1,10 @@
-body {
-  background-color: #f0f2f5; /* Um cinza bem claro */
-  color: #333;
-}
-
-.app-container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 2rem 1rem;
-}
-
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem; /* Espaço entre o ícone e o texto */
-  color: #1a2c50; /* Um azul escuro */
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #dee2e6;
-  padding-bottom: 1rem;
-}
-
-.app-header-icon {
-  font-size: 2.5rem;
-}
-
-.data-card {
-  border: none;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden; /* Garante que os cantos da tabela fiquem arredondados */
-}
-
-.loading-spinner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 300px;
-  font-size: 1.2rem;
-  color: #555;
-}
-
-.spinner-border {
-    margin-right: 1rem;
-}
-
-/* Rodapé */
-.app-footer {
-  text-align: center;
-  margin-top: 3rem;
-  color: #888;
-  font-size: 0.9rem;
-}
-
+/* Estilo base para o container principal */
 .app-container {
   max-width: 960px; /* Define uma largura máxima para telas grandes */
   margin: 0 auto;
 }
 
+/* Ajustes de fonte para telas pequenas (mobile-first) */
 h1 {
   font-size: 1.75rem; /* Reduz o título principal em telas pequenas */
 }
@@ -64,6 +13,7 @@ h1 {
   font-size: 1rem;
 }
 
+/* Em telas maiores, aumenta a fonte de volta */
 @media (min-width: 768px) {
   h1 {
     font-size: 2.5rem;
@@ -73,6 +23,7 @@ h1 {
   }
 }
 
+/* Garante que os botões no rodapé dos modais se ajustem bem em telas pequenas */
 .modal-footer {
   display: flex;
   flex-wrap: wrap; /* Permite que os botões quebrem a linha se não couberem */
@@ -87,5 +38,22 @@ h1 {
 @media (min-width: 576px) {
   .modal-footer .btn {
     flex-grow: 0; /* Em telas maiores, os botões voltam ao tamanho normal */
+  }
+}
+
+/* --- ESTILOS NOVOS PARA A TABELA RESPONSIVA --- */
+
+/* Deixa a tabela com rolagem horizontal mais amigável em telas de toque */
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Reduz o tamanho da fonte da tabela em telas pequenas para caber mais informação */
+@media (max-width: 767px) {
+  .results-table {
+    font-size: 0.8rem;
+  }
+  .results-table th, .results-table td {
+    padding: 0.5rem 0.4rem; /* Reduz o espaçamento interno das células */
   }
 }
