@@ -111,7 +111,6 @@ function App() {
     <div className="app-wrapper">
       <Container className="app-container">
         <Header/>
-        <div className="main-content-area">
           <InputArea 
             codigo={codigo}
             setCodigo={setCodigo}
@@ -124,7 +123,6 @@ function App() {
             resultado={resultado}
             onRefresh={refreshData} 
           />
-        </div>
         <div className="main-actions-container">
             <Button variant="danger" size="lg" onClick={() => {
               const cc = prompt("Por favor, digite o Centro de Custo para iniciar o inventário:");
