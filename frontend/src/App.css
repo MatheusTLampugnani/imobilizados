@@ -1,6 +1,5 @@
 html, body, #root {
-  height: 100%;
-  background-color: #f0f2f5; /* Cor de fundo suave para a página inteira */
+  height: 100%;/* Cor de fundo suave para a página inteira */
 }
 
 .app-wrapper {
@@ -44,11 +43,25 @@ h1, .h1 {
   }
 }
 
+.main-content-area {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+}
 @media (max-width: 576px) {
   .main-content-area {
     padding: 1rem;
     border-radius: 0.5rem;
   }
+}
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  margin-top: 1.5rem;
 }
 
 .results-table {
