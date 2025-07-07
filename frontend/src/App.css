@@ -1,5 +1,6 @@
 html, body, #root {
-  height: 100%;/* Cor de fundo suave para a página inteira */
+  height: 100%;
+  background-color: #f0f2f5; /* Cor de fundo suave para a página inteira */
 }
 
 .app-wrapper {

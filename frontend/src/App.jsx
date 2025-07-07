@@ -109,52 +109,50 @@ function App() {
 
   return (
     <div className="app-wrapper">
-      <main className="app-content">
-        <Container className="app-container">
-          <Header />
-          <div className="main-content-area">
-            <InputArea 
-              codigo={codigo}
-              setCodigo={setCodigo}
-              onConsultar={() => handleCodeSearch(codigo)}
-              isLoading={isLoading}
-            />
-            <ResultsDisplay 
-              isLoading={isLoading} 
-              error={error} 
-              resultado={resultado}
-              onRefresh={refreshData} 
-            />
-          </div>
-          <div className="main-actions-container">
-              <Button variant="danger" size="lg" onClick={() => {
-                const cc = prompt("Por favor, digite o Centro de Custo para iniciar o inventário:");
-                if (cc) {
-                  setInventarioCentroCusto(cc);
-                  setInventarioAtivo(true);
-                  fetchExpectedItems(cc);
-                }
-              }}>
-                Iniciar Inventário
-              </Button>
-              <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
-                Gerar Relatórios
-              </Button>
-          </div>
+      <Container className="app-container">
+        <Header />
+        <div className="main-content-area">
+          <InputArea 
+            codigo={codigo}
+            setCodigo={setCodigo}
+            onConsultar={() => handleCodeSearch(codigo)}
+            isLoading={isLoading}
+          />
+          <ResultsDisplay 
+            isLoading={isLoading} 
+            error={error} 
+            resultado={resultado}
+            onRefresh={refreshData} 
+          />
+        </div>
+        <div className="main-actions-container">
+            <Button variant="danger" size="lg" onClick={() => {
+              const cc = prompt("Por favor, digite o Centro de Custo para iniciar o inventário:");
+              if (cc) {
+                setInventarioCentroCusto(cc);
+                setInventarioAtivo(true);
+                fetchExpectedItems(cc);
+              }
+            }}>
+              Iniciar Inventário
+            </Button>
+            <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
+              Gerar Relatórios
+            </Button>
+        </div>
 
-          {inventarioAtivo && (
-            <Inventory
-              inventario={inventario}
-              setInventario={setInventario}
-              onClose={() => setInventarioAtivo(false)}
-              onAddItem={handleCodeSearch}
-              inventarioCentroCusto={inventarioCentroCusto}
-              expectedItems={expectedItems}
-              onFinishInventory={() => setShowDivergenceReport(true)}
-            />
-          )}
-        </Container>
-      </main>
+        {inventarioAtivo && (
+          <Inventory
+            inventario={inventario}
+            setInventario={setInventario}
+            onClose={() => setInventarioAtivo(false)}
+            onAddItem={handleCodeSearch}
+            inventarioCentroCusto={inventarioCentroCusto}
+            expectedItems={expectedItems}
+            onFinishInventory={() => setShowDivergenceReport(true)}
+          />
+        )}
+      </Container>
 
       {showReportModal && <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} />}
       
