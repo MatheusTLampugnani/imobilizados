@@ -100,7 +100,7 @@ function App() {
   };
 
   return (
-    <Container className="app-container p-3 p-md-4">
+    <Container>
       <Header />
       <main>
         <Card className="border-0 mb-4">
