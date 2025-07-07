@@ -18,11 +18,14 @@ function App() {
   const [inventario, setInventario] = useState([]);
   const [showReportModal, setShowReportModal] = useState(false);
 
+<<<<<<< HEAD
   // Novos estados
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState(''); // Novo estado para o CC do inventário
   const [expectedItems, setExpectedItems] = useState([]); // Novo estado para os itens esperados
   const [showDivergenceReport, setShowDivergenceReport] = useState(false); // Novo estado para controlar o relatório de divergências
   
+=======
+>>>>>>> c1652dfc1a236ebdbc6bc93318b04f7b2523e4c6
   useEffect(() => {
     try {
       const inventarioSalvo = localStorage.getItem('inventario');
@@ -47,6 +50,7 @@ function App() {
     return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
   }
 
+<<<<<<< HEAD
   // Nova função para buscar itens esperados
   const fetchExpectedItems = async (cc) => {
     if (!cc) return;
@@ -62,6 +66,13 @@ function App() {
   };
 
   const handleCodeSearch = async (codeToSearch) => {
+=======
+const handleCodeSearch = async (codeToSearch) => {
+    if (isLoading) {
+      return; 
+    }
+
+>>>>>>> c1652dfc1a236ebdbc6bc93318b04f7b2523e4c6
     if (!codeToSearch || codeToSearch.trim() === '') {
       setError('Por favor, digite um código.');
       setResultado(null);
@@ -70,7 +81,6 @@ function App() {
     
     setIsLoading(true);
     setError('');
-    setResultado(null);
 
     try {
       const response = await axios.get(`${API_URL}/imobilizado?codigo=${codeToSearch}`);
@@ -86,7 +96,7 @@ function App() {
       });
       
       if (inventarioAtivo) {
-        if (dados.itens.length > 0) {
+        if (dados.itens && dados.itens.length > 0) {
             const codigoFormatado = formatarCodigo(codeToSearch);
             const itemEscaneado = dados.itens.find(item => 
                 formatarCodigo(item.Inventário) === codigoFormatado || 
@@ -101,6 +111,7 @@ function App() {
         }
       }
     } catch (err) {
+      setResultado(null);
       const errorMessage = err.response?.status === 404 
         ? `Imobilizado ${codeToSearch} não encontrado.` 
         : (err.response?.data?.message || 'Erro ao conectar ao servidor. Verifique sua conexão.');
@@ -109,6 +120,7 @@ function App() {
       setIsLoading(false);
     }
   };
+
 
   const refreshData = () => {
     if (codigo) {
