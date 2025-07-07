@@ -6,8 +6,10 @@ import InputArea from './components/InputArea';
 import Inventory from './components/Inventory';
 import ResultsDisplay from './components/ResultsDisplay';
 import ReportModal from './components/ReportModal';
-import DivergenceReport from './components/DivergenceReport'; // Importar o novo componente
+import DivergenceReport from './components/DivergenceReport';
+import CcInputModal from './components/CcInputModal'; // Importando o novo modal
 import { API_URL } from './apiConfig'; 
+import './App.css'; // Importando nosso novo CSS
 
 function App() {
   const [codigo, setCodigo] = useState('');
@@ -17,28 +19,25 @@ function App() {
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
+  const [expectedItems, setExpectedItems] = useState([]);
+  const [showDivergenceReport, setShowDivergenceReport] = useState(false);
+  const [showCcInputModal, setShowCcInputModal] = useState(false); // Estado para o novo modal
 
-  // Novos estados
-  const [inventarioCentroCusto, setInventarioCentroCusto] = useState(''); // Novo estado para o CC do inventário
-  const [expectedItems, setExpectedItems] = useState([]); // Novo estado para os itens esperados
-  const [showDivergenceReport, setShowDivergenceReport] = useState(false); // Novo estado para controlar o relatório de divergências
-  
   useEffect(() => {
     try {
       const inventarioSalvo = localStorage.getItem('inventario');
-      if (inventarioSalvo) {
-        setInventario(JSON.parse(inventarioSalvo));
-      }
+      if (inventarioSalvo) setInventario(JSON.parse(inventarioSalvo));
     } catch (e) {
-      console.error("Erro ao carregar inventário do localStorage:", e);
+      console.error("Erro ao carregar inventário:", e);
     }
   }, []);
 
   useEffect(() => {
     try {
-        localStorage.setItem('inventario', JSON.stringify(inventario));
+      localStorage.setItem('inventario', JSON.stringify(inventario));
     } catch (e) {
-        console.error("Erro ao salvar inventário no localStorage:", e);
+      console.error("Erro ao salvar inventário:", e);
     }
   }, [inventario]);
 
@@ -47,31 +46,30 @@ function App() {
     return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
   }
 
-  // Nova função para buscar itens esperados
   const fetchExpectedItems = async (cc) => {
     if (!cc) return;
     try {
       const response = await axios.get(`${API_URL}/imobilizado?codigo=${cc}`);
-      // A API retorna um objeto com 'itens' dentro, então pegamos apenas a lista de itens
       setExpectedItems(response.data.itens || []);
     } catch (error) {
       console.error("Erro ao buscar itens esperados:", error);
       setExpectedItems([]);
-      // Opcional: exibir um erro para o usuário
     }
   };
 
-  const handleCodeSearch = async (codeToSearch) => {
-    if (isLoading) {
-      return; 
-    }
+  const handleStartInventory = (cc) => {
+    setInventarioCentroCusto(cc);
+    setInventarioAtivo(true);
+    fetchExpectedItems(cc);
+  };
 
+  const handleCodeSearch = async (codeToSearch) => {
+    if (isLoading) return;
     if (!codeToSearch || codeToSearch.trim() === '') {
       setError('Por favor, digite um código.');
       setResultado(null);
       return;
     }
-    
     setIsLoading(true);
     setError('');
 
@@ -107,26 +105,24 @@ function App() {
       setResultado(null);
       const errorMessage = err.response?.status === 404 
         ? `Imobilizado ${codeToSearch} não encontrado.` 
-        : (err.response?.data?.message || 'Erro ao conectar ao servidor. Verifique sua conexão.');
+        : (err.response?.data?.message || 'Erro ao conectar ao servidor.');
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-
   const refreshData = () => {
-    if (codigo) {
-        handleCodeSearch(codigo);
-    }
+    if (codigo) handleCodeSearch(codigo);
   };
 
   return (
-    <Container className="app-container">
+    // Usando classes responsivas para padding: p-3 em telas pequenas, p-md-4 em médias e maiores
+    <Container className="app-container p-3 p-md-4">
       <Header />
       <main>
         <Card className="border-0 mb-4">
-          <Card.Body className="p-4">
+          <Card.Body className="p-3 p-md-4">
             <InputArea 
               codigo={codigo}
               setCodigo={setCodigo}
@@ -143,15 +139,9 @@ function App() {
             onRefresh={refreshData} 
         />
 
-        <div className="d-grid gap-2 mt-4 d-sm-flex justify-content-sm-center">
-            <Button variant="danger" size="lg" onClick={() => {
-              const cc = prompt("Por favor, digite o Centro de Custo para iniciar o inventário:");
-              if (cc) {
-                setInventarioCentroCusto(cc);
-                setInventarioAtivo(true);
-                fetchExpectedItems(cc); // Buscar itens esperados ao iniciar o inventário
-              }
-            }}>
+        {/* Layout de botões aprimorado para mobile */}
+        <div className="d-grid gap-3 d-md-flex justify-content-md-center mt-4">
+            <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
               Iniciar Inventário
             </Button>
             <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
@@ -165,16 +155,20 @@ function App() {
             setInventario={setInventario}
             onClose={() => setInventarioAtivo(false)}
             onAddItem={handleCodeSearch}
-            inventarioCentroCusto={inventarioCentroCusto} // Nova prop
-            expectedItems={expectedItems} // Nova prop
-            onFinishInventory={() => setShowDivergenceReport(true)} // Nova prop para finalizar e mostrar relatório
+            inventarioCentroCusto={inventarioCentroCusto}
+            expectedItems={expectedItems}
+            onFinishInventory={() => setShowDivergenceReport(true)}
           />
         )}
       </main>
 
+      {/* Renderização dos Modais */}
+      <CcInputModal 
+        show={showCcInputModal}
+        onClose={() => setShowCcInputModal(false)}
+        onConfirm={handleStartInventory}
+      />
       {showReportModal && <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} />}
-      
-      {/* Novo componente para o relatório de divergências */}
       {showDivergenceReport && (
         <DivergenceReport
           show={showDivergenceReport}

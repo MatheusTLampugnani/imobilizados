@@ -1,17 +1,14 @@
-/* Estilo geral do corpo da página */
 body {
   background-color: #f0f2f5; /* Um cinza bem claro */
   color: #333;
 }
 
-/* Container principal da aplicação */
 .app-container {
   max-width: 1200px;
   margin: auto;
   padding: 2rem 1rem;
 }
 
-/* Estilo do cabeçalho principal */
 .app-header {
   display: flex;
   align-items: center;
@@ -26,7 +23,6 @@ body {
   font-size: 2.5rem;
 }
 
-/* Card que envolve a tabela */
 .data-card {
   border: none;
   border-radius: 8px;
@@ -34,7 +30,6 @@ body {
   overflow: hidden; /* Garante que os cantos da tabela fiquem arredondados */
 }
 
-/* Componente de carregamento (spinner) */
 .loading-spinner {
   display: flex;
   justify-content: center;
@@ -54,4 +49,43 @@ body {
   margin-top: 3rem;
   color: #888;
   font-size: 0.9rem;
+}
+
+.app-container {
+  max-width: 960px; /* Define uma largura máxima para telas grandes */
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 1.75rem; /* Reduz o título principal em telas pequenas */
+}
+
+.lead {
+  font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+  h1 {
+    font-size: 2.5rem;
+  }
+  .lead {
+    font-size: 1.25rem;
+  }
+}
+
+.modal-footer {
+  display: flex;
+  flex-wrap: wrap; /* Permite que os botões quebrem a linha se não couberem */
+  justify-content: flex-end;
+  gap: 0.5rem; /* Adiciona um pequeno espaçamento entre os botões */
+}
+
+.modal-footer .btn {
+  flex-grow: 1; /* Faz os botões crescerem para preencher o espaço */
+}
+
+@media (min-width: 576px) {
+  .modal-footer .btn {
+    flex-grow: 0; /* Em telas maiores, os botões voltam ao tamanho normal */
+  }
 }
