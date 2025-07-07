@@ -44,13 +44,6 @@ h1, .h1 {
   }
 }
 
-.main-content-area {
-  background-color: #ffffff;
-  padding: 1.5rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  margin-bottom: 1.5rem;
-}
 @media (max-width: 576px) {
   .main-content-area {
     padding: 1rem;
