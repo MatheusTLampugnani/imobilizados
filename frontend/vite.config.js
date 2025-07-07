@@ -13,7 +13,7 @@ export default defineConfig({
         name: 'Consulta de Imobilizados',
         short_name: 'Imobilizados',
         description: 'Aplicação para consulta e inventário de imobilizados da Videplast.',
-        theme_color: '#ffffff', // Cor da barra de título do app
+        theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
         scope: '/',
@@ -21,7 +21,12 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: 'videplast_logo.png', // Caminho relativo à pasta 'public'
+            src: 'videplast_logo.png', // Lembre-se: este arquivo deve estar em /frontend/public
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: 'videplast_logo.png', // Lembre-se: este arquivo deve estar em /frontend/public
             sizes: '192x192',
             type: 'image/png',
           },
@@ -29,7 +34,7 @@ export default defineConfig({
             src: 'videplast_logo.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any maskable', // Ícone "mascarável" para diferentes formatos no Android
+            purpose: 'any maskable',
           }
         ],
       },

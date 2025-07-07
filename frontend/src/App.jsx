@@ -8,7 +8,7 @@ import ResultsDisplay from './components/ResultsDisplay';
 import ReportModal from './components/ReportModal';
 import DivergenceReport from './components/DivergenceReport';
 import { API_URL } from './apiConfig'; 
-import './App.css'; // Importando nosso novo CSS
+import './App.css';
 
 function App() {
   const [codigo, setCodigo] = useState('');
@@ -21,23 +21,19 @@ function App() {
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
   const [expectedItems, setExpectedItems] = useState([]);
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
-  const [showCcInputModal, setShowCcInputModal] = useState(false); // Estado para o novo modal
-
+  
+  // Efeitos de localStorage e função formatarCodigo continuam iguais...
   useEffect(() => {
     try {
       const inventarioSalvo = localStorage.getItem('inventario');
       if (inventarioSalvo) setInventario(JSON.parse(inventarioSalvo));
-    } catch (e) {
-      console.error("Erro ao carregar inventário:", e);
-    }
+    } catch (e) { console.error("Erro ao carregar inventário:", e); }
   }, []);
 
   useEffect(() => {
     try {
       localStorage.setItem('inventario', JSON.stringify(inventario));
-    } catch (e) {
-      console.error("Erro ao salvar inventário:", e);
-    }
+    } catch (e) { console.error("Erro ao salvar inventário:", e); }
   }, [inventario]);
 
   const formatarCodigo = (valor) => {
@@ -56,12 +52,6 @@ function App() {
     }
   };
 
-  const handleStartInventory = (cc) => {
-    setInventarioCentroCusto(cc);
-    setInventarioAtivo(true);
-    fetchExpectedItems(cc);
-  };
-
   const handleCodeSearch = async (codeToSearch) => {
     if (isLoading) return;
     if (!codeToSearch || codeToSearch.trim() === '') {
@@ -75,29 +65,23 @@ function App() {
     try {
       const response = await axios.get(`${API_URL}/imobilizado?codigo=${codeToSearch}`);
       const dados = response.data;
-      
       if (!dados || !dados.itens) {
         throw new Error("A resposta do servidor não continha os dados esperados.");
       }
-
       setResultado({
         codigo_imobilizado: dados.codigo_imobilizado,
         itens: dados.itens
       });
-      
-      if (inventarioAtivo) {
-        if (dados.itens && dados.itens.length > 0) {
-            const codigoFormatado = formatarCodigo(codeToSearch);
-            const itemEscaneado = dados.itens.find(item => 
-                formatarCodigo(item.Inventário) === codigoFormatado || 
-                formatarCodigo(item.Série) === codigoFormatado ||
-                formatarCodigo(dados.codigo_imobilizado) === codigoFormatado
-            );
-            const itemParaAdicionar = itemEscaneado || dados.itens[0];
-            
-            if (itemParaAdicionar && !inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
-                setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
-            }
+      if (inventarioAtivo && dados.itens.length > 0) {
+        const codigoFormatado = formatarCodigo(codeToSearch);
+        const itemEscaneado = dados.itens.find(item => 
+            formatarCodigo(item.Inventário) === codigoFormatado || 
+            formatarCodigo(item.Série) === codigoFormatado ||
+            formatarCodigo(dados.codigo_imobilizado) === codigoFormatado
+        );
+        const itemParaAdicionar = itemEscaneado || dados.itens[0];
+        if (itemParaAdicionar && !inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
+            setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
         }
       }
     } catch (err) {
@@ -116,7 +100,6 @@ function App() {
   };
 
   return (
-    // Usando classes responsivas para padding: p-3 em telas pequenas, p-md-4 em médias e maiores
     <Container className="app-container p-3 p-md-4">
       <Header />
       <main>
@@ -138,9 +121,16 @@ function App() {
             onRefresh={refreshData} 
         />
 
-        {/* Layout de botões aprimorado para mobile */}
         <div className="d-grid gap-3 d-md-flex justify-content-md-center mt-4">
-            <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
+            {/* LÓGICA DO PROMPT RESTAURADA AQUI */}
+            <Button variant="danger" size="lg" onClick={() => {
+              const cc = prompt("Por favor, digite o Centro de Custo para iniciar o inventário:");
+              if (cc) {
+                setInventarioCentroCusto(cc);
+                setInventarioAtivo(true);
+                fetchExpectedItems(cc);
+              }
+            }}>
               Iniciar Inventário
             </Button>
             <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
@@ -162,6 +152,7 @@ function App() {
       </main>
 
       {showReportModal && <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} />}
+      
       {showDivergenceReport && (
         <DivergenceReport
           show={showDivergenceReport}
@@ -173,7 +164,7 @@ function App() {
       )}
 
       <footer className="text-center text-muted mt-5 border-top pt-3">
-        <p>&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados | Desenvolvido para Videplast</p>
+        <p>&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados</p>
       </footer>
     </Container>
   );
