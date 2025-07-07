@@ -7,7 +7,6 @@ import Inventory from './components/Inventory';
 import ResultsDisplay from './components/ResultsDisplay';
 import ReportModal from './components/ReportModal';
 import DivergenceReport from './components/DivergenceReport';
-import CcInputModal from './components/CcInputModal'; // Importando o novo modal
 import { API_URL } from './apiConfig'; 
 import './App.css'; // Importando nosso novo CSS
 
