@@ -6,6 +6,7 @@ import InputArea from './components/InputArea';
 import Inventory from './components/Inventory';
 import ResultsDisplay from './components/ResultsDisplay';
 import ReportModal from './components/ReportModal';
+import DivergenceReport from './components/DivergenceReport'; // Importar o novo componente
 import { API_URL } from './apiConfig'; 
 
 function App() {
@@ -16,6 +17,11 @@ function App() {
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
   const [showReportModal, setShowReportModal] = useState(false);
+
+  // Novos estados
+  const [inventarioCentroCusto, setInventarioCentroCusto] = useState(''); // Novo estado para o CC do inventário
+  const [expectedItems, setExpectedItems] = useState([]); // Novo estado para os itens esperados
+  const [showDivergenceReport, setShowDivergenceReport] = useState(false); // Novo estado para controlar o relatório de divergências
   
   useEffect(() => {
     try {
@@ -40,6 +46,20 @@ function App() {
     if (!valor) return "";
     return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
   }
+
+  // Nova função para buscar itens esperados
+  const fetchExpectedItems = async (cc) => {
+    if (!cc) return;
+    try {
+      const response = await axios.get(`${API_URL}/imobilizado?codigo=${cc}`);
+      // A API retorna um objeto com 'itens' dentro, então pegamos apenas a lista de itens
+      setExpectedItems(response.data.itens || []);
+    } catch (error) {
+      console.error("Erro ao buscar itens esperados:", error);
+      setExpectedItems([]);
+      // Opcional: exibir um erro para o usuário
+    }
+  };
 
   const handleCodeSearch = async (codeToSearch) => {
     if (!codeToSearch || codeToSearch.trim() === '') {
@@ -119,7 +139,14 @@ function App() {
         />
 
         <div className="d-grid gap-2 mt-4 d-sm-flex justify-content-sm-center">
-            <Button variant="danger" size="lg" onClick={() => setInventarioAtivo(true)}>
+            <Button variant="danger" size="lg" onClick={() => {
+              const cc = prompt("Por favor, digite o Centro de Custo para iniciar o inventário:");
+              if (cc) {
+                setInventarioCentroCusto(cc);
+                setInventarioAtivo(true);
+                fetchExpectedItems(cc); // Buscar itens esperados ao iniciar o inventário
+              }
+            }}>
               Iniciar Inventário
             </Button>
             <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
@@ -133,12 +160,26 @@ function App() {
             setInventario={setInventario}
             onClose={() => setInventarioAtivo(false)}
             onAddItem={handleCodeSearch}
+            inventarioCentroCusto={inventarioCentroCusto} // Nova prop
+            expectedItems={expectedItems} // Nova prop
+            onFinishInventory={() => setShowDivergenceReport(true)} // Nova prop para finalizar e mostrar relatório
           />
         )}
       </main>
 
       {showReportModal && <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} />}
       
+      {/* Novo componente para o relatório de divergências */}
+      {showDivergenceReport && (
+        <DivergenceReport
+          show={showDivergenceReport}
+          onClose={() => setShowDivergenceReport(false)}
+          collectedItems={inventario}
+          expectedItems={expectedItems}
+          inventoryCc={inventarioCentroCusto}
+        />
+      )}
+
       <footer className="text-center text-muted mt-5 border-top pt-3">
         <p>&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados | Desenvolvido para Videplast</p>
       </footer>
