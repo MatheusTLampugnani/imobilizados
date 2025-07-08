@@ -14,8 +14,6 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       const formatCode = (item) => String(item.Inventário || item.Série || item.codigo_imobilizado || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
       const collectedIds = new Set(collectedItems.map(item => formatCode(item)));
 
-      const checkitens = collectedItem.filter(collectedItem => collectedIds)
-
       const missing = expectedItems.filter(expectedItem => !collectedIds.has(formatCode(expectedItem)));
       setMissingItems(missing);
 
