@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, expectedItems, inventoryCc }) => {
+  const [okItems, setOkItems] = useState([]);
   const [missingItems, setMissingItems] = useState([]);
   const [wrongCcItems, setWrongCcItems] = useState([]);
   const [isGenerating, setIsGenerating] = useState(null);
@@ -12,6 +13,8 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     if (show) {
       const formatCode = (item) => String(item.Inventário || item.Série || item.codigo_imobilizado || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
       const collectedIds = new Set(collectedItems.map(item => formatCode(item)));
+
+      const checkitens = collectedItem.filter(collectedItem => collectedIds)
 
       const missing = expectedItems.filter(expectedItem => !collectedIds.has(formatCode(expectedItem)));
       setMissingItems(missing);
@@ -26,6 +29,10 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         return !isExpectedForCurrentCc && collectedCc !== currentInventoryCc;
       });
       setWrongCcItems(wrongCc);
+
+      const wrongCcIds = new Set(wrongCc.map(item => item.id));
+      const ok = collectedItems.filter(item => !wrongCcIds.has(item.id));
+      setOkItems(ok);
     }
   }, [show, collectedItems, expectedItems, inventoryCc]);
 
@@ -36,6 +43,10 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     try {
       const tableColumns = ["Status", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
       const tableRows = [];
+
+      okItems.forEach(item => {
+        tableRows.push(["Ok", item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
+      });
 
       missingItems.forEach(item => {
         tableRows.push(["Faltante", item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
@@ -57,10 +68,13 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
           willDrawCell: (data) => {
             const status = data.row.raw[0]; 
 
-            if (status === 'Faltante') {
-              data.cell.styles.fillColor = '#fde2e4'; // Um tom de vermelho bem claro
+            if (status === 'Ok'){
+              data.cell.styles.fillColor = '#d1e7dd';
+            }
+            else if (status === 'Faltante') {
+              data.cell.styles.fillColor = '#fde2e4';
             } else if (status === 'CC Errado') {
-              data.cell.styles.fillColor = '#fff1c7'; // Um tom de amarelo bem claro
+              data.cell.styles.fillColor = '#fff1c7';
             }
           },
           headStyles: { fillColor: [41, 46, 51], textColor: [255, 255, 255] }
@@ -101,6 +115,21 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
                     Nenhuma divergência encontrada! Inventário perfeito para o Centro de Custo {inventoryCc}.
                 </Alert>
             )}
+
+            {okItems.length > 0 && (
+            <div className="mb-4">
+              <h5>✅ Itens Corretos ({okItems.length})</h5>
+                <ListGroup>
+                  {okItems.map((item, index) => (
+                    <ListGroup.Item key={item.id || index} variant="success">
+                      <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
+                      <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+                    </ListGroup.Item>
+                  ))}
+                </ListGroup>
+              </div>
+            )}
+
             {missingItems.length > 0 && (
                 <div className="mb-4">
                     <h5>Itens Faltantes ({missingItems.length})</h5>
