@@ -3,7 +3,7 @@ import { Modal, Button, ListGroup, Badge, Alert } from 'react-bootstrap';
 import { BoxArrowUpRight, QrCodeScan, Trash } from 'react-bootstrap-icons';
 import BatchScannerModal from './BatchScannerModal';
 
-const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, expectedItems, onFinishInventory }) => {
+const Inventory = ({ inventario, setInventario, onClose, onAddItem, onFinishInventory, inventoryCc }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [feedback, setFeedback] = useState({ message: '', type: 'info' });
   const [isAdding, setIsAdding] = useState(false);
