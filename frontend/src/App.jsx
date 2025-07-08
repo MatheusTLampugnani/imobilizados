@@ -7,10 +7,14 @@ import Inventory from './components/Inventory';
 import ResultsDisplay from './components/ResultsDisplay';
 import ReportModal from './components/ReportModal';
 import DivergenceReport from './components/DivergenceReport';
+import CcInputModal from './components/CcInputModal';
 import { API_URL } from './apiConfig'; 
 import './App.css';
 
 function App() {
+
+  const [showCcInputModal, setShowCcInputModal] = useState(false);
+
   const [codigo, setCodigo] = useState('');
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +52,21 @@ function App() {
     } catch (error) {
       console.error("Erro ao buscar itens esperados:", error);
       setExpectedItems([]);
+    }
+  };
+
+  const handleStartInventory = async (cc) => {
+    try {
+
+      await axios.get(`${API_URL}/centro-custo/validate/${cc}`);
+      
+      setInventarioCentroCusto(cc);
+      setInventarioAtivo(true);
+      fetchExpectedItems(cc);
+      return true; 
+    } catch (error) {
+      console.error("Validação do Centro de Custo falhou:", error);
+      return false; 
     }
   };
 

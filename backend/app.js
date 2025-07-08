@@ -25,6 +25,35 @@ function formatarValor(valor) {
     if (valor === null || valor === undefined || valor === '') return "";
     return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
 }
+app.get('/api/centro-custo/validate/:cc', async (req, res) => {
+  const { cc } = req.params;
+
+  if (!cc) {
+    return res.status(400).json({ isValid: false, message: 'Centro de Custo não fornecido.' });
+  }
+
+  try {
+    // Verifica se existe pelo menos um item com este centro de custo na tabela
+    const { data, error, count } = await supabase
+      .from('imobilizados')
+      .select('centro_custo', { count: 'exact', head: true })
+      .eq('centro_custo', cc);
+
+    if (error) {
+      throw error;
+    }
+
+    // Se a contagem for maior que 0, o CC é válido
+    if (count > 0) {
+      res.status(200).json({ isValid: true });
+    } else {
+      res.status(404).json({ isValid: false, message: 'Centro de Custo não encontrado.' });
+    }
+  } catch (dbError) {
+    console.error('Erro ao validar Centro de Custo:', dbError);
+    res.status(500).json({ isValid: false, message: 'Erro interno do servidor.' });
+  }
+});
 
 app.get('/api', (req, res) => {
     res.status(200).send('Servidor do Imobilizados-API está no ar!');
