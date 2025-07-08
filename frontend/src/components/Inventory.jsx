@@ -54,7 +54,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
     <>
       <Modal show={true} onHide={onClose} centered size="xl" backdrop="static">
         <Modal.Header closeButton className="bg-dark text-white"> 
-          <Modal.Title>Inventário de Ativos - Centro  de Custo {inventarioCentroCusto}</Modal.Title> //nessa linha
+          <Modal.Title>Inventário de Ativos - Centro  de Custo {inventarioCentroCusto}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="text-center mb-3">
