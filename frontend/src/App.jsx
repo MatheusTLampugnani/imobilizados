@@ -26,14 +26,14 @@ function App() {
   
   useEffect(() => {
     try {
-      const inventarioSalvo = localStorage.getItem('inventario');
+      const inventarioSalvo = sessionStorage.getItem('inventario');
       if (inventarioSalvo) setInventario(JSON.parse(inventarioSalvo));
     } catch (e) { console.error("Erro ao carregar inventário:", e); }
   }, []);
 
   useEffect(() => {
     try {
-      localStorage.setItem('inventario', JSON.stringify(inventario));
+      sessionStorage.setItem('inventario', JSON.stringify(inventario));
     } catch (e) { console.error("Erro ao salvar inventário:", e); }
   }, [inventario]);
 
