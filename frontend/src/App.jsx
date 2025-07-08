@@ -12,9 +12,7 @@ import { API_URL } from './apiConfig';
 import './App.css';
 
 function App() {
-
   const [showCcInputModal, setShowCcInputModal] = useState(false);
-
   const [codigo, setCodigo] = useState('');
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,9 +55,7 @@ function App() {
 
   const handleStartInventory = async (cc) => {
     try {
-
       await axios.get(`${API_URL}/centro-custo/validate/${cc}`);
-      
       setInventarioCentroCusto(cc);
       setInventarioAtivo(true);
       fetchExpectedItems(cc);
@@ -143,19 +139,12 @@ function App() {
             onRefresh={refreshData} 
           />
         <div className="main-actions-container">
-            <Button variant="danger" size="lg" onClick={() => {
-              const cc = prompt("Por favor, digite o Centro de Custo para iniciar o inventário:");
-              if (cc) {
-                setInventarioCentroCusto(cc);
-                setInventarioAtivo(true);
-                fetchExpectedItems(cc);
-              }
-            }}>
-              Iniciar Inventário
-            </Button>
-            <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
-              Gerar Relatórios
-            </Button>
+          <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
+            Iniciar Inventário
+          </Button>
+          <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
+            Gerar Relatórios
+          </Button>
         </div>
 
         {inventarioAtivo && (
@@ -170,6 +159,12 @@ function App() {
           />
         )}
       </Container>
+
+      <CcInputModal
+        show={showCcInputModal}
+        onClose={() => setShowCcInputModal(false)}
+        onConfirm={handleStartInventory}
+      />
 
       {showReportModal && <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} />}
       
