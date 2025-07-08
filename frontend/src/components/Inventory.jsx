@@ -3,7 +3,7 @@ import { Modal, Button, ListGroup, Badge, Alert } from 'react-bootstrap';
 import { BoxArrowUpRight, QrCodeScan, Trash } from 'react-bootstrap-icons';
 import BatchScannerModal from './BatchScannerModal';
 
-const Inventory = ({ inventario, setInventario, onClose, onAddItem, onFinishInventory, inventoryCc }) => {
+const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, expectedItems, onFinishInventory }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [feedback, setFeedback] = useState({ message: '', type: 'info' });
   const [isAdding, setIsAdding] = useState(false);
@@ -53,8 +53,8 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, onFinishInve
   return (
     <>
       <Modal show={true} onHide={onClose} centered size="xl" backdrop="static">
-        <Modal.Header closeButton className="bg-dark text-white">
-          <Modal.Title>Inventário de Ativos - Centro  de Custo {inventoryCc}</Modal.Title>
+        <Modal.Header closeButton className="bg-dark text-white"> 
+          <Modal.Title>Inventário de Ativos - Centro  de Custo {inventarioCentroCusto}</Modal.Title> //nessa linha
         </Modal.Header>
         <Modal.Body>
           <div className="text-center mb-3">
