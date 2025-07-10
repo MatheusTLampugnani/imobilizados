@@ -9,7 +9,7 @@ const InputArea = ({ codigo, setCodigo, onConsultar, isLoading }) => {
 
   return (
     <Form onSubmit={handleFormSubmit}>
-      <InputGroup size="lg">
+      <InputGroup>
         <Form.Control
           type="text"
           placeholder="Digite o código do ativo..."
