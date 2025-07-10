@@ -8,22 +8,25 @@ const InputArea = ({ codigo, setCodigo, onConsultar, isLoading }) => {
   };
 
   return (
-    <Form onSubmit={handleFormSubmit}>
-      <InputGroup size="lg">
-        <Form.Control
-          type="text"
-          placeholder="Digite o código do ativo..."
-          value={codigo}
-          onChange={(e) => setCodigo(e.target.value)}
-          aria-label="Código do imobilizado"
-          autoFocus
-        />
-        <Button type="submit" variant="danger" disabled={isLoading}>
-          {isLoading ? 'Buscando...' : 'Consultar'}
-        </Button>
-      </InputGroup>
-    </Form>
+    <div className="input-container"> 
+      <Form onSubmit={handleFormSubmit}>
+        <InputGroup size="lg">
+          <Form.Control
+            type="text"
+            placeholder="Digite o código do ativo..."
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            aria-label="Código do imobilizado"
+            autoFocus
+          />
+          <Button type="submit" variant="danger" disabled={isLoading}>
+            {isLoading ? 'Buscando...' : 'Consultar'}
+          </Button>
+        </InputGroup>
+      </Form>
+    </div>
   );
+
 };
 
 export default InputArea;
