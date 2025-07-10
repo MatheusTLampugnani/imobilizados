@@ -94,3 +94,7 @@
    }
  }
  
+.input-container {
+  max-width: 500px; /* Defina a largura máxima que desejar */
+  margin: 0 auto 1.5rem auto; /* Centraliza o contêiner e adiciona uma margem inferior */
+}
