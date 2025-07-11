@@ -8,6 +8,7 @@ import ResultsDisplay from './components/ResultsDisplay';
 import ReportModal from './components/ReportModal';
 import DivergenceReport from './components/DivergenceReport';
 import CcInputModal from './components/CcInputModal';
+import AddNotFoundItemModal from './components/AddNotFoundItemModal'; 
 import { API_URL } from './apiConfig'; 
 import './App.css';
 
@@ -24,6 +25,10 @@ function App() {
   const [expectedItems, setExpectedItems] = useState([]);
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
   
+  // Estados para o novo modal de item não encontrado
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [itemCodeToAdd, setItemCodeToAdd] = useState('');
+
   useEffect(() => {
     try {
       const inventarioSalvo = sessionStorage.getItem('inventario');
@@ -36,6 +41,7 @@ function App() {
       sessionStorage.setItem('inventario', JSON.stringify(inventario));
     } catch (e) { console.error("Erro ao salvar inventário:", e); }
   }, [inventario]);
+
 
   const formatarCodigo = (valor) => {
     if (!valor) return "";
@@ -88,8 +94,8 @@ function App() {
       });
       if (inventarioAtivo && dados.itens.length > 0) {
         const codigoFormatado = formatarCodigo(codeToSearch);
-        const itemEscaneado = dados.itens.find(item => 
-            formatarCodigo(item.Inventário) === codigoFormatado || 
+        const itemEscaneado = dados.itens.find(item =>
+            formatarCodigo(item.Inventário) === codigoFormatado ||
             formatarCodigo(item.Série) === codigoFormatado ||
             formatarCodigo(dados.codigo_imobilizado) === codigoFormatado
         );
@@ -98,16 +104,26 @@ function App() {
             setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
         }
       }
+      return true;
     } catch (err) {
       setResultado(null);
-      const errorMessage = err.response?.status === 404 
-        ? `Imobilizado ${codeToSearch} não encontrado.` 
-        : (err.response?.data?.message || 'Erro ao conectar ao servidor.');
-      setError(errorMessage);
+      if (err.response?.status === 404) {
+        if (inventarioAtivo) {
+          setItemCodeToAdd(codeToSearch);
+          setShowAddItemModal(true);
+        } else {
+          setError(`Imobilizado ${codeToSearch} não encontrado.`);
+        }
+      } else {
+        const errorMessage = err.response?.data?.message || 'Erro ao conectar ao servidor.';
+        setError(errorMessage);
+      }
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const refreshData = () => {
     if (codigo) handleCodeSearch(codigo);
@@ -178,6 +194,13 @@ function App() {
           inventoryCc={inventarioCentroCusto}
         />
       )}
+
+        <AddNotFoundItemModal
+          show={showAddItemModal}
+          onClose={() => setShowAddItemModal(false)}
+          onConfirm={handleConfirmAddItem}
+          itemCode={itemCodeToAdd}
+        />
 
       <footer className="app-footer">
         <p className="mb-0">&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados | Desenvolvido para Videplast</p>

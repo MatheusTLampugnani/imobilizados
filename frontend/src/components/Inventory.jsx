@@ -19,7 +19,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
     if (success) {
       setFeedback({ message: `Item ${code} adicionado com sucesso!`, type: 'success' });
     } else {
-      setFeedback({ message: `Item ${code} não encontrado.`, type: 'danger' });
+      setFeedback({ message: `Verificando item ${code}...`, type: 'info' });
     }
 
     setIsAdding(false);
@@ -27,16 +27,18 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
   };
 
   const exportToCSV = () => {
-    let csvContent = "data:text/csv;charset=utf-8,Inventário;Subnº;Descrição;Data;Série;Centro de Custo\n";
+    let csvContent = "data:text/csv;charset=utf-8,Inventário;Subnº;Descrição;Data;Série;Centro de Custo;Observacao\n";
     
     inventario.forEach(item => {
+        const observacao = item.notFound ? "Item não encontrado no cadastro" : "";
         const row = [
           item.Inventário,
           item["Subnº"],
           `"${item.Descrição || ''}"`,
           item.Data,
           item.Série,
-          item.CentroCusto
+          item.CentroCusto,
+          observacao
         ].join(";");
         csvContent += row + "\r\n";
     });
@@ -54,7 +56,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
     <>
       <Modal show={true} onHide={onClose} centered size="xl" backdrop="static">
         <Modal.Header closeButton className="bg-dark text-white"> 
-          <Modal.Title>Inventário de Ativos - Centro  de Custo {inventarioCentroCusto}</Modal.Title>
+          <Modal.Title>Inventário de Ativos - Centro de Custo {inventarioCentroCusto}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="text-center mb-3">
@@ -67,12 +69,22 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           <ListGroup variant="flush">
             {inventario.length > 0 ? (
               inventario.map((item) => (
-                 <ListGroup.Item key={item.id} className="d-flex justify-content-between align-items-center">
+                 <ListGroup.Item 
+                    key={item.id} 
+                    className="d-flex justify-content-between align-items-center"
+                    variant={item.notFound ? 'warning' : ''}
+                 >
                    <div className="ms-2 me-auto">
-                     <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
+                     <div className="fw-bold">
+                       {item.notFound ? 'Código Lido: ' : 'Plaqueta: '} 
+                       {item.Inventário || 'N/A'} 
+                       {!item.notFound && ` (Subnº: ${item['Subnº']})`}
+                     </div>
                      {item.Descrição || 'Item sem descrição'}
                    </div>
-                   <Badge bg="danger" pill>ID: {item.id}</Badge>
+                   <Badge bg={item.notFound ? "secondary" : "danger"} pill>
+                     {item.notFound ? 'NÃO CADASTRADO' : `ID: ${item.id}`}
+                   </Badge>
                  </ListGroup.Item>
               ))
             ) : (
