@@ -10,7 +10,7 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode }) => {
       setError('Por favor, insira uma descrição para o item.');
       return;
     }
-    onConfirm(description);
+    onConfirm(description); 
     handleClose();
   };
 
