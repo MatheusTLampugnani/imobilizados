@@ -3,11 +3,19 @@ import { Modal, Button, ListGroup, Alert, Spinner } from 'react-bootstrap';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Definindo as cores em um objeto para reutilização e fácil manutenção
+const statusColors = {
+  ok: '#12a351',         // Verde
+  faltante: '#ea899a',   // Rosa
+  ccErrado: '#f2cb15',   // Amarelo
+  naoCadastrado: '#f1ad44', // Laranja
+};
+
 const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, expectedItems, inventoryCc }) => {
   const [okItems, setOkItems] = useState([]);
   const [missingItems, setMissingItems] = useState([]);
   const [wrongCcItems, setWrongCcItems] = useState([]);
-  const [notFoundItems, setNotFoundItems] = useState([]); // Nova categoria para itens não cadastrados
+  const [notFoundItems, setNotFoundItems] = useState([]);
   const [isGenerating, setIsGenerating] = useState(null);
 
   useEffect(() => {
@@ -30,7 +38,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       setWrongCcItems(wrongCc);
 
       const wrongCcIds = new Set(wrongCc.map(item => item.id));
-      const notFound = collectedItems.filter(item => item.notFound); // Itens com notFound: true
+      const notFound = collectedItems.filter(item => item.notFound);
       setNotFoundItems(notFound);
 
       const ok = collectedItems.filter(item => !wrongCcIds.has(item.id) && !item.notFound);
@@ -75,13 +83,13 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             const status = data.row.raw[0]; 
 
             if (status === 'Ok') {
-              data.cell.styles.fillColor = '#d1e7dd'; // Verde claro
+              data.cell.styles.fillColor = statusColors.ok;
             } else if (status === 'Faltante') {
-              data.cell.styles.fillColor = '#fde2e4'; // Rosa claro
+              data.cell.styles.fillColor = statusColors.faltante;
             } else if (status === 'CC Errado') {
-              data.cell.styles.fillColor = '#fff1c7'; // Amarelo claro
+              data.cell.styles.fillColor = statusColors.ccErrado;
             } else if (status === 'Não Cadastrado') {
-              data.cell.styles.fillColor = '#69bbff'; // Laranja claro
+              data.cell.styles.fillColor = statusColors.naoCadastrado;
             }
           },
           headStyles: { fillColor: [41, 46, 51], textColor: [255, 255, 255] }
@@ -128,7 +136,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             <h5>✅ Itens Corretos ({okItems.length})</h5>
             <ListGroup>
               {okItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} variant="success">
+                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ok, color: 'white' }}>
                   <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
                   <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
                 </ListGroup.Item>
@@ -143,7 +151,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             <p className="text-muted">Estes itens deveriam estar no Centro de Custo {inventoryCc}, mas não foram coletados:</p>
             <ListGroup>
               {missingItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} variant="danger">
+                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.faltante, color: 'black' }}>
                   <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
                   <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
                   <div>Centro de Custo Esperado: {item.CentroCusto || 'N/A'}</div>
@@ -159,7 +167,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             <p className="text-muted">Estes itens foram coletados, mas pertencem a um Centro de Custo diferente de {inventoryCc}:</p>
             <ListGroup>
               {wrongCcItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} variant="warning">
+                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ccErrado, color: 'black' }}>
                   <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
                   <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
                   <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
@@ -175,7 +183,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             <p className="text-muted">Itens adicionados manualmente que não estavam no cadastro:</p>
             <ListGroup>
               {notFoundItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} variant="warning">
+                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.naoCadastrado, color: 'black' }}>
                   <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
                   <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
                   <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
