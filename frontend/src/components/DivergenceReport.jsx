@@ -3,12 +3,11 @@ import { Modal, Button, ListGroup, Alert, Spinner } from 'react-bootstrap';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Definindo as cores em um objeto para reutilização e fácil manutenção
 const statusColors = {
-  ok: '#12a351',         // Verde
-  faltante: '#ea899a',   // Rosa
-  ccErrado: '#f2cb15',   // Amarelo
-  naoCadastrado: '#f1ad44', // Laranja
+  ok: '#12a351',
+  faltante: '#ea899a',
+  ccErrado: '#f2cb15',
+  naoCadastrado: '#f1ad44',
 };
 
 const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, expectedItems, inventoryCc }) => {
@@ -51,26 +50,22 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     await new Promise(resolve => setTimeout(resolve, 50)); 
 
     try {
-      // Coluna "Imobilizado" adicionada ao cabeçalho
       const tableColumns = ["Status", "Imobilizado", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
       const tableRows = [];
 
-      // Adicionando o campo 'codigo_imobilizado' em todas as linhas
-      okItems.forEach(item => {
-        tableRows.push(["Ok", item.Imobilizado || 'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
-      });
+      const createRow = (status, item) => [
+        status,
+        item.codigo_imobilizado || 'N/A',
+        item.Inventário || 'N/A',
+        item['Subnº'] || 'N/A',
+        item.Descrição || 'Sem descrição',
+        item.CentroCusto || 'N/A'
+      ];
 
-      missingItems.forEach(item => {
-        tableRows.push(["Faltante", item.codigo_imobilizado || 'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
-      });
-
-      wrongCcItems.forEach(item => {
-        tableRows.push(["CC Errado", item.codigo_imobilizado || 'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
-      });
-
-      notFoundItems.forEach(item => {
-        tableRows.push(["Não Cadastrado", item.codigo_imobilizado || 'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
-      });
+      okItems.forEach(item => tableRows.push(createRow("Ok", item)));
+      missingItems.forEach(item => tableRows.push(createRow("Faltante", item)));
+      wrongCcItems.forEach(item => tableRows.push(createRow("CC Errado", item)));
+      notFoundItems.forEach(item => tableRows.push(createRow("Não Cadastrado", item)));
       
       if (format === 'pdf') {
         const doc = new jsPDF();
@@ -82,21 +77,14 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
           body: tableRows,
           startY: 30,
           willDrawCell: (data) => {
-            const status = data.row.raw[0]; 
-
-            if (status === 'Ok') {
-              data.cell.styles.fillColor = statusColors.ok;
-            } else if (status === 'Faltante') {
-              data.cell.styles.fillColor = statusColors.faltante;
-            } else if (status === 'CC Errado') {
-              data.cell.styles.fillColor = statusColors.ccErrado;
-            } else if (status === 'Não Cadastrado') {
-              data.cell.styles.fillColor = statusColors.naoCadastrado;
-            }
+            const status = data.row.raw[0];
+            if (status === 'Ok') data.cell.styles.fillColor = statusColors.ok;
+            else if (status === 'Faltante') data.cell.styles.fillColor = statusColors.faltante;
+            else if (status === 'CC Errado') data.cell.styles.fillColor = statusColors.ccErrado;
+            else if (status === 'Não Cadastrado') data.cell.styles.fillColor = statusColors.naoCadastrado;
           },
           headStyles: { fillColor: [41, 46, 51], textColor: [255, 255, 255] }
         });
-
         doc.save(`Relatorio_Divergencias_CC_${inventoryCc}.pdf`);
       }
 
@@ -121,6 +109,14 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     }
   };
 
+  const renderItemDetails = (item) => (
+    <>
+      <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº'] || 'N/A'})</div>
+      <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
+      <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+    </>
+  );
+
   return (
     <Modal show={show} onHide={onClose} centered size="xl" backdrop="static">
       <Modal.Header closeButton className="bg-dark text-white">
@@ -128,21 +124,16 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       </Modal.Header>
       <Modal.Body>
         {missingItems.length === 0 && wrongCcItems.length === 0 && notFoundItems.length === 0 && (
-          <Alert variant="success" className="text-center">
-            Nenhuma divergência encontrada! Inventário perfeito para o Centro de Custo {inventoryCc}.
-          </Alert>
+          <Alert variant="success" className="text-center">Nenhuma divergência encontrada!</Alert>
         )}
 
-        {/* --- MODIFICAÇÃO NA INTERFACE --- */}
         {okItems.length > 0 && (
           <div className="mb-4">
             <h5>✅ Itens Corretos ({okItems.length})</h5>
             <ListGroup>
               {okItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ok, color: 'white' }}>
-                  <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
-                  <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
-                  <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+                  {renderItemDetails(item)}
                 </ListGroup.Item>
               ))}
             </ListGroup>
@@ -152,13 +143,10 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         {missingItems.length > 0 && (
           <div className="mb-4">
             <h5>Itens Faltantes ({missingItems.length})</h5>
-            <p className="text-muted">Estes itens deveriam estar no Centro de Custo {inventoryCc}, mas não foram coletados:</p>
             <ListGroup>
               {missingItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.faltante, color: 'black' }}>
-                  <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
-                  <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
-                  <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+                  {renderItemDetails(item)}
                   <div>Centro de Custo Esperado: {item.CentroCusto || 'N/A'}</div>
                 </ListGroup.Item>
               ))}
@@ -169,13 +157,10 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         {wrongCcItems.length > 0 && (
           <div className="mb-4">
             <h5>Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
-            <p className="text-muted">Estes itens foram coletados, mas pertencem a um Centro de Custo diferente de {inventoryCc}:</p>
             <ListGroup>
               {wrongCcItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ccErrado, color: 'black' }}>
-                  <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
-                  <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
-                  <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+                  {renderItemDetails(item)}
                   <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
                 </ListGroup.Item>
               ))}
@@ -186,13 +171,10 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         {notFoundItems.length > 0 && (
           <div className="mb-4">
             <h5>Itens Não Cadastrados ({notFoundItems.length})</h5>
-            <p className="text-muted">Itens adicionados manualmente que não estavam no cadastro:</p>
             <ListGroup>
               {notFoundItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.naoCadastrado, color: 'black' }}>
-                  <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
-                  <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
-                  <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+                  {renderItemDetails(item)}
                   <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
                 </ListGroup.Item>
               ))}
@@ -201,22 +183,12 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         )}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onFinishAndReset}>
-          Voltar ao Início
-        </Button>
+        <Button variant="secondary" onClick={onFinishAndReset}>Voltar ao Início</Button>
         <Button variant="outline-secondary" onClick={onClose}>Retornar ao inventario</Button>
-        <Button 
-          variant="success" 
-          onClick={() => handleGenerateReport('csv')} 
-          disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0 && notFoundItems.length === 0)}
-        >
+        <Button variant="success" onClick={() => handleGenerateReport('csv')} disabled={isGenerating}>
           {isGenerating === 'csv' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar CSV'}
         </Button>
-        <Button 
-          variant="danger" 
-          onClick={() => handleGenerateReport('pdf')} 
-          disabled={isGenerating || (missingItems.length === 0 && wrongCcItems.length === 0 && notFoundItems.length === 0)}
-        >
+        <Button variant="danger" onClick={() => handleGenerateReport('pdf')} disabled={isGenerating}>
           {isGenerating === 'pdf' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar PDF'}
         </Button>
       </Modal.Footer>
