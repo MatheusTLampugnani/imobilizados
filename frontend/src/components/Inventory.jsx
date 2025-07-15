@@ -3,7 +3,7 @@ import { Modal, Button, ListGroup, Badge, Alert } from 'react-bootstrap';
 import { BoxArrowUpRight, QrCodeScan, Trash } from 'react-bootstrap-icons';
 import BatchScannerModal from './BatchScannerModal';
 
-const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, expectedItems, onFinishInventory }) => {
+const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, onFinishInventory }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [feedback, setFeedback] = useState({ message: '', type: 'info' });
   const [isAdding, setIsAdding] = useState(false);
@@ -30,17 +30,17 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
     let csvContent = "data:text/csv;charset=utf-8,Inventário;Subnº;Descrição;Data;Série;Centro de Custo;Observacao\n";
     
     inventario.forEach(item => {
-        const observacao = item.notFound ? "Item não encontrado no cadastro" : "";
-        const row = [
-          item.Inventário,
-          item["Subnº"],
-          `"${item.Descrição || ''}"`,
-          item.Data,
-          item.Série,
-          item.CentroCusto,
-          observacao
-        ].join(";");
-        csvContent += row + "\r\n";
+      const observacao = item.notFound ? "Item não encontrado no cadastro" : "";
+      const row = [
+        item.Inventário,
+        item["Subnº"],
+        `"${item.Descrição || ''}"`,
+        item.Data,
+        item.Série,
+        item.CentroCusto,
+        observacao
+      ].join(";");
+      csvContent += row + "\r\n";
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -69,23 +69,23 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           <ListGroup variant="flush">
             {inventario.length > 0 ? (
               inventario.map((item) => (
-                 <ListGroup.Item 
-                    key={item.id} 
-                    className="d-flex justify-content-between align-items-center"
-                    variant={item.notFound ? 'warning' : ''}
-                 >
-                   <div className="ms-2 me-auto">
-                     <div className="fw-bold">
-                       {item.notFound ? 'Código Lido: ' : 'Plaqueta: '} 
-                       {item.Inventário || 'N/A'} 
-                       {!item.notFound && ` (Subnº: ${item['Subnº']})`}
-                     </div>
-                     {item.Descrição || 'Item sem descrição'}
-                   </div>
-                   <Badge bg={item.notFound ? "secondary" : "danger"} pill>
-                     {item.notFound ? 'NÃO CADASTRADO' : `ID: ${item.id}`}
-                   </Badge>
-                 </ListGroup.Item>
+                <ListGroup.Item 
+                  key={item.id} 
+                  className="d-flex justify-content-between align-items-center"
+                  variant={item.notFound ? 'warning' : ''}
+                >
+                  <div className="ms-2 me-auto">
+                    <div className="fw-bold">
+                      {item.notFound ? 'Código Lido: ' : 'Plaqueta: '} 
+                      {item.Inventário || 'N/A'} 
+                      {!item.notFound && ` (Subnº: ${item['Subnº']})`}
+                    </div>
+                    {item.Descrição || 'Item sem descrição'}
+                  </div>
+                  <Badge bg={item.notFound ? "secondary" : "danger"} pill>
+                    {item.notFound ? 'NÃO CADASTRADO' : `ID: ${item.id}`}
+                  </Badge>
+                </ListGroup.Item>
               ))
             ) : (
               <p className="text-center text-muted p-4">A lista de inventário está vazia. Inicie o escaneamento.</p>
@@ -93,16 +93,19 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           </ListGroup>
         </Modal.Body>
         <Modal.Footer>
-            <Button variant="outline-secondary" onClick={() => setInventario([])} disabled={inventario.length === 0}>
-                <Trash /> Limpar Lista
-            </Button>
-            <Button variant="danger" onClick={() => setIsScanning(true)}>
-                <QrCodeScan /> Escanear Itens em Lote
-            </Button>
-            <Button variant="primary" onClick={onFinishInventory} disabled={inventario.length === 0}>
-              Finalizar Inventário
-            </Button>
-            <Button variant="secondary" onClick={onClose}>Fechar</Button>
+          <Button variant="outline-secondary" onClick={() => setInventario([])} disabled={inventario.length === 0}>
+            <Trash /> Limpar Lista
+          </Button>
+          <Button variant="danger" onClick={() => setIsScanning(true)}>
+            <QrCodeScan /> Escanear Itens em Lote
+          </Button>
+          <Button variant="outline-info" onClick={exportToCSV} disabled={inventario.length === 0}>
+            <BoxArrowUpRight /> Exportar para CSV
+          </Button>
+          <Button variant="primary" onClick={onFinishInventory} disabled={inventario.length === 0}>
+            Finalizar Inventário
+          </Button>
+          <Button variant="secondary" onClick={onClose}>Fechar</Button>
         </Modal.Footer>
       </Modal>
 
