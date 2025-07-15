@@ -1,129 +1,231 @@
-require('dotenv').config();
-const { createClient } = require('@supabase/supabase-js');
-const PDFDocument = require('pdfkit');
-const fs = require('fs');
-const path = require('path');
-const url = require('url');
+import React, { useEffect, useState } from 'react';
+import { Modal, Button, ListGroup, Alert, Spinner } from 'react-bootstrap';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Importe a imagem do logo diretamente. O React (com Webpack/Vite) irá processá-la.
+import logoVideplast from '../assets/videplast-brand.png'; // <-- AJUSTE O CAMINHO SE NECESSÁRIO
 
-async function handlePdfReportRequest(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    const parsedUrl = url.parse(req.url, true);
-    const { centro_custo } = parsedUrl.query;
+// 1. Objeto de cores já está correto e será usado tanto na UI quanto no PDF.
+const statusColors = {
+  ok: '#12a351',
+  faltante: '#ea899a',
+  ccErrado: '#f2cb15',
+  naoCadastrado: '#f1ad44',
+};
 
-    if (!centro_custo) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ message: "Centro de custo não fornecido." }));
+const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, expectedItems, inventoryCc }) => {
+  const [okItems, setOkItems] = useState([]);
+  const [missingItems, setMissingItems] = useState([]);
+  const [wrongCcItems, setWrongCcItems] = useState([]);
+  const [notFoundItems, setNotFoundItems] = useState([]);
+  const [isGenerating, setIsGenerating] = useState(null);
+
+  // A lógica do useEffect para separar os itens está correta.
+  useEffect(() => {
+    if (show) {
+      const formatCode = (item) => String(item.Inventário || item.Série || item.codigo_imobilizado || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
+      const collectedIds = new Set(collectedItems.map(item => formatCode(item)));
+
+      const missing = expectedItems.filter(expectedItem => !collectedIds.has(formatCode(expectedItem)));
+      setMissingItems(missing);
+
+      const wrongCc = collectedItems.filter(collectedItem => {
+        const collectedCc = String(collectedItem.CentroCusto || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
+        const currentInventoryCc = String(inventoryCc || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
+        const isExpectedForCurrentCc = expectedItems.some(expectedItem => 
+          formatCode(expectedItem) === formatCode(collectedItem) && 
+          String(expectedItem.CentroCusto || '').trim().replace(/\.0$/, '').replace(/^0+/, '') === currentInventoryCc
+        );
+        return !isExpectedForCurrentCc && collectedCc !== currentInventoryCc;
+      });
+      setWrongCcItems(wrongCc);
+
+      const wrongCcIds = new Set(wrongCc.map(item => item.id));
+      const notFound = collectedItems.filter(item => item.notFound);
+      setNotFoundItems(notFound);
+
+      const ok = collectedItems.filter(item => !wrongCcIds.has(item.id) && !item.notFound);
+      setOkItems(ok);
     }
-    
-    const centroCustoNumerico = parseInt(centro_custo, 10);
+  }, [show, collectedItems, expectedItems, inventoryCc]);
+
+  const handleGenerateReport = async (format) => {
+    setIsGenerating(format);
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     try {
-        const { data, error } = await supabase
-            .from('imobilizados')
-            .select('*')
-            .eq('centro_custo', centroCustoNumerico) 
-            .order('codigo_imobilizado', { ascending: true })
-            .order('sub_numero', { ascending: true });
+      const tableColumns = ["Status", "Imobilizado", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
+      const tableRows = [];
 
-        if (error) throw error;
+      const createRow = (status, item) => [
+        status,
+        item.codigo_imobilizado || 'N/A',
+        item.Inventário || 'N/A',
+        item['Subnº'] || 'N/A', // Corrigido para 'Subnº' para corresponder à UI
+        item.Descrição || 'Sem descrição',
+        item.CentroCusto || 'N/A'
+      ];
 
-        if (!data || data.length === 0) {
-            res.writeHead(404, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ message: `Nenhum imobilizado encontrado para o Centro de Custo ${centro_custo}.` }));
-        }
-        gerarRelatorioPDF({ data, centro_custo }, res);
+      okItems.forEach(item => tableRows.push(createRow("Ok", item)));
+      missingItems.forEach(item => tableRows.push(createRow("Faltante", item)));
+      wrongCcItems.forEach(item => tableRows.push(createRow("CC Errado", item)));
+      notFoundItems.forEach(item => tableRows.push(createRow("Não Cadastrado", item)));
+      
+      if (format === 'pdf') {
+        // 2. Inicialize o PDF aqui, fora de qualquer lógica condicional desnecessária.
+        const doc = new jsPDF();
+        
+        // Adiciona o logo
+        // O logo importado já é uma string base64 ou uma URL gerenciada pelo bundler.
+        const imgWidth = 50;
+        const imgHeight = (imgWidth * 128) / 512; // Mantém a proporção da imagem
+        const centerX = (doc.internal.pageSize.getWidth() - imgWidth) / 2;
+        doc.addImage(logoVideplast, 'PNG', centerX, 10, imgWidth, imgHeight);
 
-    } catch (dbError) {
-        console.error('ERRO AO GERAR PDF:', dbError);
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
-    }
-}
+        // Adiciona o título
+        doc.setFontSize(18);
+        doc.text(`Relatório de Divergências - CC: ${inventoryCc}`, 14, 45);
+        
+        // 3. A sua lógica para colorir as células já está correta!
+        autoTable(doc, {
+          head: [tableColumns],
+          body: tableRows,
+          startY: 55, // Ajusta a posição inicial da tabela para depois do logo e título
+          willDrawCell: (data) => {
+            // Não precisa verificar a coluna, aplica a cor na linha inteira
+            if (data.section === 'body') {
+              const status = data.row.raw[0]; // Pega o status da primeira coluna
+              let textColor = 'black'; // Cor padrão do texto
 
-function gerarRelatorioPDF({ data, centro_custo }, res) {
-    const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
-    const filename = `Relatorio_CC_${centro_custo}.pdf`;
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    doc.pipe(res);
-
-    const drawHeader = (doc) => {
-        const logoPath = path.join(__dirname, '..', '..', 'frontend', 'src', 'assets', 'videplast-brand.png');
-        const centerX = (doc.page.width - 120) / 2;
-
-        if (fs.existsSync(logoPath)) {
-            doc.image(logoPath, centerX, 30, { width: 120 });
-        }
-
-        doc.moveDown(3);
-        doc.fontSize(14).font('Helvetica-Bold').fillColor('#000000').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
-        doc.moveDown(1);
-        doc.fontSize(10).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, { align: 'left' });
-        doc.moveDown(0.5);
-        doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#000000").lineWidth(1).stroke();
-        doc.moveDown(1);
-    };
-
-    const drawFooter = (doc) => {
-        const pageCount = doc.bufferedPageRange().count;
-        for (let i = 0; i < pageCount; i++) {
-            doc.switchToPage(i);
-            const bottom = doc.page.margins.bottom;
-            const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-
-            doc.fontSize(8).font('Helvetica').fillColor('#000');
-            doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, doc.page.height - bottom + 10, { align: 'left' });
-            doc.text(`Página ${i + 1} de ${pageCount}`, 0, doc.page.height - bottom + 10, { align: 'right' });
-        }
-    };
-
-    drawHeader(doc);
-
-    for (let i = 0; i < data.length; i++) {
-        const item = data[i];
-        const estimatedHeight = 90;
-
-        if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
-             if (i < data.length) {
-                doc.addPage();
-                drawHeader(doc);
+              if (status === 'Ok') {
+                data.cell.styles.fillColor = statusColors.ok;
+                textColor = 'white'; // Texto branco para fundo verde escuro
+              } else if (status === 'Faltante') {
+                data.cell.styles.fillColor = statusColors.faltante;
+              } else if (status === 'CC Errado') {
+                data.cell.styles.fillColor = statusColors.ccErrado;
+              } else if (status === 'Não Cadastrado') {
+                data.cell.styles.fillColor = statusColors.naoCadastrado;
+              }
+              data.cell.styles.textColor = textColor;
             }
-        }
+          },
+          headStyles: { fillColor: [41, 46, 51], textColor: [255, 255, 255] }
+        });
 
-        const y = doc.y;
-        doc.fontSize(9).fillColor('#000');
+        doc.save(`Relatorio_Divergencias_CC_${inventoryCc}.pdf`);
+      }
 
-        doc.font('Helvetica-Bold').text(`Imobilizado:`, 40, y, { continued: true }).font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`, { continued: true });
-        doc.font('Helvetica-Bold').text(`   Subnº:`, 200, y, { continued: true }).font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`);
-
-        const line2Y = y + 15;
-        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`, { continued: true });
-        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`, { continued: true });
-        doc.font('Helvetica-Bold').text(`Data incorporação:`, 200, line2Y, { continued: true }).font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
-
-        const line3Y = y + 30;
-        doc.font('Helvetica-Bold').text('Descrição:', 40, line3Y, { continued: true })
-           .font('Helvetica').text(` ${item.descricao || 'N/A'}`, { width: 480 });
-
-        const descHeight = doc.heightOfString(item.descricao || 'N/A', { width: 480 });
-        const line4Y = line3Y + descHeight + 2;
-        doc.font('Helvetica-Bold').text('Nº Série:', 40, line4Y, { continued: true }).font('Helvetica').text(` ${item.numero_serie || 'N/A'}`);
-
-        doc.moveDown(1.5);
-        doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
-        doc.moveDown(1);
+      if (format === 'csv') {
+        // Lógica do CSV (não precisa de alteração)
+        let csvContent = "data:text/csv;charset=utf-8," 
+          + tableColumns.join(";") + "\n" 
+          + tableRows.map(e => e.join(";")).join("\n");
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Relatorio_Divergencias_CC_${inventoryCc}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error("Erro ao gerar relatório:", error);
+      alert("Ocorreu um erro ao gerar o relatório. Verifique o console para mais detalhes.");
+    } finally {
+      setIsGenerating(null);
     }
+  };
 
-    drawFooter(doc);
-    doc.end();
-}
+  // O JSX para renderizar o modal já está correto e usando as cores.
+  const renderItemDetails = (item) => (
+    <>
+      <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº'] || 'N/A'})</div>
+      <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
+      <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+    </>
+  );
 
-module.exports = {
-    handlePdfReportRequest
+  return (
+    <Modal show={show} onHide={onClose} centered size="xl" backdrop="static">
+      <Modal.Header closeButton className="bg-dark text-white">
+        <Modal.Title>Relatório de Divergências do Inventário</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {/* ... seu JSX para exibir as listas ... (sem alterações) */}
+        {missingItems.length === 0 && wrongCcItems.length === 0 && notFoundItems.length === 0 && (
+          <Alert variant="success" className="text-center">Nenhuma divergência encontrada!</Alert>
+        )}
+
+        {okItems.length > 0 && (
+          <div className="mb-4">
+            <h5>Itens Corretos ({okItems.length})</h5>
+            <ListGroup>
+              {okItems.map((item, index) => (
+                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ok, color: 'white' }}>
+                  {renderItemDetails(item)}
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
+          </div>
+        )}
+
+        {missingItems.length > 0 && (
+          <div className="mb-4">
+            <h5>Itens Faltantes ({missingItems.length})</h5>
+            <ListGroup>
+              {missingItems.map((item, index) => (
+                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.faltante, color: 'black' }}>
+                  {renderItemDetails(item)}
+                  <div>Centro de Custo Esperado: {item.CentroCusto || 'N/A'}</div>
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
+          </div>
+        )}
+
+        {wrongCcItems.length > 0 && (
+          <div className="mb-4">
+            <h5>Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
+            <ListGroup>
+              {wrongCcItems.map((item, index) => (
+                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ccErrado, color: 'black' }}>
+                  {renderItemDetails(item)}
+                  <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
+          </div>
+        )}
+
+        {notFoundItems.length > 0 && (
+          <div className="mb-4">
+            <h5>Itens Não Cadastrados ({notFoundItems.length})</h5>
+            <ListGroup>
+              {notFoundItems.map((item, index) => (
+                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.naoCadastrado, color: 'black' }}>
+                  {renderItemDetails(item)}
+                  <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
+                </ListGroup.Item>
+              ))}
+            </ListGroup>
+          </div>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onFinishAndReset}>Voltar ao Início</Button>
+        <Button variant="outline-secondary" onClick={onClose}>Retornar ao inventario</Button>
+        <Button variant="success" onClick={() => handleGenerateReport('csv')} disabled={isGenerating}>
+          {isGenerating === 'csv' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar CSV'}
+        </Button>
+        <Button variant="danger" onClick={() => handleGenerateReport('pdf')} disabled={isGenerating}>
+          {isGenerating === 'pdf' ? <Spinner as="span" animation="border" size="sm" /> : 'Gerar PDF'}
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
 };
+
+export default DivergenceReport;
