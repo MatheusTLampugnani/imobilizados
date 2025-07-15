@@ -76,7 +76,7 @@ function App() {
       setInventarioCentroCusto(cc);
       setInventarioAtivo(true);
       fetchExpectedItems(cc);
-      sessionStorage.removeItem('appState'); // Limpa estado anterior
+      sessionStorage.removeItem('appState');
       setInventario([]);
       return true;
     } catch (error) {
