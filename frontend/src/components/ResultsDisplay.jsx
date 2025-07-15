@@ -60,7 +60,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
                       <tr><td><strong>INVENTÁRIO ANTIGO</strong></td><td>{item.Inventário_Antigo || 'N/A'}</td></tr>
                       <tr><td><strong>NÚMERO DE SÉRIE</strong></td><td>{item.Série || 'N/A'}</td></tr>
                       <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'N/A'}</td></tr>
-                      <tr><td><strong>SUB NÚMERO</strong></td><td>{item['Subnº'] || 'N/A'}</td></tr>
+                      <tr><td><strong>SUB NÚMERO</strong></td><td>{item.Subnº}</td></tr>
                     </tbody>
                   </Table>
                   <div className="text-end mt-2">

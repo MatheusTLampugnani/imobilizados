@@ -64,7 +64,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         status,
         item.codigo_imobilizado || 'N/A',
         item.Inventário || 'N/A',
-        item['Subnº'] || 'N/A',
+        item.Subnº,
         item.Descrição || 'Sem descrição',
         item.CentroCusto || 'N/A'
       ];
