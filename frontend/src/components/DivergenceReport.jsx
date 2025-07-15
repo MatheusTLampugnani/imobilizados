@@ -57,7 +57,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
       // Adicionando o campo 'codigo_imobilizado' em todas as linhas
       okItems.forEach(item => {
-        tableRows.push(["Ok", item.codigo_imobilizado || 'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
+        tableRows.push(["Ok", item.Imobilizado || 'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
       });
 
       missingItems.forEach(item => {
