@@ -51,23 +51,23 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     await new Promise(resolve => setTimeout(resolve, 50)); 
 
     try {
-      const tableColumns = ["Status", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
+      const tableColumns = ["Status", "Imobilizado", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
       const tableRows = [];
 
       okItems.forEach(item => {
-        tableRows.push(["Ok", item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
+        tableRows.push(["Ok", item.codigo_imobilizado, item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
       });
 
       missingItems.forEach(item => {
-        tableRows.push(["Faltante", item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
+        tableRows.push(["Faltante", item.codigo_imobilizado, item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
       });
 
       wrongCcItems.forEach(item => {
-        tableRows.push(["CC Errado", item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
+        tableRows.push(["CC Errado", item.codigo_imobilizado, item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
       });
 
       notFoundItems.forEach(item => {
-        tableRows.push(["Não Cadastrado", item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
+        tableRows.push(["Não Cadastrado",'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
       });
       
       if (format === 'pdf') {
