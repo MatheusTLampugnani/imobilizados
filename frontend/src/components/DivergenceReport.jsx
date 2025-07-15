@@ -50,7 +50,14 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     await new Promise(resolve => setTimeout(resolve, 50)); 
 
     try {
-      const tableColumns = ["Status", "Imobilizado", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
+      const logoPath = path.join(__dirname, '..', '..', 'frontend', 'src', 'assets', 'videplast-brand.png');
+      const centerX = (doc.page.width - 120) / 2;
+
+      if (fs.existsSync(logoPath)) {
+          doc.image(logoPath, centerX, 30, { width: 120 });
+      }
+
+      const tableColumns = ["Status", "Imobilizado", "Inventario", "Subn", "Descricao", "Centro de Custo"];
       const tableRows = [];
 
       const createRow = (status, item) => [
@@ -129,7 +136,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
         {okItems.length > 0 && (
           <div className="mb-4">
-            <h5>✅ Itens Corretos ({okItems.length})</h5>
+            <h5>Itens Corretos ({okItems.length})</h5>
             <ListGroup>
               {okItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ok, color: 'white' }}>
