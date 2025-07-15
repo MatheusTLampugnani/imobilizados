@@ -133,7 +133,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
         {okItems.length > 0 && (
           <div className="mb-4">
-            <h5>✅ Itens Corretos ({okItems.length})</h5>
+            <h5>Itens Corretos ({okItems.length})</h5>
             <ListGroup>
               {okItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ok, color: 'white' }}>

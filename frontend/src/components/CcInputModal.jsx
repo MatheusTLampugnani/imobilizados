@@ -14,19 +14,17 @@ const CcInputModal = ({ show, onClose, onConfirm }) => {
     setIsLoading(true);
     setError('');
 
-    // Chama a função de validação que veio do App.jsx
     const isValid = await onConfirm(cc);
     
     setIsLoading(false);
 
     if (isValid) {
-      handleClose(); // Fecha o modal se a validação for bem-sucedida
+      handleClose();
     } else {
       setError('Centro de Custo inválido ou não encontrado. Tente novamente.');
     }
   };
 
-  // Limpa os estados ao fechar
   const handleClose = () => {
     setCc('');
     setError('');
