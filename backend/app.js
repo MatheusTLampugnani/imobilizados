@@ -33,7 +33,6 @@ app.get('/api/centro-custo/validate/:cc', async (req, res) => {
   }
 
   try {
-    // Verifica se existe pelo menos um item com este centro de custo na tabela
     const { data, error, count } = await supabase
       .from('imobilizados')
       .select('centro_custo', { count: 'exact', head: true })
@@ -43,7 +42,6 @@ app.get('/api/centro-custo/validate/:cc', async (req, res) => {
       throw error;
     }
 
-    // Se a contagem for maior que 0, o CC é válido
     if (count > 0) {
       res.status(200).json({ isValid: true });
     } else {
@@ -91,14 +89,17 @@ app.get('/api/imobilizado', async (req, res) => {
             const responseData = {
                 codigo_imobilizado: imobilizadoPrincipalCodigo,
                 itens: itensEncontrados.map(item => ({
-                    id: item.id, "Subnº": item.sub_numero, "Data": item.data_incorporacao,
-                    "Descrição": item.descricao, "Inventário": item.codigo_inventario,
-                    "Inventário_Antigo": item.codigo_inventario_antigo, "Série": item.numero_serie,
+                    id: item.id, 
+                    "Subnº": item.sub_numero, 
+                    "Data": item.data_incorporacao,
+                    "Descrição": item.descricao, 
+                    "Inventário": item.codigo_inventario,
+                    "Inventário_Antigo": item.codigo_inventario_antigo, 
+                    "Série": item.numero_serie,
                     "CentroCusto": item.centro_custo,
+                    "codigo_imobilizado": item.codigo_imobilizado
                 }))
             };
-            return res.status(200).json(responseData);
-        } if (itensEncontrados && itensEncontrados.length > 0) {
             return res.status(200).json(responseData);
         } else {
             return res.status(404).json({ message: 'Imobilizado, Inventário ou Nº de Série não encontrado' });
@@ -111,7 +112,7 @@ app.get('/api/imobilizado', async (req, res) => {
 
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
-        const { itemId, newInventoryCode } = req.body; // <-- Pegando dados do corpo da requisição com Express
+        const { itemId, newInventoryCode } = req.body;
         const newCodeNumeric = parseInt(newInventoryCode, 10);
 
         if (!itemId || isNaN(newCodeNumeric)) {
