@@ -81,7 +81,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             } else if (status === 'CC Errado') {
               data.cell.styles.fillColor = '#fff1c7'; // Amarelo claro
             } else if (status === 'Não Cadastrado') {
-              data.cell.styles.fillColor = '#ff8552'; // Laranja claro
+              data.cell.styles.fillColor = '#69bbff'; // Laranja claro
             }
           },
           headStyles: { fillColor: [41, 46, 51], textColor: [255, 255, 255] }
