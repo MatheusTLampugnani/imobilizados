@@ -54,7 +54,6 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
     doc.pipe(res);
 
     const drawHeader = (doc) => {
-// CORREÇÃO: Ajustado para subir dois níveis de diretório
         const logoPath = path.join(__dirname, '..', '..', 'frontend', 'src', 'assets', 'videplast-brand.png');
         const centerX = (doc.page.width - 120) / 2;
 
@@ -125,7 +124,6 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
     doc.end();
 }
 
-// Exporta a função principal para ser usada no app.js
 module.exports = {
     handlePdfReportRequest
 };

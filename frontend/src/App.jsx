@@ -8,6 +8,7 @@ import ResultsDisplay from './components/ResultsDisplay';
 import ReportModal from './components/ReportModal';
 import DivergenceReport from './components/DivergenceReport';
 import CcInputModal from './components/CcInputModal';
+import AddNotFoundItemModal from './components/AddNotFoundItemModal'; 
 import { API_URL } from './apiConfig'; 
 import './App.css';
 
@@ -23,24 +24,40 @@ function App() {
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
   const [expectedItems, setExpectedItems] = useState([]);
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
-  
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [itemCodeToAdd, setItemCodeToAdd] = useState('');
+
   useEffect(() => {
     try {
-      const inventarioSalvo = sessionStorage.getItem('inventario');
-      if (inventarioSalvo) setInventario(JSON.parse(inventarioSalvo));
-    } catch (e) { console.error("Erro ao carregar inventário:", e); }
+      const savedData = sessionStorage.getItem('appState');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        setInventario(parsedData.inventario || []);
+        setInventarioCentroCusto(parsedData.inventarioCentroCusto || '');
+      }
+    } catch (e) {
+      setError('Erro ao carregar o estado.');
+      console.error("Erro ao carregar estado:", e);
+    }
   }, []);
 
   useEffect(() => {
     try {
-      sessionStorage.setItem('inventario', JSON.stringify(inventario));
-    } catch (e) { console.error("Erro ao salvar inventário:", e); }
-  }, [inventario]);
+      const appState = {
+        inventario,
+        inventarioCentroCusto,
+      };
+      sessionStorage.setItem('appState', JSON.stringify(appState));
+    } catch (e) {
+      setError('Erro ao salvar o estado.');
+      console.error("Erro ao salvar estado:", e);
+    }
+  }, [inventario, inventarioCentroCusto]);
 
   const formatarCodigo = (valor) => {
     if (!valor) return "";
     return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
-  }
+  };
 
   const fetchExpectedItems = async (cc) => {
     if (!cc) return;
@@ -59,10 +76,12 @@ function App() {
       setInventarioCentroCusto(cc);
       setInventarioAtivo(true);
       fetchExpectedItems(cc);
-      return true; 
+      sessionStorage.removeItem('appState');
+      setInventario([]);
+      return true;
     } catch (error) {
       console.error("Validação do Centro de Custo falhou:", error);
-      return false; 
+      return false;
     }
   };
 
@@ -88,25 +107,50 @@ function App() {
       });
       if (inventarioAtivo && dados.itens.length > 0) {
         const codigoFormatado = formatarCodigo(codeToSearch);
-        const itemEscaneado = dados.itens.find(item => 
-            formatarCodigo(item.Inventário) === codigoFormatado || 
-            formatarCodigo(item.Série) === codigoFormatado ||
-            formatarCodigo(dados.codigo_imobilizado) === codigoFormatado
+        const itemEscaneado = dados.itens.find(item =>
+          formatarCodigo(item.Inventário) === codigoFormatado ||
+          formatarCodigo(item.Série) === codigoFormatado ||
+          formatarCodigo(dados.codigo_imobilizado) === codigoFormatado
         );
         const itemParaAdicionar = itemEscaneado || dados.itens[0];
         if (itemParaAdicionar && !inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
-            setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
+          setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
         }
       }
+      return true;
     } catch (err) {
       setResultado(null);
-      const errorMessage = err.response?.status === 404 
-        ? `Imobilizado ${codeToSearch} não encontrado.` 
-        : (err.response?.data?.message || 'Erro ao conectar ao servidor.');
-      setError(errorMessage);
+      if (err.response?.status === 404) {
+        if (inventarioAtivo) {
+          setItemCodeToAdd(codeToSearch);
+          setShowAddItemModal(true);
+        } else {
+          setError(`Imobilizado ${codeToSearch} não encontrado.`);
+        }
+      } else {
+        const errorMessage = err.response?.data?.message || 'Erro ao conectar ao servidor.';
+        setError(errorMessage);
+      }
+      return false;
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleConfirmAddItem = (description) => {
+    if (!description.trim()) {
+      setError('Por favor, insira uma descrição.');
+      return;
+    }
+    const newItem = {
+      id: Date.now(),
+      Inventário: itemCodeToAdd,
+      Descrição: description,
+      notFound: true,
+      CentroCusto: inventarioCentroCusto,
+    };
+    setInventario((prevInventario) => [newItem, ...prevInventario]);
+    setShowAddItemModal(false);
   };
 
   const refreshData = () => {
@@ -125,19 +169,19 @@ function App() {
   return (
     <div className="app-wrapper">
       <Container>
-        <Header/>
-          <InputArea 
-            codigo={codigo}
-            setCodigo={setCodigo}
-            onConsultar={() => handleCodeSearch(codigo)}
-            isLoading={isLoading}
-          />
-          <ResultsDisplay 
-            isLoading={isLoading} 
-            error={error} 
-            resultado={resultado}
-            onRefresh={refreshData} 
-          />
+        <Header />
+        <InputArea
+          codigo={codigo}
+          setCodigo={setCodigo}
+          onConsultar={() => handleCodeSearch(codigo)}
+          isLoading={isLoading}
+        />
+        <ResultsDisplay
+          isLoading={isLoading}
+          error={error}
+          resultado={resultado}
+          onRefresh={refreshData}
+        />
         <div className="main-actions-container">
           <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
             Iniciar Inventário
@@ -167,20 +211,27 @@ function App() {
       />
 
       {showReportModal && <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} />}
-      
+
       {showDivergenceReport && (
         <DivergenceReport
           show={showDivergenceReport}
           onClose={() => setShowDivergenceReport(false)}
-          onFinishAndReset={handleFinishAndReset} 
+          onFinishAndReset={handleFinishAndReset}
           collectedItems={inventario}
           expectedItems={expectedItems}
           inventoryCc={inventarioCentroCusto}
         />
       )}
 
+      <AddNotFoundItemModal
+        show={showAddItemModal}
+        onClose={() => setShowAddItemModal(false)}
+        onConfirm={handleConfirmAddItem}
+        itemCode={itemCodeToAdd}
+      />
+
       <footer className="app-footer">
-        <p className="mb-0">&copy; {new Date().getFullYear()} - Sistema de Consulta de Imobilizados | Desenvolvido para Videplast</p>
+        <p className="mb-0">© {new Date().getFullYear()} - Sistema de Consulta de Imobilizados | Desenvolvido para Videplast</p>
       </footer>
     </div>
   );
