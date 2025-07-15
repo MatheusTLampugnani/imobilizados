@@ -51,23 +51,25 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     await new Promise(resolve => setTimeout(resolve, 50)); 
 
     try {
+      // Coluna "Imobilizado" adicionada ao cabeçalho
       const tableColumns = ["Status", "Imobilizado", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
       const tableRows = [];
 
+      // Adicionando o campo 'codigo_imobilizado' em todas as linhas
       okItems.forEach(item => {
-        tableRows.push(["Ok", item.codigo_imobilizado, item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
+        tableRows.push(["Ok", item.codigo_imobilizado || 'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
       });
 
       missingItems.forEach(item => {
-        tableRows.push(["Faltante", item.codigo_imobilizado, item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
+        tableRows.push(["Faltante", item.codigo_imobilizado || 'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
       });
 
       wrongCcItems.forEach(item => {
-        tableRows.push(["CC Errado", item.codigo_imobilizado, item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
+        tableRows.push(["CC Errado", item.codigo_imobilizado || 'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
       });
 
       notFoundItems.forEach(item => {
-        tableRows.push(["Não Cadastrado",'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
+        tableRows.push(["Não Cadastrado", item.codigo_imobilizado || 'N/A', item.Inventário || 'N/A', item['Subnº'] || 'N/A', item.Descrição || 'Sem descrição', item.CentroCusto || 'N/A']);
       });
       
       if (format === 'pdf') {
@@ -131,13 +133,15 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
           </Alert>
         )}
 
+        {/* --- MODIFICAÇÃO NA INTERFACE --- */}
         {okItems.length > 0 && (
           <div className="mb-4">
-            <h5>Itens Corretos ({okItems.length})</h5>
+            <h5>✅ Itens Corretos ({okItems.length})</h5>
             <ListGroup>
               {okItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ok, color: 'white' }}>
                   <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
+                  <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
                   <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
                 </ListGroup.Item>
               ))}
@@ -153,6 +157,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
               {missingItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.faltante, color: 'black' }}>
                   <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
+                  <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
                   <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
                   <div>Centro de Custo Esperado: {item.CentroCusto || 'N/A'}</div>
                 </ListGroup.Item>
@@ -169,6 +174,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
               {wrongCcItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ccErrado, color: 'black' }}>
                   <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
+                  <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
                   <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
                   <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
                 </ListGroup.Item>
@@ -185,6 +191,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
               {notFoundItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.naoCadastrado, color: 'black' }}>
                   <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº']})</div>
+                  <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
                   <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
                   <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
                 </ListGroup.Item>
