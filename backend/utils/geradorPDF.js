@@ -2,16 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Button, ListGroup, Alert, Spinner } from 'react-bootstrap';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import logoVideplast from '../assets/videplast-brand.png'; // Importa o logo
 
-// Importe a imagem do logo diretamente. O React (com Webpack/Vite) irá processá-la.
-import logoVideplast from '../assets/videplast-brand.png'; // <-- AJUSTE O CAMINHO SE NECESSÁRIO
-
-// 1. Objeto de cores já está correto e será usado tanto na UI quanto no PDF.
 const statusColors = {
-  ok: '#12a351',
-  faltante: '#ea899a',
-  ccErrado: '#f2cb15',
-  naoCadastrado: '#f1ad44',
+  ok: '#d1e7dd',          // Verde
+  faltante: '#f8d7da',      // Vermelho
+  ccErrado: '#fff3cd',      // Amarelo
+  naoCadastrado: '#cff4fc', // Azul
 };
 
 const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, expectedItems, inventoryCc }) => {
@@ -21,32 +18,48 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
   const [notFoundItems, setNotFoundItems] = useState([]);
   const [isGenerating, setIsGenerating] = useState(null);
 
-  // A lógica do useEffect para separar os itens está correta.
   useEffect(() => {
     if (show) {
-      const formatCode = (item) => String(item.Inventário || item.Série || item.codigo_imobilizado || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
-      const collectedIds = new Set(collectedItems.map(item => formatCode(item)));
-
-      const missing = expectedItems.filter(expectedItem => !collectedIds.has(formatCode(expectedItem)));
-      setMissingItems(missing);
-
-      const wrongCc = collectedItems.filter(collectedItem => {
-        const collectedCc = String(collectedItem.CentroCusto || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
-        const currentInventoryCc = String(inventoryCc || '').trim().replace(/\.0$/, '').replace(/^0+/, '');
-        const isExpectedForCurrentCc = expectedItems.some(expectedItem => 
-          formatCode(expectedItem) === formatCode(collectedItem) && 
-          String(expectedItem.CentroCusto || '').trim().replace(/\.0$/, '').replace(/^0+/, '') === currentInventoryCc
-        );
-        return !isExpectedForCurrentCc && collectedCc !== currentInventoryCc;
+      const collectedMap = new Map();
+      collectedItems.forEach(item => {
+        // Usa o 'Inventário' como chave primária para a comparação
+        const key = String(item.Inventário || item.id).trim();
+        collectedMap.set(key, item);
       });
-      setWrongCcItems(wrongCc);
 
-      const wrongCcIds = new Set(wrongCc.map(item => item.id));
-      const notFound = collectedItems.filter(item => item.notFound);
-      setNotFoundItems(notFound);
+      const expectedMap = new Map();
+      expectedItems.forEach(item => {
+        const key = String(item.Inventário || item.id).trim();
+        expectedMap.set(key, item);
+      });
 
-      const ok = collectedItems.filter(item => !wrongCcIds.has(item.id) && !item.notFound);
-      setOkItems(ok);
+      const newOk = [];
+      const newMissing = [];
+      const newWrongCc = [];
+      const newNotFound = collectedItems.filter(item => item.notFound);
+      const foundAndCollected = collectedItems.filter(item => !item.notFound);
+      
+      foundAndCollected.forEach(collected => {
+        const expectedItem = expectedMap.get(String(collected.Inventário).trim());
+        if (expectedItem) {
+          if (String(collected.CentroCusto).trim() === String(inventoryCc).trim()) {
+            newOk.push(collected);
+          } else {
+            newWrongCc.push(collected);
+          }
+        }
+      });
+
+      expectedItems.forEach(expected => {
+        if (!collectedMap.has(String(expected.Inventário).trim())) {
+          newMissing.push(expected);
+        }
+      });
+      
+      setOkItems(newOk);
+      setMissingItems(newMissing);
+      setWrongCcItems(newWrongCc);
+      setNotFoundItems(newNotFound);
     }
   }, [show, collectedItems, expectedItems, inventoryCc]);
 
@@ -62,7 +75,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         status,
         item.codigo_imobilizado || 'N/A',
         item.Inventário || 'N/A',
-        item['Subnº'] || 'N/A', // Corrigido para 'Subnº' para corresponder à UI
+        item['Subnº'] || 'N/A',
         item.Descrição || 'Sem descrição',
         item.CentroCusto || 'N/A'
       ];
@@ -71,44 +84,34 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       missingItems.forEach(item => tableRows.push(createRow("Faltante", item)));
       wrongCcItems.forEach(item => tableRows.push(createRow("CC Errado", item)));
       notFoundItems.forEach(item => tableRows.push(createRow("Não Cadastrado", item)));
-      
+
       if (format === 'pdf') {
-        // 2. Inicialize o PDF aqui, fora de qualquer lógica condicional desnecessária.
         const doc = new jsPDF();
         
-        // Adiciona o logo
-        // O logo importado já é uma string base64 ou uma URL gerenciada pelo bundler.
         const imgWidth = 50;
-        const imgHeight = (imgWidth * 128) / 512; // Mantém a proporção da imagem
+        const imgHeight = 12; 
         const centerX = (doc.internal.pageSize.getWidth() - imgWidth) / 2;
         doc.addImage(logoVideplast, 'PNG', centerX, 10, imgWidth, imgHeight);
 
-        // Adiciona o título
         doc.setFontSize(18);
-        doc.text(`Relatório de Divergências - CC: ${inventoryCc}`, 14, 45);
+        doc.text(`Relatório de Divergências - CC: ${inventoryCc}`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
         
-        // 3. A sua lógica para colorir as células já está correta!
         autoTable(doc, {
           head: [tableColumns],
           body: tableRows,
-          startY: 55, // Ajusta a posição inicial da tabela para depois do logo e título
+          startY: 50,
           willDrawCell: (data) => {
-            // Não precisa verificar a coluna, aplica a cor na linha inteira
             if (data.section === 'body') {
-              const status = data.row.raw[0]; // Pega o status da primeira coluna
-              let textColor = 'black'; // Cor padrão do texto
-
-              if (status === 'Ok') {
-                data.cell.styles.fillColor = statusColors.ok;
-                textColor = 'white'; // Texto branco para fundo verde escuro
-              } else if (status === 'Faltante') {
-                data.cell.styles.fillColor = statusColors.faltante;
-              } else if (status === 'CC Errado') {
-                data.cell.styles.fillColor = statusColors.ccErrado;
-              } else if (status === 'Não Cadastrado') {
-                data.cell.styles.fillColor = statusColors.naoCadastrado;
+              const status = data.row.raw[0];
+              const colorMap = {
+                  'Ok': statusColors.ok,
+                  'Faltante': statusColors.faltante,
+                  'CC Errado': statusColors.ccErrado,
+                  'Não Cadastrado': statusColors.naoCadastrado,
+              };
+              if (colorMap[status]) {
+                  data.cell.styles.fillColor = colorMap[status];
               }
-              data.cell.styles.textColor = textColor;
             }
           },
           headStyles: { fillColor: [41, 46, 51], textColor: [255, 255, 255] }
@@ -118,7 +121,6 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       }
 
       if (format === 'csv') {
-        // Lógica do CSV (não precisa de alteração)
         let csvContent = "data:text/csv;charset=utf-8," 
           + tableColumns.join(";") + "\n" 
           + tableRows.map(e => e.join(";")).join("\n");
@@ -139,12 +141,17 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     }
   };
 
-  // O JSX para renderizar o modal já está correto e usando as cores.
-  const renderItemDetails = (item) => (
+  const renderItemDetails = (item, type) => (
     <>
-      <div className="fw-bold">Plaqueta: {item.Inventário || 'N/A'} (Subnº: {item['Subnº'] || 'N/A'})</div>
-      <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>
+      <div className="fw-bold">
+        {type === 'notFound' ? 'Código Lido: ' : 'Plaqueta: '}
+        {item.Inventário || 'N/A'}
+        {type !== 'notFound' && ` (Subnº: ${item['Subnº'] || 'N/A'})`}
+      </div>
+      {type !== 'notFound' && <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>}
       <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+      {type === 'missing' && <div>Centro de Custo Esperado: {item.CentroCusto || 'N/A'}</div>}
+      {(type === 'wrongCc' || type === 'notFound') && <div>Centro de Custo: {item.CentroCusto || 'N/A'}</div>}
     </>
   );
 
@@ -154,8 +161,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         <Modal.Title>Relatório de Divergências do Inventário</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {/* ... seu JSX para exibir as listas ... (sem alterações) */}
-        {missingItems.length === 0 && wrongCcItems.length === 0 && notFoundItems.length === 0 && (
+        {okItems.length === 0 && missingItems.length === 0 && wrongCcItems.length === 0 && notFoundItems.length === 0 && (
           <Alert variant="success" className="text-center">Nenhuma divergência encontrada!</Alert>
         )}
 
@@ -164,8 +170,8 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             <h5>Itens Corretos ({okItems.length})</h5>
             <ListGroup>
               {okItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ok, color: 'white' }}>
-                  {renderItemDetails(item)}
+                <ListGroup.Item key={item.id || index} variant="success">
+                  {renderItemDetails(item, 'ok')}
                 </ListGroup.Item>
               ))}
             </ListGroup>
@@ -177,9 +183,8 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             <h5>Itens Faltantes ({missingItems.length})</h5>
             <ListGroup>
               {missingItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.faltante, color: 'black' }}>
-                  {renderItemDetails(item)}
-                  <div>Centro de Custo Esperado: {item.CentroCusto || 'N/A'}</div>
+                <ListGroup.Item key={item.id || index} variant="danger">
+                  {renderItemDetails(item, 'missing')}
                 </ListGroup.Item>
               ))}
             </ListGroup>
@@ -191,9 +196,8 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             <h5>Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
             <ListGroup>
               {wrongCcItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.ccErrado, color: 'black' }}>
-                  {renderItemDetails(item)}
-                  <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
+                <ListGroup.Item key={item.id || index} variant="warning">
+                  {renderItemDetails(item, 'wrongCc')}
                 </ListGroup.Item>
               ))}
             </ListGroup>
@@ -205,9 +209,8 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             <h5>Itens Não Cadastrados ({notFoundItems.length})</h5>
             <ListGroup>
               {notFoundItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} style={{ backgroundColor: statusColors.naoCadastrado, color: 'black' }}>
-                  {renderItemDetails(item)}
-                  <div>Centro de Custo Coletado: {item.CentroCusto || 'N/A'}</div>
+                <ListGroup.Item key={item.id || index} variant="info">
+                   {renderItemDetails(item, 'notFound')}
                 </ListGroup.Item>
               ))}
             </ListGroup>
@@ -228,6 +231,4 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
   );
 };
 
-module.exports = {
-    handlePdfReportRequest
-};
+export default DivergenceReport;
