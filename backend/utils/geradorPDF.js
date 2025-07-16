@@ -124,7 +124,6 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
     doc.end();
 }
 
-// Exporta a função principal para ser usada no app.js
 module.exports = {
     handlePdfReportRequest
 };
