@@ -228,4 +228,6 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
   );
 };
 
-export default DivergenceReport;
+module.exports = {
+    handlePdfReportRequest
+};
