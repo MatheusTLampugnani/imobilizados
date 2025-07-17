@@ -81,12 +81,11 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       const tableColumns = ["Status", "Imobilizado", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
       const tableRows = [];
 
-      // Helper para criar linhas, garantindo que as propriedades sejam acessadas corretamente
       const createRow = (status, item) => [
         status,
         item.codigo_imobilizado || 'N/A',
         item.Inventário || 'N/A',
-        item['Subnº'] || 'N/A',
+        item.Subnº,
         item.Descrição || 'Sem descrição',
         item.CentroCusto || 'N/A'
       ];
