@@ -5,10 +5,10 @@ import autoTable from 'jspdf-autotable';
 import logoVideplast from '../assets/videplast-brand.png'; // Importa o logo para uso no PDF
 
 const statusColors = {
-  ok: '#12a351',
-  faltante: '#ea899a',
-  ccErrado: '#f2cb15',
-  naoCadastrado: '#f1ad44',
+  ok: '#d1e7dd',
+  faltante: '#f8d7da',
+  ccErrado: '#fff3cd',
+  naoCadastrado: '#cff4fc',
 };
 
 const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, expectedItems, inventoryCc }) => {
