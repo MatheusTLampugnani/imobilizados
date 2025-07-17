@@ -22,6 +22,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     if (show) {
       const collectedMap = new Map();
       collectedItems.forEach(item => {
+        // Usamos o código de inventário como chave única
         const key = String(item.Inventário || item.id).trim();
         if (key) collectedMap.set(key, item);
       });
@@ -38,21 +39,26 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       const newNotFound = collectedItems.filter(item => item.notFound);
       const foundAndCollected = collectedItems.filter(item => !item.notFound);
       
+      // Itera sobre os itens COLETADOS E CADASTRADOS
       foundAndCollected.forEach(collected => {
         const collectedKey = String(collected.Inventário).trim();
         const expectedItem = expectedMap.get(collectedKey);
 
         if (expectedItem) {
+          // O item foi coletado e era esperado. Agora, checa o Centro de Custo.
           if (String(collected.CentroCusto).trim() === String(inventoryCc).trim()) {
             newOk.push(collected);
           } else {
+            // Foi coletado, era esperado, mas o CC está errado no cadastro.
             newWrongCc.push(collected);
           }
         } else {
+            // Foi coletado, está no cadastro, mas não era esperado para este CC.
             newWrongCc.push(collected);
         }
       });
-
+      
+      // Itera sobre os itens ESPERADOS para encontrar os faltantes
       expectedItems.forEach(expected => {
         const expectedKey = String(expected.Inventário).trim();
         if (!collectedMap.has(expectedKey)) {
@@ -67,7 +73,6 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     }
   }, [show, collectedItems, expectedItems, inventoryCc]);
 
-
   const handleGenerateReport = async (format) => {
     setIsGenerating(format);
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -76,11 +81,12 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       const tableColumns = ["Status", "Imobilizado", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
       const tableRows = [];
 
+      // Helper para criar linhas, garantindo que as propriedades sejam acessadas corretamente
       const createRow = (status, item) => [
         status,
         item.codigo_imobilizado || 'N/A',
         item.Inventário || 'N/A',
-        item.Subnº,
+        item['Subnº'] || 'N/A',
         item.Descrição || 'Sem descrição',
         item.CentroCusto || 'N/A'
       ];
@@ -94,9 +100,8 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         const doc = new jsPDF();
         
         const imgWidth = 50;
-        const imgHeight = 12;
+        const imgHeight = 12; 
         const centerX = (doc.internal.pageSize.getWidth() - imgWidth) / 2;
-        
         doc.addImage(logoVideplast, 'PNG', centerX, 10, imgWidth, imgHeight);
 
         doc.setFontSize(18);
@@ -110,13 +115,13 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             if (data.section === 'body') {
               const status = data.row.raw[0];
               const colorMap = {
-                  'Ok': statusColors.ok,
-                  'Faltante': statusColors.faltante,
-                  'CC Errado': statusColors.ccErrado,
-                  'Não Cadastrado': statusColors.naoCadastrado,
+                'Ok': statusColors.ok,
+                'Faltante': statusColors.faltante,
+                'CC Errado': statusColors.ccErrado,
+                'Não Cadastrado': statusColors.naoCadastrado,
               };
               if (colorMap[status]) {
-                  data.cell.styles.fillColor = colorMap[status];
+                data.cell.styles.fillColor = colorMap[status];
               }
             }
           },
@@ -174,7 +179,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
         {okItems.length > 0 && (
           <div className="mb-4">
-            <h5>Itens Corretos ({okItems.length})</h5>
+            <h5>✅ Itens Corretos ({okItems.length})</h5>
             <ListGroup>
               {okItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} variant="success">
@@ -187,7 +192,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
         {missingItems.length > 0 && (
           <div className="mb-4">
-            <h5>Itens Faltantes ({missingItems.length})</h5>
+            <h5>❌ Itens Faltantes ({missingItems.length})</h5>
             <ListGroup>
               {missingItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} variant="danger">
@@ -200,7 +205,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
         {wrongCcItems.length > 0 && (
           <div className="mb-4">
-            <h5>Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
+            <h5>⚠️ Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
             <ListGroup>
               {wrongCcItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} variant="warning">
@@ -213,7 +218,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
         {notFoundItems.length > 0 && (
           <div className="mb-4">
-            <h5>Itens Não Cadastrados ({notFoundItems.length})</h5>
+            <h5>➕ Itens Não Cadastrados ({notFoundItems.length})</h5>
             <ListGroup>
               {notFoundItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} variant="info">
