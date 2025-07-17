@@ -103,8 +103,7 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
         doc.font('Helvetica-Bold').text(`   Subnº:`, 200, y, { continued: true }).font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`);
 
         const line2Y = y + 15;
-        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`, { continued: true });
-        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`, { continued: true });
+        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`);
         doc.font('Helvetica-Bold').text(`Data incorporação:`, 200, line2Y, { continued: true }).font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
 
         const line3Y = y + 30;
