@@ -23,13 +23,13 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       const collectedMap = new Map();
       collectedItems.forEach(item => {
         const key = String(item.Inventário || item.id).trim();
-        collectedMap.set(key, item);
+        if (key) collectedMap.set(key, item);
       });
 
       const expectedMap = new Map();
       expectedItems.forEach(item => {
         const key = String(item.Inventário || item.id).trim();
-        expectedMap.set(key, item);
+        if (key) expectedMap.set(key, item);
       });
 
       const newOk = [];
@@ -39,18 +39,23 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       const foundAndCollected = collectedItems.filter(item => !item.notFound);
       
       foundAndCollected.forEach(collected => {
-        const expectedItem = expectedMap.get(String(collected.Inventário).trim());
+        const collectedKey = String(collected.Inventário).trim();
+        const expectedItem = expectedMap.get(collectedKey);
+
         if (expectedItem) {
           if (String(collected.CentroCusto).trim() === String(inventoryCc).trim()) {
             newOk.push(collected);
           } else {
             newWrongCc.push(collected);
           }
+        } else {
+            newWrongCc.push(collected);
         }
       });
 
       expectedItems.forEach(expected => {
-        if (!collectedMap.has(String(expected.Inventário).trim())) {
+        const expectedKey = String(expected.Inventário).trim();
+        if (!collectedMap.has(expectedKey)) {
           newMissing.push(expected);
         }
       });
@@ -61,6 +66,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       setNotFoundItems(newNotFound);
     }
   }, [show, collectedItems, expectedItems, inventoryCc]);
+
 
   const handleGenerateReport = async (format) => {
     setIsGenerating(format);
@@ -168,7 +174,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
         {okItems.length > 0 && (
           <div className="mb-4">
-            <h5>✅ Itens Corretos ({okItems.length})</h5>
+            <h5>Itens Corretos ({okItems.length})</h5>
             <ListGroup>
               {okItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} variant="success">
@@ -181,7 +187,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
         {missingItems.length > 0 && (
           <div className="mb-4">
-            <h5>❌ Itens Faltantes ({missingItems.length})</h5>
+            <h5>Itens Faltantes ({missingItems.length})</h5>
             <ListGroup>
               {missingItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} variant="danger">
@@ -194,7 +200,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
         {wrongCcItems.length > 0 && (
           <div className="mb-4">
-            <h5>⚠️ Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
+            <h5>Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
             <ListGroup>
               {wrongCcItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} variant="warning">
@@ -207,7 +213,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
         {notFoundItems.length > 0 && (
           <div className="mb-4">
-            <h5>➕ Itens Não Cadastrados ({notFoundItems.length})</h5>
+            <h5>Itens Não Cadastrados ({notFoundItems.length})</h5>
             <ListGroup>
               {notFoundItems.map((item, index) => (
                 <ListGroup.Item key={item.id || index} variant="info">
