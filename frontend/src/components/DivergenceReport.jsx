@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Button, ListGroup, Alert, Spinner } from 'react-bootstrap';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import logoVideplast from '../assets/videplast-brand.png'; // Importa o logo
+import logoVideplast from '../assets/videplast-brand.png';
 
 const statusColors = {
-  ok: '#d1e7dd',          // Verde
-  faltante: '#f8d7da',      // Vermelho
-  ccErrado: '#fff3cd',      // Amarelo
-  naoCadastrado: '#cff4fc', // Azul
+  ok: '#1eff00ff',
+  faltante: '#ff0015ff',
+  ccErrado: '#fbff00ff',
+  naoCadastrado: '#ffc400ff',
 };
 
 const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, expectedItems, inventoryCc }) => {
@@ -22,7 +22,6 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     if (show) {
       const collectedMap = new Map();
       collectedItems.forEach(item => {
-        // Usa o 'Inventário' como chave primária para a comparação
         const key = String(item.Inventário || item.id).trim();
         collectedMap.set(key, item);
       });
@@ -75,7 +74,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         status,
         item.codigo_imobilizado || 'N/A',
         item.Inventário || 'N/A',
-        item['Subnº'] || 'N/A',
+        item.Subnº,
         item.Descrição || 'Sem descrição',
         item.CentroCusto || 'N/A'
       ];
@@ -84,13 +83,14 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       missingItems.forEach(item => tableRows.push(createRow("Faltante", item)));
       wrongCcItems.forEach(item => tableRows.push(createRow("CC Errado", item)));
       notFoundItems.forEach(item => tableRows.push(createRow("Não Cadastrado", item)));
-
+      
       if (format === 'pdf') {
         const doc = new jsPDF();
         
         const imgWidth = 50;
-        const imgHeight = 12; 
+        const imgHeight = 12;
         const centerX = (doc.internal.pageSize.getWidth() - imgWidth) / 2;
+        
         doc.addImage(logoVideplast, 'PNG', centerX, 10, imgWidth, imgHeight);
 
         doc.setFontSize(18);
@@ -140,6 +140,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       setIsGenerating(null);
     }
   };
+
 
   const renderItemDetails = (item, type) => (
     <>
