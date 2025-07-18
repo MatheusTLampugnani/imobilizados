@@ -39,39 +39,34 @@ async function handlePdfReportRequest(req, res) {
 
     } catch (dbError) {
         console.error('ERRO AO GERAR PDF:', dbError);
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
     }
 }
 
 function gerarRelatorioPDF({ data, centro_custo }, res) {
-    const doc = new PDFDocument({ 
-        size: 'A4', 
-        margin: 40, 
-        bufferPages: true // Essencial para o rodapé funcionar
-    });
-    
+    const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
     const filename = `Relatorio_CC_${centro_custo}.pdf`;
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     doc.pipe(res);
 
-    // --- FUNÇÕES DE DESENHO ---
-
     const drawHeader = (doc) => {
-        const logoPath = path.join(__dirname, '..', '..', 'frontend', 'public', 'videplast_logo.png');
-        
+        const logoPath = path.join(__dirname, '..', '..', 'frontend', 'src', 'assets', 'videplast-brand.png');
+        const centerX = (doc.page.width - 120) / 2;
+
         if (fs.existsSync(logoPath)) {
-            doc.image(logoPath, {
-                fit: [150, 150],
-                align: 'center',
-                y: 30
-            });
+            doc.image(logoPath, centerX, 30, { width: 120 });
         }
 
-        doc.fontSize(16).font('Helvetica-Bold').fillColor('#333333').text('Relatório de Imobilizados', { align: 'center' });
+        doc.moveDown(3);
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#000000').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
+        doc.moveDown(1);
+        doc.fontSize(10).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, { align: 'left' });
         doc.moveDown(0.5);
-        doc.fontSize(11).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, { align: 'center' });
+        doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#000000").lineWidth(1).stroke();
         doc.moveDown(1);
     };
 
@@ -79,72 +74,54 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
         const pageCount = doc.bufferedPageRange().count;
         for (let i = 0; i < pageCount; i++) {
             doc.switchToPage(i);
-            
-            // Define uma posição Y segura, bem dentro da margem inferior
-            const yPos = doc.page.height - 35;
-
+            const bottom = doc.page.margins.bottom;
             const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
-            doc.fontSize(8).font('Helvetica').fillColor('#666666');
-            doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
-            doc.text(`Página ${i + 1} de ${pageCount}`, doc.page.margins.left, yPos, { 
-                align: 'right', 
-                width: doc.page.width - doc.page.margins.left - doc.page.margins.right 
-            });
+            doc.fontSize(8).font('Helvetica').fillColor('#000');
+            doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, doc.page.height - bottom + 10, { align: 'left' });
+            doc.text(`Página ${i + 1} de ${pageCount}`, 0, doc.page.height - bottom + 10, { align: 'right' });
         }
-    };
-    
-    const drawItem = (doc, item) => {
-        const leftColX = doc.page.margins.left;
-        const rightColX = 320; // Posição da segunda coluna
-        const labelWidth = 85;
-        const valueWidth = 180;
-
-        doc.font('Helvetica-Bold').fontSize(8);
-        doc.fillColor('#333');
-
-        // Linha 1
-        doc.text('Imobilizado:', leftColX, doc.y);
-        doc.font('Helvetica').text(`${item.codigo_imobilizado || 'N/A'}`, leftColX + labelWidth);
-        doc.font('Helvetica-Bold').text('Subnº:', rightColX, doc.y - doc.currentLineHeight());
-        doc.font('Helvetica').text(`${item.sub_numero ?? 'N/A'}`, rightColX + labelWidth);
-
-        // Linha 2
-        doc.font('Helvetica-Bold').text('Inventário:', leftColX);
-        doc.font('Helvetica').text(`${item.codigo_inventario || 'N/A'}`, leftColX + labelWidth);
-        doc.font('Helvetica-Bold').text('Data Incorporação:', rightColX, doc.y - doc.currentLineHeight());
-        doc.font('Helvetica').text(`${item.data_incorporacao || 'N/A'}`, rightColX + labelWidth);
-
-        // Linha 3
-        doc.font('Helvetica-Bold').text('Inventário Antigo:', leftColX);
-        doc.font('Helvetica').text(`${item.codigo_inventario_antigo || 'N/A'}`, leftColX + labelWidth);
-        doc.font('Helvetica-Bold').text('Nº Série:', rightColX, doc.y - doc.currentLineHeight());
-        doc.font('Helvetica').text(`${item.numero_serie || 'N/A'}`, rightColX + labelWidth);
-
-        // Linha 4 (Descrição com quebra de linha)
-        const currentY = doc.y;
-        doc.font('Helvetica-Bold').text('Descrição:', leftColX, currentY);
-        doc.font('Helvetica').text(`${item.descricao || 'N/A'}`, leftColX + labelWidth, currentY, { width: 425 });
-
-        // Linha divisória
-        doc.moveDown(2);
-        doc.moveTo(leftColX, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
-        doc.moveDown(2);
     };
 
     drawHeader(doc);
 
-    data.forEach((item, index) => {
-        // Lógica de quebra de página
-        const pageBottom = doc.page.height - doc.page.margins.bottom;
-        const estimatedHeight = 100; // Altura segura estimada para cada item
+    for (let i = 0; i < data.length; i++) {
+        const item = data[i];
+        
+        // Calcula a altura da descrição para estimar o espaço total necessário
+        const descHeight = doc.heightOfString(item.descricao || 'N/A', { width: 480 });
+        const estimatedHeight = 90 + descHeight;
 
-        if (doc.y + estimatedHeight > pageBottom) {
+        // Se o item não couber na página atual, cria uma nova página
+        if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
             doc.addPage();
             drawHeader(doc);
         }
-        drawItem(doc, item);
-    });
+
+        const y = doc.y;
+        doc.fontSize(9).fillColor('#000');
+
+        doc.font('Helvetica-Bold').text(`Imobilizado:`, 40, y, { continued: true }).font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`);
+        doc.font('Helvetica-Bold').text(`Subnº:`, 200, y, { continued: true }).font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`);
+        
+        const line2Y = y + 15;
+        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`);
+        doc.font('Helvetica-Bold').text('Inventário Antigo:', 200, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`);
+        doc.font('Helvetica-Bold').text(`Data incorporação:`, 380, line2Y, { continued: true }).font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
+
+        const line3Y = y + 30;
+        doc.font('Helvetica-Bold').text('Descrição:', 40, line3Y);
+        doc.font('Helvetica').text(`${item.descricao || 'N/A'}`, 95, line3Y, { width: 460 });
+
+        const currentDescHeight = doc.heightOfString(item.descricao || 'N/A', { width: 460 });
+        const line4Y = line3Y + currentDescHeight + 2;
+        doc.font('Helvetica-Bold').text('Nº Série:', 40, line4Y, { continued: true }).font('Helvetica').text(` ${item.numero_serie || 'N/A'}`);
+
+        doc.moveDown(1.5);
+        const finalY = doc.y;
+        doc.moveTo(40, finalY).lineTo(555, finalY).strokeColor("#cccccc").lineWidth(0.5).stroke();
+        doc.moveDown(1);
+    }
 
     drawFooter(doc);
     doc.end();
