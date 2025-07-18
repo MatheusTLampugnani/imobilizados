@@ -39,7 +39,6 @@ async function handlePdfReportRequest(req, res) {
 
     } catch (dbError) {
         console.error('ERRO AO GERAR PDF:', dbError);
-        res.setHeader('Access-Control-Allow-Origin', '*');
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
     }
@@ -54,7 +53,7 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
     doc.pipe(res);
 
     const drawHeader = (doc) => {
-        const logoPath = path.join(__dirname, '..', '..', 'frontend', 'src', 'assets', 'videplast-brand.png');
+        const logoPath = path.join(__dirname, '..', '..', 'frontend', 'public', 'videplast_logo.png');
         const centerX = (doc.page.width - 120) / 2;
 
         if (fs.existsSync(logoPath)) {
@@ -64,9 +63,9 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
         doc.moveDown(3);
         doc.fontSize(14).font('Helvetica-Bold').fillColor('#000000').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
         doc.moveDown(1);
-        doc.fontSize(10).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, { align: 'left' });
+        doc.fontSize(10).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, doc.page.margins.left, doc.y, { align: 'left' });
         doc.moveDown(0.5);
-        doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#000000").lineWidth(1).stroke();
+        doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#000000").lineWidth(1).stroke();
         doc.moveDown(1);
     };
 
@@ -74,79 +73,53 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
         const pageCount = doc.bufferedPageRange().count;
         for (let i = 0; i < pageCount; i++) {
             doc.switchToPage(i);
-            
-            // Define uma posição Y fixa a 30 pontos da base da página, garantindo que esteja dentro da área de desenho.
-            const yPos = doc.page.height - 30;
-
+            const yPos = doc.page.height - 30; // Posição segura dentro da margem
             const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
             doc.fontSize(8).font('Helvetica').fillColor('#000');
-            
-            doc.text(`Gerado em: ${datetime}`, 
-                doc.page.margins.left, // Posição X
-                yPos,                  // Posição Y corrigida
-                { align: 'left' }
-            );
-
-            doc.text(`Página ${i + 1} de ${pageCount}`, 
-                0,                     // Posição X (ignorado pelo align: 'right')
-                yPos,                  // Posição Y corrigida
-                { align: 'right' }
-            );
+            doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
+            doc.text(`Página ${i + 1} de ${pageCount}`, 0, yPos, { align: 'right', width: doc.page.width - doc.page.margins.right });
         }
     };
 
-
     drawHeader(doc);
 
-    for (let i = 0; i < data.length; i++) {
-        const item = data[i];
-        const estimatedHeight = 110;
-
-        if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
-             if (i < data.length) {
-                doc.addPage();
-                drawHeader(doc);
-            }
-        }
-
-const y = doc.y;
-        doc.fontSize(9).fillColor('#000');
-
-        doc.font('Helvetica-Bold').text('Imobilizado:', 40, y, { continued: true })
-           .font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`);
+    data.forEach((item, index) => {
+        const startY = doc.y;
         
-        doc.font('Helvetica-Bold').text('Subnº:', 250, y, { continued: true })
-           .font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`);
+        escreverItem(doc, item);
 
-        const line2Y = y + 15;
-        doc.font('Helvetica-Bold').text('Inventário:', 40, line2Y, { continued: true })
-           .font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`);
+        const endY = doc.y;
+        const itemHeight = endY - startY;
 
-        doc.font('Helvetica-Bold').text('Data Incorporação:', 250, line2Y, { continued: true })
-           .font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
-
-        const line3Y = y + 30;
-        doc.font('Helvetica-Bold').text('Inventário Antigo:', 40, line3Y, { continued: true })
-           .font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`);
-           
-        doc.font('Helvetica-Bold').text('Nº Série:', 250, line3Y, { continued: true })
-            .font('Helvetica').text(` ${item.numero_serie || 'N/A'}`);
-
-        const line4Y = y + 45;
-        doc.font('Helvetica-Bold').text('Descrição:', 40, line4Y, { continued: true })
-           .font('Helvetica').text(` ${item.descricao || 'N/A'}`, { width: 480 });
-
-        const descHeight = doc.heightOfString(item.descricao || 'N/A', { width: 480 });
-        doc.y = line4Y + descHeight + 5; // Posição final antes da linha
-
-        doc.moveDown(1);
-        doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
-        doc.moveDown(1);
-    }
+        if (index < data.length - 1 && (doc.y + itemHeight > doc.page.height - doc.page.margins.bottom)) {
+            doc.addPage();
+            drawHeader(doc);
+        }
+    });
 
     drawFooter(doc);
     doc.end();
+}
+
+function escreverItem(doc, item) {
+    const y = doc.y;
+    doc.fontSize(9).fillColor('#000');
+
+    doc.font('Helvetica-Bold').text('Imobilizado:', 40, y).font('Helvetica').text(`${item.codigo_imobilizado || 'N/A'}`, 130, y);
+    doc.font('Helvetica-Bold').text('Subnº:', 250, y).font('Helvetica').text(`${item.sub_numero ?? 'N/A'}`, 350, y);
+
+    doc.font('Helvetica-Bold').text('Inventário:', 40, doc.y).font('Helvetica').text(`${item.codigo_inventario || 'N/A'}`, 130, doc.y);
+    doc.font('Helvetica-Bold').text('Data Incorporação:', 250, doc.y).font('Helvetica').text(`${item.data_incorporacao || 'N/A'}`, 350, doc.y);
+
+    doc.font('Helvetica-Bold').text('Inventário Antigo:', 40, doc.y).font('Helvetica').text(`${item.codigo_inventario_antigo || 'N/A'}`, 130, doc.y);
+    doc.font('Helvetica-Bold').text('Nº Série:', 250, doc.y).font('Helvetica').text(`${item.numero_serie || 'N/A'}`, 350, doc.y);
+    
+    doc.font('Helvetica-Bold').text('Descrição:', 40, doc.y).font('Helvetica').text(`${item.descricao || 'N/A'}`, 130, doc.y, { width: 425 });
+
+    doc.moveDown(1);
+    doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
+    doc.moveDown(1);
 }
 
 module.exports = {
