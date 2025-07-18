@@ -104,6 +104,7 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
 
         const line2Y = y + 15;
         doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`);
+        doc.font('Helvetica-Bold').text('Número de inventario anterior:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`);
         doc.font('Helvetica-Bold').text(`Data incorporação:`, 200, line2Y, { continued: true }).font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
 
         const line3Y = y + 30;
