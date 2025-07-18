@@ -74,20 +74,34 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
         const pageCount = doc.bufferedPageRange().count;
         for (let i = 0; i < pageCount; i++) {
             doc.switchToPage(i);
-            const bottom = doc.page.margins.bottom;
+            
+            // Define uma posição Y fixa a 30 pontos da base da página, garantindo que esteja dentro da área de desenho.
+            const yPos = doc.page.height - 30;
+
             const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
             doc.fontSize(8).font('Helvetica').fillColor('#000');
-            doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, doc.page.height - bottom + 10, { align: 'left' });
-            doc.text(`Página ${i + 1} de ${pageCount}`, 0, doc.page.height - bottom + 10, { align: 'right' });
+            
+            doc.text(`Gerado em: ${datetime}`, 
+                doc.page.margins.left, // Posição X
+                yPos,                  // Posição Y corrigida
+                { align: 'left' }
+            );
+
+            doc.text(`Página ${i + 1} de ${pageCount}`, 
+                0,                     // Posição X (ignorado pelo align: 'right')
+                yPos,                  // Posição Y corrigida
+                { align: 'right' }
+            );
         }
     };
+
 
     drawHeader(doc);
 
     for (let i = 0; i < data.length; i++) {
         const item = data[i];
-        const estimatedHeight = 90;
+        const estimatedHeight = 110;
 
         if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
              if (i < data.length) {
