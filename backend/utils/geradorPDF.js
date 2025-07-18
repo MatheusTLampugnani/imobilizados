@@ -96,26 +96,37 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
             }
         }
 
-        const y = doc.y;
+const y = doc.y;
         doc.fontSize(9).fillColor('#000');
 
-        doc.font('Helvetica-Bold').text(`Imobilizado:`, 40, y, { continued: true }).font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`, { continued: true });
-        doc.font('Helvetica-Bold').text(`   Subnº:`, 200, y, { continued: true }).font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`);
+        doc.font('Helvetica-Bold').text('Imobilizado:', 40, y, { continued: true })
+           .font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`);
+        
+        doc.font('Helvetica-Bold').text('Subnº:', 250, y, { continued: true })
+           .font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`);
 
         const line2Y = y + 15;
-        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`);
-        doc.font('Helvetica-Bold').text('Número de inventario anterior:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`);
-        doc.font('Helvetica-Bold').text(`Data incorporação:`, 200, line2Y, { continued: true }).font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
+        doc.font('Helvetica-Bold').text('Inventário:', 40, line2Y, { continued: true })
+           .font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`);
+
+        doc.font('Helvetica-Bold').text('Data Incorporação:', 250, line2Y, { continued: true })
+           .font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
 
         const line3Y = y + 30;
-        doc.font('Helvetica-Bold').text('Descrição:', 40, line3Y, { continued: true })
+        doc.font('Helvetica-Bold').text('Inventário Antigo:', 40, line3Y, { continued: true })
+           .font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`);
+           
+        doc.font('Helvetica-Bold').text('Nº Série:', 250, line3Y, { continued: true })
+            .font('Helvetica').text(` ${item.numero_serie || 'N/A'}`);
+
+        const line4Y = y + 45;
+        doc.font('Helvetica-Bold').text('Descrição:', 40, line4Y, { continued: true })
            .font('Helvetica').text(` ${item.descricao || 'N/A'}`, { width: 480 });
 
         const descHeight = doc.heightOfString(item.descricao || 'N/A', { width: 480 });
-        const line4Y = line3Y + descHeight + 2;
-        doc.font('Helvetica-Bold').text('Nº Série:', 40, line4Y, { continued: true }).font('Helvetica').text(` ${item.numero_serie || 'N/A'}`);
+        doc.y = line4Y + descHeight + 5; // Posição final antes da linha
 
-        doc.moveDown(1.5);
+        doc.moveDown(1);
         doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
         doc.moveDown(1);
     }
