@@ -53,67 +53,81 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     doc.pipe(res);
 
-    const drawHeader = (doc) => {
+    const drawHeader = (docInstance) => {
         const logoPath = path.join(__dirname, '..', '..', 'frontend', 'src', 'assets', 'videplast-brand.png');
-        const centerX = (doc.page.width - 120) / 2;
+        const centerX = (docInstance.page.width - 120) / 2;
 
         if (fs.existsSync(logoPath)) {
-            doc.image(logoPath, centerX, 30, { width: 120 });
+            docInstance.image(logoPath, centerX, 30, { width: 120 });
         }
 
-        doc.moveDown(3);
-        doc.fontSize(14).font('Helvetica-Bold').fillColor('#000000').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
-        doc.moveDown(1);
-        doc.fontSize(10).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, { align: 'left' });
-        doc.moveDown(0.5);
-        doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#000000").lineWidth(1).stroke();
-        doc.moveDown(1);
+        docInstance.moveDown(3);
+        docInstance.fontSize(14).font('Helvetica-Bold').fillColor('#000000').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
+        docInstance.moveDown(1);
+        docInstance.fontSize(10).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, { align: 'left' });
+        docInstance.moveDown(0.5);
+        docInstance.moveTo(40, docInstance.y).lineTo(555, docInstance.y).strokeColor("#000000").lineWidth(1).stroke();
+        docInstance.moveDown(1);
     };
 
-    const drawFooter = (doc) => {
-        const pageCount = doc.bufferedPageRange().count;
+    const drawFooter = (docInstance) => {
+        const pageCount = docInstance.bufferedPageRange().count;
         for (let i = 0; i < pageCount; i++) {
-            doc.switchToPage(i);
-            const bottom = doc.page.margins.bottom;
+            docInstance.switchToPage(i);
+            const bottom = docInstance.page.margins.bottom;
             const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
-            doc.fontSize(8).font('Helvetica').fillColor('#000');
-            doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, doc.page.height - bottom + 10, { align: 'left' });
-            doc.text(`Página ${i + 1} de ${pageCount}`, 0, doc.page.height - bottom + 10, { align: 'right' });
+            docInstance.fontSize(8).font('Helvetica').fillColor('#000');
+            docInstance.text(`Gerado em: ${datetime}`, docInstance.page.margins.left, docInstance.page.height - bottom + 10, { align: 'left' });
+            docInstance.text(`Página ${i + 1} de ${pageCount}`, 0, docInstance.page.height - bottom + 10, { align: 'right' });
         }
     };
 
     drawHeader(doc);
 
-    for (let i = 0; i < data.length; i++) {
-        const item = data[i];
-        const estimatedHeight = 90;
+    for (const item of data) {
+        const descHeight = doc.heightOfString(item.descricao || 'N/A', { width: 480 });
+        // Estimativa mais precisa da altura do bloco do item
+        const estimatedHeight = 60 + descHeight;
 
+        // **CORREÇÃO PRINCIPAL:** Verifica se o item cabe ANTES de desenhar
         if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
-             if (i < data.length) {
-                doc.addPage();
-                drawHeader(doc);
-            }
+            doc.addPage();
+            drawHeader(doc);
         }
 
         const y = doc.y;
         doc.fontSize(9).fillColor('#000');
 
-        doc.font('Helvetica-Bold').text(`Imobilizado:`, 40, y, { continued: true }).font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`, { continued: true });
-        doc.font('Helvetica-Bold').text(`   Subnº:`, 200, y, { continued: true }).font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`);
+        // Linha 1
+        doc.font('Helvetica-Bold').text(`Imobilizado:`, 40, y)
+           .font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`, 150, y);
+        doc.font('Helvetica-Bold').text(`Subnº:`, 300, y)
+           .font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`, 400, y);
 
+        // Linha 2
         const line2Y = y + 15;
-        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`, { continued: true });
-        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`, { continued: true });
-        doc.font('Helvetica-Bold').text(`Data incorporação:`, 200, line2Y, { continued: true }).font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
+        doc.font('Helvetica-Bold').text('Número de inventário:', 40, line2Y)
+           .font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`, 150, line2Y);
+        doc.font('Helvetica-Bold').text(`Data incorporação:`, 300, line2Y)
+           .font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`, 400, line2Y);
 
+        // Linha 3
         const line3Y = y + 30;
-        doc.font('Helvetica-Bold').text('Descrição:', 40, line3Y, { continued: true })
-           .font('Helvetica').text(` ${item.descricao || 'N/A'}`, { width: 480 });
+        doc.font('Helvetica-Bold').text('Inventário Antigo:', 40, line3Y)
+           .font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`, 150, line3Y);
+        
+        // Linha 4 (Descrição)
+        const line4Y = y + 45;
+        doc.font('Helvetica-Bold').text('Descrição:', 40, line4Y)
+           .font('Helvetica').text(`${item.descricao || 'N/A'}`, 150, line4Y, { width: 405 });
+        
+        // Pula para a posição Y após a descrição (que tem altura variável)
+        const currentY = doc.y;
 
-        const descHeight = doc.heightOfString(item.descricao || 'N/A', { width: 480 });
-        const line4Y = line3Y + descHeight + 2;
-        doc.font('Helvetica-Bold').text('Nº Série:', 40, line4Y, { continued: true }).font('Helvetica').text(` ${item.numero_serie || 'N/A'}`);
+        // Linha 5 (Nº de Série)
+        doc.font('Helvetica-Bold').text('Nº Série:', 40, currentY)
+           .font('Helvetica').text(` ${item.numero_serie || 'N/A'}`, 150, currentY);
 
         doc.moveDown(1.5);
         doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
