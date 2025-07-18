@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
-const Pdfmake = require('pdfmake');
+const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
@@ -9,20 +9,8 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Função para converter a imagem do logo para base64
-const getLogoBase64 = () => {
-    const logoPath = path.join(__dirname, '..', '..', 'frontend', 'src', 'assets', 'videplast-brand.png');
-    if (fs.existsSync(logoPath)) {
-        // Retorna como uma data URL, que é o formato que o pdfmake espera
-        return `data:image/png;base64,${fs.readFileSync(logoPath).toString('base64')}`;
-    }
-    return null;
-};
-
-const logoBase64 = getLogoBase64();
-
 async function handlePdfReportRequest(req, res) {
-    // ... (o início da sua função continua igual)
+    res.setHeader('Access-Control-Allow-Origin', '*');
     const parsedUrl = url.parse(req.url, true);
     const { centro_custo } = parsedUrl.query;
 
@@ -43,89 +31,97 @@ async function handlePdfReportRequest(req, res) {
 
         if (error) throw error;
 
-        if (!data || !data.length === 0) {
+        if (!data || data.length === 0) {
             res.writeHead(404, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({ message: `Nenhum imobilizado encontrado para o Centro de Custo ${centro_custo}.` }));
         }
-        
         gerarRelatorioPDF({ data, centro_custo }, res);
 
     } catch (dbError) {
         console.error('ERRO AO GERAR PDF:', dbError);
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
     }
 }
 
 function gerarRelatorioPDF({ data, centro_custo }, res) {
-    const fonts = {
-        Roboto: {
-            normal: path.join(__dirname, '..', '..', 'frontend', 'public', 'fonts', 'Roboto-Regular.ttf'), // Você precisará adicionar as fontes
-            bold: path.join(__dirname, '..', '..', 'frontend', 'public', 'fonts', 'Roboto-Medium.ttf'),
-        }
-    };
-    const printer = new Pdfmake(fonts);
-
-    const tableHeader = ["Imobilizado", "Subnº", "Inventário", "Descrição", "Nº Série", "Data Incorporação"];
-    const tableBody = data.map(item => [
-        item.codigo_imobilizado || 'N/A',
-        item.sub_numero ?? 'N/A',
-        item.codigo_inventario || 'N/A',
-        item.descricao || 'Sem descrição',
-        item.numero_serie || 'N/A',
-        item.data_incorporacao || 'N/A'
-    ]);
-
-    const docDefinition = {
-        pageSize: 'A4',
-        pageMargins: [40, 100, 40, 60], // [left, top, right, bottom]
-        header: {
-            margin: [40, 20, 40, 0],
-            stack: [
-                logoBase64 ? { image: logoBase64, width: 150, alignment: 'center' } : {},
-                { text: 'RELATÓRIO DE IMOBILIZADOS', style: 'headerTitle', alignment: 'center', margin: [0, 10, 0, 0] },
-                { text: `Centro de Custo: ${centro_custo}`, style: 'subHeader', alignment: 'left', margin: [0, 10, 0, 0] }
-            ]
-        },
-        footer: (currentPage, pageCount) => ({
-            columns: [
-                { text: `Gerado em: ${new Date().toLocaleString('pt-BR')}`, alignment: 'left', style: 'footer' },
-                { text: `Página ${currentPage} de ${pageCount}`, alignment: 'right', style: 'footer' }
-            ],
-            margin: [40, 0]
-        }),
-        content: [
-            {
-                layout: 'lightHorizontalLines', // optional
-                table: {
-                    headerRows: 1,
-                    widths: ['auto', 'auto', 'auto', '*', 'auto', 'auto'],
-                    body: [
-                        tableHeader.map(text => ({ text, style: 'tableHeader' })),
-                        ...tableBody
-                    ]
-                }
-            }
-        ],
-        styles: {
-            headerTitle: { fontSize: 16, bold: true },
-            subHeader: { fontSize: 12 },
-            tableHeader: { bold: true, fontSize: 9, color: 'black' },
-            footer: { fontSize: 8 }
-        },
-        defaultStyle: {
-            font: 'Roboto',
-            fontSize: 8
-        }
-    };
-
-    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
+    const filename = `Relatorio_CC_${centro_custo}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="Relatorio_CC_${centro_custo}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    doc.pipe(res);
 
-    pdfDoc.pipe(res);
-    pdfDoc.end();
+    const drawHeader = (doc) => {
+        const logoPath = path.join(__dirname, '..', '..', 'frontend', 'src', 'assets', 'videplast-brand.png');
+        const centerX = (doc.page.width - 120) / 2;
+
+        if (fs.existsSync(logoPath)) {
+            doc.image(logoPath, centerX, 30, { width: 120 });
+        }
+
+        doc.moveDown(3);
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#000000').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
+        doc.moveDown(1);
+        doc.fontSize(10).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, { align: 'left' });
+        doc.moveDown(0.5);
+        doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#000000").lineWidth(1).stroke();
+        doc.moveDown(1);
+    };
+
+    const drawFooter = (doc) => {
+        const pageCount = doc.bufferedPageRange().count;
+        for (let i = 0; i < pageCount; i++) {
+            doc.switchToPage(i);
+            const bottom = doc.page.margins.bottom;
+            const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+            doc.fontSize(8).font('Helvetica').fillColor('#000');
+            doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, doc.page.height - bottom + 10, { align: 'left' });
+            doc.text(`Página ${i + 1} de ${pageCount}`, 0, doc.page.height - bottom + 10, { align: 'right' });
+        }
+    };
+
+    drawHeader(doc);
+
+    for (let i = 0; i < data.length; i++) {
+        const item = data[i];
+        const estimatedHeight = 90;
+
+        if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
+             if (i < data.length) {
+                doc.addPage();
+                drawHeader(doc);
+            }
+        }
+
+        const y = doc.y;
+        doc.fontSize(9).fillColor('#000');
+
+        doc.font('Helvetica-Bold').text(`Imobilizado:`, 40, y, { continued: true }).font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`, { continued: true });
+        doc.font('Helvetica-Bold').text(`   Subnº:`, 200, y, { continued: true }).font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`);
+
+        const line2Y = y + 15;
+        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`, { continued: true });
+        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`, { continued: true });
+        doc.font('Helvetica-Bold').text(`Data incorporação:`, 200, line2Y, { continued: true }).font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
+
+        const line3Y = y + 30;
+        doc.font('Helvetica-Bold').text('Descrição:', 40, line3Y, { continued: true })
+           .font('Helvetica').text(` ${item.descricao || 'N/A'}`, { width: 480 });
+
+        const descHeight = doc.heightOfString(item.descricao || 'N/A', { width: 480 });
+        const line4Y = line3Y + descHeight + 2;
+        doc.font('Helvetica-Bold').text('Nº Série:', 40, line4Y, { continued: true }).font('Helvetica').text(` ${item.numero_serie || 'N/A'}`);
+
+        doc.moveDown(1.5);
+        doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
+        doc.moveDown(1);
+    }
+
+    drawFooter(doc);
+    doc.end();
 }
 
 module.exports = {
