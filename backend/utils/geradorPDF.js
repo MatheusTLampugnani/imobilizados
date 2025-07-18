@@ -77,11 +77,17 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
         ];
         tableRows.push(row);
     });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // Conecta o PDF diretamente à resposta
+    doc.pipe(res);
 
     autoTable(doc, {
         head: [tableColumns],
         body: tableRows,
-        startY: 50, // Posição inicial da tabela para dar espaço ao cabeçalho
+        startY: 50,
         didDrawPage: (data) => {
             // Cabeçalho
             if (logoBase64) {
@@ -104,15 +110,11 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
             doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width - 14, doc.internal.pageSize.height - 10, { align: 'right' });
         },
         headStyles: { fillColor: [41, 46, 51], textColor: [255, 255, 255] },
-        margin: { top: 60 } // Margem superior para o cabeçalho personalizado
+        margin: { top: 60 }
     });
     
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    
-    // Converte o documento para um Buffer e envia
-    const pdfBuffer = doc.output('arraybuffer');
-    res.send(Buffer.from(pdfBuffer));
+    // Finaliza o documento e o envio
+    doc.end();
 }
 
 module.exports = {
