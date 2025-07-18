@@ -85,42 +85,60 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
 
     drawHeader(doc);
 
-    for (let i = 0; i < data.length; i++) {
-        const item = data[i];
-        
-        // Calcula a altura da descrição para estimar o espaço total necessário
-        const descHeight = doc.heightOfString(item.descricao || 'N/A', { width: 480 });
-        const estimatedHeight = 90 + descHeight;
+    for (const item of data) {
+        // Estima a altura do bloco de conteúdo
+        const descHeight = doc.heightOfString(item.descricao || 'N/A', { width: 460 });
+        const blockHeight = (4 * 15) + descHeight + 20; // 4 linhas de texto + altura da descrição + margem
 
-        // Se o item não couber na página atual, cria uma nova página
-        if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
+        // Se o bloco não couber na página, adiciona uma nova página
+        if (doc.y + blockHeight > doc.page.height - doc.page.margins.bottom) {
             doc.addPage();
             drawHeader(doc);
         }
 
-        const y = doc.y;
+        const startX = 40;
+        const labelColX = startX;
+        const valueColX = startX + 110;
+        const secondLabelColX = 300;
+        const secondValueColX = 400;
+        let currentY = doc.y;
+
         doc.fontSize(9).fillColor('#000');
 
-        doc.font('Helvetica-Bold').text(`Imobilizado:`, 40, y, { continued: true }).font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`);
-        doc.font('Helvetica-Bold').text(`Subnº:`, 200, y, { continued: true }).font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`);
+        // Linha 1
+        doc.font('Helvetica-Bold').text('Imobilizado:', labelColX, currentY);
+        doc.font('Helvetica').text(`${item.codigo_imobilizado || 'N/A'}`, valueColX, currentY);
+        doc.font('Helvetica-Bold').text('Subnº:', secondLabelColX, currentY);
+        doc.font('Helvetica').text(`${item.sub_numero ?? 'N/A'}`, secondValueColX, currentY);
+        currentY += 15;
+
+        // Linha 2
+        doc.font('Helvetica-Bold').text('Número de Inventário:', labelColX, currentY);
+        doc.font('Helvetica').text(`${item.codigo_inventario || 'N/A'}`, valueColX, currentY);
+        doc.font('Helvetica-Bold').text('Inventário Antigo:', secondLabelColX, currentY);
+        doc.font('Helvetica').text(`${item.codigo_inventario_antigo || 'N/A'}`, secondValueColX, currentY);
+        currentY += 15;
         
-        const line2Y = y + 15;
-        doc.font('Helvetica-Bold').text('Número de inventario:', 40, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`);
-        doc.font('Helvetica-Bold').text('Inventário Antigo:', 200, line2Y, { continued: true }).font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`);
-        doc.font('Helvetica-Bold').text(`Data incorporação:`, 380, line2Y, { continued: true }).font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
+        // Linha 3
+        doc.font('Helvetica-Bold').text('Data Incorporação:', labelColX, currentY);
+        doc.font('Helvetica').text(`${item.data_incorporacao || 'N/A'}`, valueColX, currentY);
+        currentY += 15;
 
-        const line3Y = y + 30;
-        doc.font('Helvetica-Bold').text('Descrição:', 40, line3Y);
-        doc.font('Helvetica').text(`${item.descricao || 'N/A'}`, 95, line3Y, { width: 460 });
+        // Linha 4 - Descrição (altura variável)
+        doc.font('Helvetica-Bold').text('Descrição:', labelColX, currentY);
+        doc.font('Helvetica').text(`${item.descricao || 'N/A'}`, valueColX, currentY, { width: 420 });
+        currentY = doc.y + 5; // Atualiza a posição Y após o texto de altura variável
 
-        const currentDescHeight = doc.heightOfString(item.descricao || 'N/A', { width: 460 });
-        const line4Y = line3Y + currentDescHeight + 2;
-        doc.font('Helvetica-Bold').text('Nº Série:', 40, line4Y, { continued: true }).font('Helvetica').text(` ${item.numero_serie || 'N/A'}`);
+        // Linha 5
+        doc.font('Helvetica-Bold').text('Nº Série:', labelColX, currentY);
+        doc.font('Helvetica').text(`${item.numero_serie || 'N/A'}`, valueColX, currentY);
+        currentY = doc.y + 10;
 
-        doc.moveDown(1.5);
-        const finalY = doc.y;
-        doc.moveTo(40, finalY).lineTo(555, finalY).strokeColor("#cccccc").lineWidth(0.5).stroke();
-        doc.moveDown(1);
+        // Linha separadora
+        doc.moveTo(startX, currentY).lineTo(555, currentY).strokeColor("#cccccc").lineWidth(0.5).stroke();
+        
+        // Espaço para o próximo item
+        doc.y = currentY + 10;
     }
 
     drawFooter(doc);
