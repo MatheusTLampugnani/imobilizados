@@ -26,32 +26,6 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
     setTimeout(() => setFeedback({ message: '', type: 'info' }), 2000);
   };
 
-  const exportToCSV = () => {
-    let csvContent = "data:text/csv;charset=utf-8,Inventário;Subnº;Descrição;Data;Série;Centro de Custo;Observacao\n";
-    
-    inventario.forEach(item => {
-      const observacao = item.notFound ? "Item não encontrado no cadastro" : "";
-      const row = [
-        item.Inventário,
-        item["Subnº"],
-        `"${item.Descrição || ''}"`,
-        item.Data,
-        item.Série,
-        item.CentroCusto,
-        observacao
-      ].join(";");
-      csvContent += row + "\r\n";
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "inventario.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   return (
     <>
       <Modal show={true} onHide={onClose} centered size="xl" backdrop="static">
@@ -98,9 +72,6 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           </Button>
           <Button variant="danger" onClick={() => setIsScanning(true)}>
             <QrCodeScan /> Escanear Itens em Lote
-          </Button>
-          <Button variant="outline-info" onClick={exportToCSV} disabled={inventario.length === 0}>
-            <BoxArrowUpRight /> Exportar para CSV
           </Button>
           <Button variant="primary" onClick={onFinishInventory} disabled={inventario.length === 0}>
             Finalizar Inventário

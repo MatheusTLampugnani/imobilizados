@@ -8,7 +8,7 @@ import ResultsDisplay from './components/ResultsDisplay';
 import ReportModal from './components/ReportModal';
 import DivergenceReport from './components/DivergenceReport';
 import CcInputModal from './components/CcInputModal';
-import AddNotFoundItemModal from './components/AddNotFoundItemModal'; 
+import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import { API_URL } from './apiConfig'; 
 import './App.css';
 
@@ -36,7 +36,6 @@ function App() {
         setInventarioCentroCusto(parsedData.inventarioCentroCusto || '');
       }
     } catch (e) {
-      setError('Erro ao carregar o estado.');
       console.error("Erro ao carregar estado:", e);
     }
   }, []);
@@ -49,7 +48,6 @@ function App() {
       };
       sessionStorage.setItem('appState', JSON.stringify(appState));
     } catch (e) {
-      setError('Erro ao salvar o estado.');
       console.error("Erro ao salvar estado:", e);
     }
   }, [inventario, inventarioCentroCusto]);
@@ -76,8 +74,8 @@ function App() {
       setInventarioCentroCusto(cc);
       setInventarioAtivo(true);
       fetchExpectedItems(cc);
-      sessionStorage.removeItem('appState');
       setInventario([]);
+      sessionStorage.removeItem('appState');
       return true;
     } catch (error) {
       console.error("Validação do Centro de Custo falhou:", error);
@@ -85,9 +83,9 @@ function App() {
     }
   };
 
-  const handleCodeSearch = async (codeToSearch) => {
+  const handleCodeSearch = async () => {
     if (isLoading) return;
-    if (!codeToSearch || codeToSearch.trim() === '') {
+    if (!codigo || codigo.trim() === '') {
       setError('Por favor, digite um código.');
       setResultado(null);
       return;
@@ -96,60 +94,57 @@ function App() {
     setError('');
 
     try {
-      const response = await axios.get(`${API_URL}/imobilizado?codigo=${codeToSearch}`);
-      const dados = response.data;
-      if (!dados || !dados.itens) {
-        throw new Error("A resposta do servidor não continha os dados esperados.");
-      }
-      setResultado({
-        codigo_imobilizado: dados.codigo_imobilizado,
-        itens: dados.itens
-      });
-      if (inventarioAtivo && dados.itens.length > 0) {
-        const codigoFormatado = formatarCodigo(codeToSearch);
-        const itemEscaneado = dados.itens.find(item =>
-          formatarCodigo(item.Inventário) === codigoFormatado ||
-          formatarCodigo(item.Série) === codigoFormatado ||
-          formatarCodigo(dados.codigo_imobilizado) === codigoFormatado
-        );
-        const itemParaAdicionar = itemEscaneado || dados.itens[0];
-        if (itemParaAdicionar && !inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
-          setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
-        }
-      }
-      return true;
+      const response = await axios.get(`${API_URL}/imobilizado?codigo=${codigo}`);
+      setResultado(response.data);
     } catch (err) {
       setResultado(null);
-      if (err.response?.status === 404) {
-        if (inventarioAtivo) {
-          setItemCodeToAdd(codeToSearch);
-          setShowAddItemModal(true);
-        } else {
-          setError(`Imobilizado ${codeToSearch} não encontrado.`);
-        }
-      } else {
-        const errorMessage = err.response?.data?.message || 'Erro ao conectar ao servidor.';
-        setError(errorMessage);
-      }
-      return false;
+      const errorMessage = err.response?.status === 404 
+        ? `Imobilizado ${codigo} não encontrado.` 
+        : (err.response?.data?.message || 'Erro ao conectar ao servidor.');
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleConfirmAddItem = (description) => {
-    if (!description.trim()) {
-      setError('Por favor, insira uma descrição.');
-      return;
+  const handleAddItemToInventory = async (codeToAdd) => {
+    try {
+      const response = await axios.get(`${API_URL}/imobilizado?codigo=${codeToAdd}`);
+      const dados = response.data;
+      
+      if (dados && dados.itens && dados.itens.length > 0) {
+        const itemParaAdicionar = dados.itens[0];
+        if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
+          setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
+        }
+        return true;
+      }
+      return false;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        setItemCodeToAdd(codeToAdd);
+        setShowAddItemModal(true);
+      } else {
+        console.error("Erro ao adicionar item ao inventário:", error);
+        setError('Erro de comunicação com o servidor.');
+      }
+      return false;
     }
+  };
+
+  const handleConfirmAddItem = (description) => {
     const newItem = {
-      id: Date.now(),
+      id: `not-found-${itemCodeToAdd}-${Date.now()}`,
       Inventário: itemCodeToAdd,
+      ['Subnº']: 'N/A',
       Descrição: description,
-      notFound: true,
       CentroCusto: inventarioCentroCusto,
+      notFound: true,
     };
-    setInventario((prevInventario) => [newItem, ...prevInventario]);
+
+    if (!inventario.some(item => item.Inventário === itemCodeToAdd && item.notFound)) {
+      setInventario(prevInventario => [newItem, ...prevInventario]);
+    }
     setShowAddItemModal(false);
   };
 
@@ -164,6 +159,7 @@ function App() {
     setExpectedItems([]);
     setInventarioCentroCusto('');
     setResultado(null);
+    sessionStorage.removeItem('appState');
   };
 
   return (
@@ -173,7 +169,7 @@ function App() {
         <InputArea
           codigo={codigo}
           setCodigo={setCodigo}
-          onConsultar={() => handleCodeSearch(codigo)}
+          onConsultar={handleCodeSearch}
           isLoading={isLoading}
         />
         <ResultsDisplay
@@ -196,7 +192,7 @@ function App() {
             inventario={inventario}
             setInventario={setInventario}
             onClose={() => setInventarioAtivo(false)}
-            onAddItem={handleCodeSearch}
+            onAddItem={handleAddItemToInventory}
             inventarioCentroCusto={inventarioCentroCusto}
             expectedItems={expectedItems}
             onFinishInventory={() => setShowDivergenceReport(true)}
