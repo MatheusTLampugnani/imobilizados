@@ -39,7 +39,6 @@ async function handlePdfReportRequest(req, res) {
 
     } catch (dbError) {
         console.error('ERRO AO GERAR PDF:', dbError);
-        res.setHeader('Access-Control-Allow-Origin', '*');
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
     }
@@ -52,88 +51,101 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     doc.pipe(res);
-
-    const drawHeader = (docInstance) => {
-        const logoPath = path.join(__dirname, '..', '..', 'frontend', 'src', 'assets', 'videplast-brand.png');
-        const centerX = (docInstance.page.width - 120) / 2;
-
+    
+    const drawHeader = (doc) => {
+        const logoPath = path.join(__dirname, '..', '..', 'frontend', 'public', 'videplast_logo.png');
+        
         if (fs.existsSync(logoPath)) {
-            docInstance.image(logoPath, centerX, 30, { width: 120 });
+            doc.image(logoPath, { fit: [150, 150], align: 'center', y: 30 });
         }
 
-        docInstance.moveDown(3);
-        docInstance.fontSize(14).font('Helvetica-Bold').fillColor('#000000').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
-        docInstance.moveDown(1);
-        docInstance.fontSize(10).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, { align: 'left' });
-        docInstance.moveDown(0.5);
-        docInstance.moveTo(40, docInstance.y).lineTo(555, docInstance.y).strokeColor("#000000").lineWidth(1).stroke();
-        docInstance.moveDown(1);
+        doc.fontSize(16).font('Helvetica-Bold').fillColor('#333333').text('Relatório de Imobilizados', { align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(11).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, { align: 'center' });
+        doc.moveDown(2);
     };
 
-    const drawFooter = (docInstance) => {
-        const pageCount = docInstance.bufferedPageRange().count;
+    const drawFooter = (doc) => {
+        const pageCount = doc.bufferedPageRange().count;
         for (let i = 0; i < pageCount; i++) {
-            docInstance.switchToPage(i);
-            const bottom = docInstance.page.margins.bottom;
+            doc.switchToPage(i);
+            const yPos = doc.page.height - 35;
             const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
-            docInstance.fontSize(8).font('Helvetica').fillColor('#000');
-            docInstance.text(`Gerado em: ${datetime}`, docInstance.page.margins.left, docInstance.page.height - bottom + 10, { align: 'left' });
-            docInstance.text(`Página ${i + 1} de ${pageCount}`, 0, docInstance.page.height - bottom + 10, { align: 'right' });
+            doc.fontSize(8).font('Helvetica').fillColor('#666666');
+            doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
+            doc.text(`Página ${i + 1} de ${pageCount}`, 0, yPos, { 
+                align: 'right', 
+                width: doc.page.width - doc.page.margins.left - doc.page.margins.right 
+            });
         }
+    };
+    
+    const drawTable = (doc, data) => {
+        const tableTop = doc.y;
+        const tableLeft = doc.page.margins.left;
+        
+        const columnHeaders = ["Imobilizado", "Inventário", "Subnº", "Descrição", "Nº Série"];
+        const columnWidths = [70, 70, 40, 255, 80];
+        
+        let y = tableTop;
+
+        const drawTableHeader = () => {
+            let x = tableLeft;
+            doc.font('Helvetica-Bold').fontSize(9).fillColor('#FFFFFF');
+            
+            doc.rect(tableLeft, y, columnWidths.reduce((a, b) => a + b, 0), 20).fill('#292e33');
+
+            columnHeaders.forEach((header, i) => {
+                doc.text(header, x + 5, y + 5, { width: columnWidths[i] - 10, align: 'left' });
+                x += columnWidths[i];
+            });
+            y += 25;
+        };
+
+        const drawTableRow = (item) => {
+            const rowHeight = calculateRowHeight(doc, item, columnWidths);
+            
+            if (y + rowHeight > doc.page.height - doc.page.margins.bottom) {
+                doc.addPage();
+                drawHeader(doc);
+                y = doc.y;
+                drawTableHeader();
+            }
+
+            let x = tableLeft;
+            const startY = y;
+            doc.font('Helvetica').fontSize(8).fillColor('#333333');
+
+            doc.text(item.codigo_imobilizado || 'N/A', x + 5, startY + 5, { width: columnWidths[0] - 10 });
+            x += columnWidths[0];
+            doc.text(item.codigo_inventario || 'N/A', x + 5, startY + 5, { width: columnWidths[1] - 10 });
+            x += columnWidths[1];
+            doc.text(item.sub_numero ?? 'N/A', x + 5, startY + 5, { width: columnWidths[2] - 10, align: 'center' });
+            x += columnWidths[2];
+            doc.text(item.descricao || 'N/A', x + 5, startY + 5, { width: columnWidths[3] - 10 });
+            x += columnWidths[3];
+            doc.text(item.numero_serie || 'N/A', x + 5, startY + 5, { width: columnWidths[4] - 10 });
+            
+            y += rowHeight + 10;
+        };
+        
+        drawTableHeader();
+        data.forEach(drawTableRow);
+    };
+    
+    const calculateRowHeight = (doc, item, widths) => {
+        const heights = [
+            doc.heightOfString(item.codigo_imobilizado || 'N/A', { width: widths[0] - 10 }),
+            doc.heightOfString(item.codigo_inventario || 'N/A', { width: widths[1] - 10 }),
+            doc.heightOfString(item.descricao || 'N/A', { width: widths[3] - 10 }),
+            doc.heightOfString(item.numero_serie || 'N/A', { width: widths[4] - 10 }),
+        ];
+        return Math.max(...heights);
     };
 
     drawHeader(doc);
-
-    for (const item of data) {
-        const descHeight = doc.heightOfString(item.descricao || 'N/A', { width: 480 });
-        // Estimativa mais precisa da altura do bloco do item
-        const estimatedHeight = 60 + descHeight;
-
-        // **CORREÇÃO PRINCIPAL:** Verifica se o item cabe ANTES de desenhar
-        if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
-            doc.addPage();
-            drawHeader(doc);
-        }
-
-        const y = doc.y;
-        doc.fontSize(9).fillColor('#000');
-
-        // Linha 1
-        doc.font('Helvetica-Bold').text(`Imobilizado:`, 40, y)
-           .font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`, 150, y);
-        doc.font('Helvetica-Bold').text(`Subnº:`, 300, y)
-           .font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`, 400, y);
-
-        // Linha 2
-        const line2Y = y + 15;
-        doc.font('Helvetica-Bold').text('Número de inventário:', 40, line2Y)
-           .font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`, 150, line2Y);
-        doc.font('Helvetica-Bold').text(`Data incorporação:`, 300, line2Y)
-           .font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`, 400, line2Y);
-
-        // Linha 3
-        const line3Y = y + 30;
-        doc.font('Helvetica-Bold').text('Inventário Antigo:', 40, line3Y)
-           .font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`, 150, line3Y);
-        
-        // Linha 4 (Descrição)
-        const line4Y = y + 45;
-        doc.font('Helvetica-Bold').text('Descrição:', 40, line4Y)
-           .font('Helvetica').text(`${item.descricao || 'N/A'}`, 150, line4Y, { width: 405 });
-        
-        // Pula para a posição Y após a descrição (que tem altura variável)
-        const currentY = doc.y;
-
-        // Linha 5 (Nº de Série)
-        doc.font('Helvetica-Bold').text('Nº Série:', 40, currentY)
-           .font('Helvetica').text(` ${item.numero_serie || 'N/A'}`, 150, currentY);
-
-        doc.moveDown(1.5);
-        doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
-        doc.moveDown(1);
-    }
-
+    drawTable(doc, data);
     drawFooter(doc);
     doc.end();
 }
