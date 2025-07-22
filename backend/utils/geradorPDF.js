@@ -39,6 +39,7 @@ async function handlePdfReportRequest(req, res) {
 
     } catch (dbError) {
         console.error('ERRO AO GERAR PDF:', dbError);
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
     }
@@ -51,18 +52,19 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     doc.pipe(res);
-    
+
     const drawHeader = (doc) => {
         const logoPath = path.join(__dirname, '..', '..', 'frontend', 'public', 'videplast_logo.png');
-        
         if (fs.existsSync(logoPath)) {
             doc.image(logoPath, { fit: [150, 150], align: 'center', y: 30 });
         }
-
-        doc.fontSize(16).font('Helvetica-Bold').fillColor('#333333').text('Relatório de Imobilizados', { align: 'center' });
+        doc.moveDown(4);
+        doc.fontSize(16).font('Helvetica-Bold').fillColor('#333333').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
+        doc.moveDown(1);
+        doc.fontSize(11).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, doc.page.margins.left);
         doc.moveDown(0.5);
-        doc.fontSize(11).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, { align: 'center' });
-        doc.moveDown(2);
+        doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#aaaaaa").lineWidth(1).stroke();
+        doc.moveDown(1);
     };
 
     const drawFooter = (doc) => {
@@ -81,73 +83,52 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
         }
     };
     
-    const drawTable = (doc, data) => {
-        const tableTop = doc.y;
-        const tableLeft = doc.page.margins.left;
-        
-        const columnHeaders = ["Imobilizado", "Inventário", "Subnº", "Descrição", "Nº Série"];
-        const columnWidths = [70, 70, 40, 255, 80];
-        
-        let y = tableTop;
-
-        const drawTableHeader = () => {
-            let x = tableLeft;
-            doc.font('Helvetica-Bold').fontSize(9).fillColor('#FFFFFF');
-            
-            doc.rect(tableLeft, y, columnWidths.reduce((a, b) => a + b, 0), 20).fill('#292e33');
-
-            columnHeaders.forEach((header, i) => {
-                doc.text(header, x + 5, y + 5, { width: columnWidths[i] - 10, align: 'left' });
-                x += columnWidths[i];
-            });
-            y += 25;
-        };
-
-        const drawTableRow = (item) => {
-            const rowHeight = calculateRowHeight(doc, item, columnWidths);
-            
-            if (y + rowHeight > doc.page.height - doc.page.margins.bottom) {
-                doc.addPage();
-                drawHeader(doc);
-                y = doc.y;
-                drawTableHeader();
-            }
-
-            let x = tableLeft;
-            const startY = y;
-            doc.font('Helvetica').fontSize(8).fillColor('#333333');
-
-            doc.text(item.codigo_imobilizado || 'N/A', x + 5, startY + 5, { width: columnWidths[0] - 10 });
-            x += columnWidths[0];
-            doc.text(item.codigo_inventario || 'N/A', x + 5, startY + 5, { width: columnWidths[1] - 10 });
-            x += columnWidths[1];
-            doc.text(item.sub_numero ?? 'N/A', x + 5, startY + 5, { width: columnWidths[2] - 10, align: 'center' });
-            x += columnWidths[2];
-            doc.text(item.descricao || 'N/A', x + 5, startY + 5, { width: columnWidths[3] - 10 });
-            x += columnWidths[3];
-            doc.text(item.numero_serie || 'N/A', x + 5, startY + 5, { width: columnWidths[4] - 10 });
-            
-            y += rowHeight + 10;
-        };
-        
-        drawTableHeader();
-        data.forEach(drawTableRow);
-    };
-    
-    const calculateRowHeight = (doc, item, widths) => {
-        const heights = [
-            doc.heightOfString(item.codigo_imobilizado || 'N/A', { width: widths[0] - 10 }),
-            doc.heightOfString(item.codigo_inventario || 'N/A', { width: widths[1] - 10 }),
-            doc.heightOfString(item.descricao || 'N/A', { width: widths[3] - 10 }),
-            doc.heightOfString(item.numero_serie || 'N/A', { width: widths[4] - 10 }),
-        ];
-        return Math.max(...heights);
-    };
-
     drawHeader(doc);
-    drawTable(doc, data);
+
+    data.forEach((item) => {
+        const estimatedHeight = 100;
+        if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
+            doc.addPage();
+            drawHeader(doc);
+        }
+        drawItem(doc, item);
+    });
+
     drawFooter(doc);
     doc.end();
+}
+
+function drawItem(doc, item) {
+    const leftColX = doc.page.margins.left;
+    const rightColX = 320;
+    const labelWidth = 110;
+    const valueOffsetX = 115;
+    
+    doc.font('Helvetica-Bold').fontSize(9).fillColor('#333333');
+
+    let y = doc.y;
+    doc.text('Imobilizado:', leftColX, y)
+       .font('Helvetica').text(`${item.codigo_imobilizado || 'N/A'}`, leftColX + valueOffsetX, y);
+    doc.font('Helvetica-Bold').text('Subnº:', rightColX, y)
+       .font('Helvetica').text(`${item.sub_numero ?? 'N/A'}`, rightColX + valueOffsetX, y);
+    y = doc.y;
+    doc.font('Helvetica-Bold').text('Número de inventário:', leftColX, y)
+       .font('Helvetica').text(`${item.codigo_inventario || 'N/A'}`, leftColX + valueOffsetX, y);
+    doc.font('Helvetica-Bold').text('Data incorporação:', rightColX, y)
+       .font('Helvetica').text(`${item.data_incorporacao || 'N/A'}`, rightColX + valueOffsetX, y);
+    y = doc.y;
+    doc.font('Helvetica-Bold').text('Inventário Antigo:', leftColX, y)
+       .font('Helvetica').text(`${item.codigo_inventario_antigo || 'N/A'}`, leftColX + valueOffsetX, y);
+    y = doc.y;
+    doc.font('Helvetica-Bold').text('Descrição:', leftColX, y)
+       .font('Helvetica').text(`${item.descricao || 'N/A'}`, leftColX + valueOffsetX, y, { width: 400 });
+    const descHeight = doc.heightOfString(`${item.descricao || 'N/A'}`, { width: 400 });
+    const serieY = y + descHeight;
+    doc.font('Helvetica-Bold').text('Nº Série:', leftColX, serieY)
+       .font('Helvetica').text(`${item.numero_serie || 'N/A'}`, leftColX + valueOffsetX, serieY);
+    doc.y = serieY + 15;
+    doc.moveTo(leftColX, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
+    doc.moveDown(1.5);
 }
 
 module.exports = {
