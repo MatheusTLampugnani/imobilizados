@@ -56,7 +56,7 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
     const drawHeader = (doc) => {
         const logoPath = path.join(__dirname, '..', '..', 'frontend', 'public', 'videplast_logo.png');
         if (fs.existsSync(logoPath)) {
-            doc.image(logoPath, { fit: [150, 150], align: 'center', y: 30 });
+            doc.image(logoPath, { fit: [75, 75], align: 'center', y: 30 });
         }
         doc.moveDown(4);
         doc.fontSize(16).font('Helvetica-Bold').fillColor('#333333').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
