@@ -27,7 +27,7 @@ function convertToCSV(data) {
         item.numero_serie
     ].join(','));
 
-    return [headers.join(','), ...rows].join('\n');
+    return [headers.join(';'), ...rows].join('\n');
 }
 
 async function handleCsvReportRequest(req, res) {
