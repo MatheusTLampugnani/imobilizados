@@ -5,10 +5,10 @@ import autoTable from 'jspdf-autotable';
 import logoVideplast from '../assets/videplast-brand.png';
 
 const statusColors = {
-  ok: '#1eff00ff',
-  faltante: '#ff0015ff',
-  ccErrado: '#fbff00ff',
-  naoCadastrado: '#ffc400ff',
+  ok: '#00ff00ff',
+  faltante: '#ff0000ff',
+  ccErrado: '#ffc400ff',
+  naoCadastrado: '#00d0ffff',
 };
 
 const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, expectedItems, inventoryCc }) => {
@@ -20,52 +20,26 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
   useEffect(() => {
     if (show) {
-      const collectedMap = new Map();
-      collectedItems.forEach(item => {
-        // Usamos o código de inventário como chave única
-        const key = String(item.Inventário || item.id).trim();
-        if (key) collectedMap.set(key, item);
-      });
-
-      const expectedMap = new Map();
-      expectedItems.forEach(item => {
-        const key = String(item.Inventário || item.id).trim();
-        if (key) expectedMap.set(key, item);
-      });
-
-      const newOk = [];
-      const newMissing = [];
-      const newWrongCc = [];
       const newNotFound = collectedItems.filter(item => item.notFound);
       const foundAndCollected = collectedItems.filter(item => !item.notFound);
       
-      // Itera sobre os itens COLETADOS E CADASTRADOS
-      foundAndCollected.forEach(collected => {
-        const collectedKey = String(collected.Inventário).trim();
-        const expectedItem = expectedMap.get(collectedKey);
-
-        if (expectedItem) {
-          // O item foi coletado e era esperado. Agora, checa o Centro de Custo.
-          if (String(collected.CentroCusto).trim() === String(inventoryCc).trim()) {
-            newOk.push(collected);
-          } else {
-            // Foi coletado, era esperado, mas o CC está errado no cadastro.
-            newWrongCc.push(collected);
-          }
+      const newOk = [];
+      const newWrongCc = [];
+      foundAndCollected.forEach(item => {
+        if (String(item.CentroCusto).trim() === String(inventoryCc).trim()) {
+          newOk.push(item);
         } else {
-            // Foi coletado, está no cadastro, mas não era esperado para este CC.
-            newWrongCc.push(collected);
+          newWrongCc.push(item);
         }
       });
+
+      const collectedInventarioMap = new Map();
+      collectedItems.forEach(item => collectedInventarioMap.set(String(item.Inventário).trim(), item));
       
-      // Itera sobre os itens ESPERADOS para encontrar os faltantes
-      expectedItems.forEach(expected => {
-        const expectedKey = String(expected.Inventário).trim();
-        if (!collectedMap.has(expectedKey)) {
-          newMissing.push(expected);
-        }
+      const newMissing = expectedItems.filter(expected => {
+        return !collectedInventarioMap.has(String(expected.Inventário).trim());
       });
-      
+
       setOkItems(newOk);
       setMissingItems(newMissing);
       setWrongCcItems(newWrongCc);
@@ -114,13 +88,13 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             if (data.section === 'body') {
               const status = data.row.raw[0];
               const colorMap = {
-                'Ok': statusColors.ok,
-                'Faltante': statusColors.faltante,
-                'CC Errado': statusColors.ccErrado,
-                'Não Cadastrado': statusColors.naoCadastrado,
+                  'Ok': statusColors.ok,
+                  'Faltante': statusColors.faltante,
+                  'CC Errado': statusColors.ccErrado,
+                  'Não Cadastrado': statusColors.naoCadastrado,
               };
               if (colorMap[status]) {
-                data.cell.styles.fillColor = colorMap[status];
+                  data.cell.styles.fillColor = colorMap[status];
               }
             }
           },
@@ -150,7 +124,6 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       setIsGenerating(null);
     }
   };
-
 
   const renderItemDetails = (item, type) => (
     <>

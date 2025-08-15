@@ -110,7 +110,7 @@ function drawItem(doc, item) {
     doc.text('Imobilizado:', leftColX, y)
        .font('Helvetica').text(`${item.codigo_imobilizado || 'N/A'}`, leftColX + valueOffsetX, y);
     doc.font('Helvetica-Bold').text('Subnº:', rightColX, y)
-       .font('Helvetica').text(`${item.sub_numero ?? 'N/A'}`, rightColX + valueOffsetX, y);
+       .font('Helvetica').text(`${item.sub_numero}`, rightColX + valueOffsetX, y);
     y = doc.y;
     doc.font('Helvetica-Bold').text('Número de inventário:', leftColX, y)
        .font('Helvetica').text(`${item.codigo_inventario || 'N/A'}`, leftColX + valueOffsetX, y);
