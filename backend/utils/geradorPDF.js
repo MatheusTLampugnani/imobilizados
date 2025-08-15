@@ -4,6 +4,7 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
+const puppeteer = require('puppeteer');
 
 // --- Configurações do Supabase ---
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -49,38 +50,50 @@ async function handlePdfReportRequest(req, res) {
 }
 
 // --- Geração de PDF (Versão Final e Robusta) ---
-function gerarRelatorioPDF({ data, centro_custo }, res) {
-    const doc = new PDFDocument({ 
-        size: 'A4', 
-        margins: { top: 40, bottom: 50, left: 40, right: 40 },
-        bufferPages: true 
-    });
-
+async function gerarRelatorioPDF({ data, centro_custo }, res) {
     const filename = `Relatorio_CC_${centro_custo}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    doc.pipe(res);
 
-    // Registra o evento para desenhar o cabeçalho em cada nova página
-    doc.on('pageAdded', () => drawHeader(doc, centro_custo));
+    let browser = null;
+    try {
+        // Gera o conteúdo HTML
+        const htmlContent = gerarHTMLdoRelatorio(data, centro_custo);
 
-    // Desenha o cabeçalho da primeira página
-    drawHeader(doc, centro_custo);
+        // Inicia o Puppeteer
+        browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+        const page = await browser.newPage();
+        
+        // Define o conteúdo da página como o nosso HTML
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-    // Itera e desenha cada item
-    data.forEach(item => {
-        drawItem(doc, item);
-    });
+        // Gera o PDF
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: {
+                top: '40px',
+                right: '40px',
+                bottom: '40px',
+                left: '40px'
+            }
+        });
 
-    // Adiciona o rodapé em todas as páginas após todo o conteúdo ser adicionado
-    const range = doc.bufferedPageRange();
-    for (let i = range.start; i < range.start + range.count; i++) {
-        doc.switchToPage(i);
-        drawFooter(doc, i + 1, range.count);
+        // Envia o PDF como resposta
+        res.end(pdfBuffer);
+
+    } catch (error) {
+        console.error("Erro ao gerar PDF com Puppeteer:", error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: `Erro no servidor: ${error.message}` }));
+    } finally {
+        // Fecha o navegador para liberar recursos
+        if (browser) {
+            await browser.close();
+        }
     }
-
-    doc.end();
 }
+
 
 // Função para desenhar o cabeçalho da página
 function drawHeader(doc, centro_custo) {
