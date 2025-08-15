@@ -89,17 +89,17 @@ function drawHeader(doc, centro_custo) {
     doc.moveDown(2);
 }
 
-//function drawFooter(doc, currentPage, totalPages) {
-//    const yPos = doc.page.height - 35;
-//    const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-//
-//    doc.fontSize(8).font('Helvetica').fillColor('#666666');
-//    doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
-//    doc.text(`Página ${currentPage} de ${totalPages}`, 0, yPos, { 
-//        align: 'right', 
-//        width: doc.page.width - doc.page.margins.right - doc.page.margins.left
-//    });
-//}
+function drawFooter(doc, currentPage, totalPages) {
+    const yPos = doc.page.height - 35;
+    const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+    doc.fontSize(8).font('Helvetica').fillColor('#666666');
+    doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
+    doc.text(`Página ${currentPage} de ${totalPages}`, 0, yPos, { 
+        align: 'right', 
+        width: doc.page.width - doc.page.margins.right - doc.page.margins.left
+    });
+}
 
 function drawItem(doc, item) {
     const leftColX = doc.page.margins.left;
