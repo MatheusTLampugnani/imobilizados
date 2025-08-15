@@ -130,7 +130,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       <div className="fw-bold">
         {type === 'notFound' ? 'Código Lido: ' : 'Plaqueta: '}
         {item.Inventário || 'N/A'}
-        {type !== 'notFound' && ` (Subnº: ${item['Subnº'] || 'N/A'})`}
+        {type !== 'notFound' && ` (Subnº: ${item.Subnº})`}
       </div>
       {type !== 'notFound' && <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>}
       <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
