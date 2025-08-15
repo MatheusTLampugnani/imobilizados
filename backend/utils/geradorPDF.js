@@ -5,10 +5,12 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
+// --- Configurações do Supabase ---
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// --- Lógica Principal do Handler ---
 async function handlePdfReportRequest(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     const parsedUrl = url.parse(req.url, true);
@@ -35,6 +37,7 @@ async function handlePdfReportRequest(req, res) {
             res.writeHead(404, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({ message: `Nenhum imobilizado encontrado para o Centro de Custo ${centro_custo}.` }));
         }
+        
         gerarRelatorioPDF({ data, centro_custo }, res);
 
     } catch (dbError) {
@@ -45,88 +48,110 @@ async function handlePdfReportRequest(req, res) {
     }
 }
 
+// --- Geração de PDF Otimizada ---
 function gerarRelatorioPDF({ data, centro_custo }, res) {
-    const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
-    const filename = `Relatorio_CC_${centro_custo}.pdf`;
+    const doc = new PDFDocument({ 
+        size: 'A4', 
+        margins: { top: 40, bottom: 50, left: 40, right: 40 }, // Aumentei a margem inferior
+        bufferPages: true 
+    });
 
+    const filename = `Relatorio_CC_${centro_custo}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     doc.pipe(res);
 
-    const drawHeader = (doc) => {
+    const drawHeader = () => {
         const logoPath = path.join(__dirname, '..', '..', 'frontend', 'public', 'videplast_logo.png');
         if (fs.existsSync(logoPath)) {
             doc.image(logoPath, { fit: [150, 150], align: 'center', y: 30 });
         }
         doc.moveDown(4);
-        doc.fontSize(16).font('Helvetica-Bold').fillColor('#333333').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
+        doc.fontSize(16).font('Helvetica-Bold').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
         doc.moveDown(1);
-        doc.fontSize(11).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, doc.page.margins.left);
+        doc.fontSize(11).font('Helvetica').text(`Centro de Custo: ${centro_custo}`);
         doc.moveDown(0.5);
         doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#aaaaaa").lineWidth(1).stroke();
-        doc.moveDown(1);
+        doc.moveDown(2); // Mais espaço após o header
     };
 
-    const drawFooter = (doc) => {
-        const pageCount = doc.bufferedPageRange().count;
-        for (let i = 0; i < pageCount; i++) {
-            doc.switchToPage(i);
-            const yPos = doc.page.height - 35;
-            const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+    doc.on('pageAdded', drawHeader);
+    drawHeader();
 
-            doc.fontSize(8).font('Helvetica').fillColor('#666666');
-            doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
-            doc.text(`Página ${i + 1} de ${pageCount}`, 0, yPos, { 
-                align: 'right', 
-                width: doc.page.width - doc.page.margins.left - doc.page.margins.right 
-            });
-        }
-    };
-    
-    drawHeader(doc);
-
-    data.forEach((item) => {
-        const estimatedHeight = 100;
-        if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
-            doc.addPage();
-            drawHeader(doc);
-        }
+    data.forEach(item => {
         drawItem(doc, item);
     });
 
-    drawFooter(doc);
+    const range = doc.bufferedPageRange();
+    for (let i = 0; i < range.count; i++) {
+        doc.switchToPage(i);
+        const pageNumber = i + 1;
+        const yPos = doc.page.height - 35;
+        const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+        doc.fontSize(8).font('Helvetica').fillColor('#666666');
+        doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
+        doc.text(`Página ${pageNumber} de ${range.count}`, 0, yPos, { 
+            align: 'right', 
+            width: doc.page.width - doc.page.margins.right - doc.page.margins.left
+        });
+    }
+
     doc.end();
 }
 
+// --- Função de Desenho de Item (Versão Final) ---
 function drawItem(doc, item) {
     const leftColX = doc.page.margins.left;
     const rightColX = 320;
-    const labelWidth = 110;
-    const valueOffsetX = 115;
-    
-    doc.font('Helvetica-Bold').fontSize(9).fillColor('#333333');
+    const valueOffsetX = 110;
+    const itemTopY = doc.y;
 
-    let y = doc.y;
-    doc.text('Imobilizado:', leftColX, y)
-       .font('Helvetica').text(`${item.codigo_imobilizado || 'N/A'}`, leftColX + valueOffsetX, y);
-    doc.font('Helvetica-Bold').text('Subnº:', rightColX, y)
-       .font('Helvetica').text(`${item.sub_numero ?? 'N/A'}`, rightColX + valueOffsetX, y);
-    y = doc.y;
-    doc.font('Helvetica-Bold').text('Número de inventário:', leftColX, y)
-       .font('Helvetica').text(`${item.codigo_inventario || 'N/A'}`, leftColX + valueOffsetX, y);
-    doc.font('Helvetica-Bold').text('Data incorporação:', rightColX, y)
-       .font('Helvetica').text(`${item.data_incorporacao || 'N/A'}`, rightColX + valueOffsetX, y);
-    y = doc.y;
-    doc.font('Helvetica-Bold').text('Inventário Antigo:', leftColX, y)
-       .font('Helvetica').text(`${item.codigo_inventario_antigo || 'N/A'}`, leftColX + valueOffsetX, y);
-    y = doc.y;
-    doc.font('Helvetica-Bold').text('Descrição:', leftColX, y)
-       .font('Helvetica').text(`${item.descricao || 'N/A'}`, leftColX + valueOffsetX, y, { width: 400 });
-    const descHeight = doc.heightOfString(`${item.descricao || 'N/A'}`, { width: 400 });
-    const serieY = y + descHeight;
-    doc.font('Helvetica-Bold').text('Nº Série:', leftColX, serieY)
-       .font('Helvetica').text(`${item.numero_serie || 'N/A'}`, leftColX + valueOffsetX, serieY);
-    doc.y = serieY + 15;
+    // Estima a altura do item para a quebra de página.
+    // O cálculo é baseado na altura da descrição, que é o campo mais variável.
+    const descriptionText = `${item.descricao || 'N/A'}`;
+    const descriptionHeight = doc.heightOfString(descriptionText, { width: doc.page.width - leftColX - valueOffsetX - doc.page.margins.right });
+    const estimatedHeight = 60 + descriptionHeight; // 60 para os campos fixos + altura da descrição
+
+    if (itemTopY + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+    }
+
+    const y = doc.y; // Posição Y inicial para este item
+
+    // --- Desenha os campos, deixando o PDFKit gerenciar o Y ---
+    // Coluna da Esquerda
+    doc.font('Helvetica-Bold').fontSize(9).text('Imobilizado:', leftColX, y);
+    doc.font('Helvetica').text(`${item.codigo_imobilizado || 'N/A'}`, leftColX + valueOffsetX, y);
+
+    doc.font('Helvetica-Bold').text('Número de inventário:');
+    doc.font('Helvetica').text(`${item.codigo_inventario || 'N/A'}`, leftColX + valueOffsetX, doc.y - 12); // -12 para alinhar com o label
+
+    doc.font('Helvetica-Bold').text('Inventário Antigo:');
+    doc.font('Helvetica').text(`${item.codigo_inventario_antigo || 'N/A'}`, leftColX + valueOffsetX, doc.y - 12);
+
+    doc.font('Helvetica-Bold').text('Descrição:');
+    doc.font('Helvetica').text(descriptionText, leftColX + valueOffsetX, doc.y - 12, {
+        width: doc.page.width - leftColX - valueOffsetX - doc.page.margins.right
+    });
+
+    doc.font('Helvetica-Bold').text('Nº Série:');
+    doc.font('Helvetica').text(`${item.numero_serie || 'N/A'}`, leftColX + valueOffsetX, doc.y - 12);
+
+    const finalLeftY = doc.y;
+
+    // Coluna da Direita (usa a posição Y inicial para alinhar)
+    doc.font('Helvetica-Bold').text('Subnº:', rightColX, y);
+    doc.font('Helvetica').text(`${item.sub_numero ?? 'N/A'}`, rightColX + valueOffsetX, y);
+
+    doc.font('Helvetica-Bold').text('Data incorporação:', rightColX, y + 15);
+    doc.font('Helvetica').text(`${item.data_incorporacao || 'N/A'}`, rightColX + valueOffsetX, y + 15);
+
+    // Garante que o cursor Y esteja abaixo do conteúdo mais longo (geralmente o da esquerda)
+    doc.y = finalLeftY;
+
+    // --- Linha Separadora ---
+    doc.moveDown(1.5);
     doc.moveTo(leftColX, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
     doc.moveDown(1.5);
 }
