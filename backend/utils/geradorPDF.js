@@ -48,11 +48,11 @@ async function handlePdfReportRequest(req, res) {
     }
 }
 
-// --- Geração de PDF Otimizada ---
+// --- Geração de PDF (Versão Final e Robusta) ---
 function gerarRelatorioPDF({ data, centro_custo }, res) {
     const doc = new PDFDocument({ 
         size: 'A4', 
-        margins: { top: 40, bottom: 50, left: 40, right: 40 }, // Aumentei a margem inferior
+        margins: { top: 40, bottom: 50, left: 40, right: 40 },
         bufferPages: true 
     });
 
@@ -72,7 +72,7 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
         doc.fontSize(11).font('Helvetica').text(`Centro de Custo: ${centro_custo}`);
         doc.moveDown(0.5);
         doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#aaaaaa").lineWidth(1).stroke();
-        doc.moveDown(2); // Mais espaço após o header
+        doc.moveDown(2);
     };
 
     doc.on('pageAdded', drawHeader);
@@ -100,60 +100,58 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
     doc.end();
 }
 
-// --- Função de Desenho de Item (Versão Final) ---
+// --- Função para Desenhar um Item (Abordagem Correta) ---
 function drawItem(doc, item) {
     const leftColX = doc.page.margins.left;
     const rightColX = 320;
     const valueOffsetX = 110;
-    const itemTopY = doc.y;
+    const lineGap = 5;
 
-    // Estima a altura do item para a quebra de página.
-    // O cálculo é baseado na altura da descrição, que é o campo mais variável.
-    const descriptionText = `${item.descricao || 'N/A'}`;
-    const descriptionHeight = doc.heightOfString(descriptionText, { width: doc.page.width - leftColX - valueOffsetX - doc.page.margins.right });
-    const estimatedHeight = 60 + descriptionHeight; // 60 para os campos fixos + altura da descrição
+    // --- Lógica de Quebra de Página ---
+    // Estima a altura do item antes de desenhar.
+    const descriptionText = item.descricao || 'N/A';
+    const descriptionHeight = doc.heightOfString(descriptionText, { width: doc.page.width - (leftColX + valueOffsetX) - doc.page.margins.right });
+    const estimatedHeight = 80 + descriptionHeight; // 80 é uma altura segura para os campos fixos.
 
-    if (itemTopY + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
+    if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
     }
 
-    const y = doc.y; // Posição Y inicial para este item
+    const itemTopY = doc.y; // Salva a posição Y inicial do item.
 
-    // --- Desenha os campos, deixando o PDFKit gerenciar o Y ---
-    // Coluna da Esquerda
-    doc.font('Helvetica-Bold').fontSize(9).text('Imobilizado:', leftColX, y);
-    doc.font('Helvetica').text(`${item.codigo_imobilizado || 'N/A'}`, leftColX + valueOffsetX, y);
+    // --- Coluna da Esquerda ---
+    // Usamos { continued: true } para não adicionar quebra de linha após o label.
+    doc.font('Helvetica-Bold').fontSize(9).text('Imobilizado:', leftColX, itemTopY, { continued: true });
+    doc.font('Helvetica').text(` ${item.codigo_imobilizado || 'N/A'}`);
 
-    doc.font('Helvetica-Bold').text('Número de inventário:');
-    doc.font('Helvetica').text(`${item.codigo_inventario || 'N/A'}`, leftColX + valueOffsetX, doc.y - 12); // -12 para alinhar com o label
+    doc.font('Helvetica-Bold').text('Número de inventário:', leftColX, undefined, { continued: true, lineGap });
+    doc.font('Helvetica').text(` ${item.codigo_inventario || 'N/A'}`);
 
-    doc.font('Helvetica-Bold').text('Inventário Antigo:');
-    doc.font('Helvetica').text(`${item.codigo_inventario_antigo || 'N/A'}`, leftColX + valueOffsetX, doc.y - 12);
+    doc.font('Helvetica-Bold').text('Inventário Antigo:', leftColX, undefined, { continued: true, lineGap });
+    doc.font('Helvetica').text(` ${item.codigo_inventario_antigo || 'N/A'}`);
 
-    doc.font('Helvetica-Bold').text('Descrição:');
-    doc.font('Helvetica').text(descriptionText, leftColX + valueOffsetX, doc.y - 12, {
-        width: doc.page.width - leftColX - valueOffsetX - doc.page.margins.right
-    });
+    doc.font('Helvetica-Bold').text('Descrição:', leftColX, undefined, { continued: true, lineGap });
+    doc.font('Helvetica').text(` ${descriptionText}`, { width: doc.page.width - (leftColX + valueOffsetX) - doc.page.margins.right });
 
-    doc.font('Helvetica-Bold').text('Nº Série:');
-    doc.font('Helvetica').text(`${item.numero_serie || 'N/A'}`, leftColX + valueOffsetX, doc.y - 12);
+    doc.font('Helvetica-Bold').text('Nº Série:', leftColX, undefined, { continued: true, lineGap });
+    doc.font('Helvetica').text(` ${item.numero_serie || 'N/A'}`);
 
-    const finalLeftY = doc.y;
+    const finalLeftY = doc.y; // Posição Y após desenhar a coluna da esquerda.
 
-    // Coluna da Direita (usa a posição Y inicial para alinhar)
-    doc.font('Helvetica-Bold').text('Subnº:', rightColX, y);
-    doc.font('Helvetica').text(`${item.sub_numero ?? 'N/A'}`, rightColX + valueOffsetX, y);
+    // --- Coluna da Direita ---
+    // Desenha os campos da direita alinhados com o topo do item.
+    doc.font('Helvetica-Bold').text('Subnº:', rightColX, itemTopY, { continued: true });
+    doc.font('Helvetica').text(` ${item.sub_numero ?? 'N/A'}`);
 
-    doc.font('Helvetica-Bold').text('Data incorporação:', rightColX, y + 15);
-    doc.font('Helvetica').text(`${item.data_incorporacao || 'N/A'}`, rightColX + valueOffsetX, y + 15);
+    doc.font('Helvetica-Bold').text('Data incorporação:', rightColX, itemTopY + 15, { continued: true });
+    doc.font('Helvetica').text(` ${item.data_incorporacao || 'N/A'}`);
 
-    // Garante que o cursor Y esteja abaixo do conteúdo mais longo (geralmente o da esquerda)
+    // --- Posicionamento Final e Linha Separadora ---
+    // Move o cursor para baixo do conteúdo mais longo (que sempre será o da esquerda).
     doc.y = finalLeftY;
-
-    // --- Linha Separadora ---
-    doc.moveDown(1.5);
+    doc.moveDown(2);
     doc.moveTo(leftColX, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
-    doc.moveDown(1.5);
+    doc.moveDown(2);
 }
 
 module.exports = {
