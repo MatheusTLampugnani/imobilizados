@@ -49,7 +49,7 @@ async function handlePdfReportRequest(req, res) {
 function gerarRelatorioPDF({ data, centro_custo }, res) {
     const doc = new PDFDocument({ 
         size: 'A4', 
-        margins: { top: 40, bottom: 50, left: 40, right: 40 },
+        margins: { top: 40, bottom: 40, left: 40, right: 40 },
         bufferPages: true 
     });
 
@@ -58,18 +58,14 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     doc.pipe(res);
 
-    // Registra o evento para desenhar o cabeçalho em cada nova página
     doc.on('pageAdded', () => drawHeader(doc, centro_custo));
 
-    // Desenha o cabeçalho da primeira página
     drawHeader(doc, centro_custo);
 
-    // Itera e desenha cada item
     data.forEach(item => {
         drawItem(doc, item);
     });
 
-    // Adiciona o rodapé em todas as páginas após todo o conteúdo ser adicionado
     const range = doc.bufferedPageRange();
     for (let i = range.start; i < range.start + range.count; i++) {
         doc.switchToPage(i);
@@ -82,7 +78,7 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
 function drawHeader(doc, centro_custo) {
     const logoPath = path.join(__dirname, '..', '..', 'frontend', 'public', 'videplast_logo.png');
     if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, { fit: [150, 150], align: 'center', y: 30 });
+        doc.image(logoPath, { fit: [75, 75], align: 'center', y: 30 });
     }
     doc.moveDown(4);
     doc.fontSize(16).font('Helvetica-Bold').fillColor('#333333').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
@@ -93,31 +89,29 @@ function drawHeader(doc, centro_custo) {
     doc.moveDown(2);
 }
 
-function drawFooter(doc, currentPage, totalPages) {
-    const yPos = doc.page.height - 35;
-    const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-
-    doc.fontSize(8).font('Helvetica').fillColor('#666666');
-    doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
-    doc.text(`Página ${currentPage} de ${totalPages}`, 0, yPos, { 
-        align: 'right', 
-        width: doc.page.width - doc.page.margins.right - doc.page.margins.left
-    });
-}
+//function drawFooter(doc, currentPage, totalPages) {
+//    const yPos = doc.page.height - 35;
+//    const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+//
+//    doc.fontSize(8).font('Helvetica').fillColor('#666666');
+//    doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
+//    doc.text(`Página ${currentPage} de ${totalPages}`, 0, yPos, { 
+//        align: 'right', 
+//        width: doc.page.width - doc.page.margins.right - doc.page.margins.left
+//    });
+//}
 
 function drawItem(doc, item) {
     const leftColX = doc.page.margins.left;
     const rightColX = 320;
     const valueOffsetX = 110;
 
-    // Estima a altura do bloco. É uma aproximação para a quebra de página.
     const descriptionText = item.descricao || 'N/A';
     const descriptionHeight = doc.heightOfString(descriptionText, { 
         width: doc.page.width - (leftColX + valueOffsetX) - doc.page.margins.right 
     });
-    const estimatedHeight = 60 + descriptionHeight; // Altura dos campos fixos + descrição
+    const estimatedHeight = 60 + descriptionHeight;
 
-    // Se o item não couber na página atual, adiciona uma nova.
     if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
     }
@@ -125,23 +119,19 @@ function drawItem(doc, item) {
     const itemTopY = doc.y;
     doc.font('Helvetica-Bold').fontSize(9).fillColor('#333333');
     
-    // Coluna da Esquerda
     doc.text('Imobilizado:', leftColX, itemTopY).font('Helvetica').text(`${item.codigo_imobilizado || 'N/A'}`, leftColX + valueOffsetX, itemTopY);
     doc.font('Helvetica-Bold').text('Número de inventário:', leftColX, doc.y).font('Helvetica').text(`${item.codigo_inventario || 'N/A'}`, leftColX + valueOffsetX, doc.y);
     doc.font('Helvetica-Bold').text('Inventário Antigo:', leftColX, doc.y).font('Helvetica').text(`${item.codigo_inventario_antigo || 'N/A'}`, leftColX + valueOffsetX, doc.y);
     const descY = doc.y;
     doc.font('Helvetica-Bold').text('Descrição:', leftColX, descY).font('Helvetica').text(`${descriptionText}`, leftColX + valueOffsetX, descY, { width: 400 });
-    const finalLeftY = doc.y; // Salva a posição Y após a descrição
-
-    // Coluna da Direita (posicionada em relação ao topo do item)
+    const finalLeftY = doc.y; 
+    
     doc.font('Helvetica-Bold').text('Subnº:', rightColX, itemTopY).font('Helvetica').text(`${item.sub_numero ?? 'N/A'}`, rightColX + valueOffsetX, itemTopY);
     doc.font('Helvetica-Bold').text('Data incorporação:', rightColX, itemTopY + 15).font('Helvetica').text(`${item.data_incorporacao || 'N/A'}`, rightColX + valueOffsetX, itemTopY + 15);
     doc.font('Helvetica-Bold').text('Nº Série:', rightColX, itemTopY + 30).font('Helvetica').text(`${item.numero_serie || 'N/A'}`, rightColX + valueOffsetX, itemTopY + 30);
     
-    // Garante que o cursor Y esteja abaixo do conteúdo mais longo
     doc.y = Math.max(finalLeftY, itemTopY + 45);
 
-    // Linha de Borda
     doc.moveDown(1.5);
     doc.moveTo(leftColX, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
     doc.moveDown(1.5);
