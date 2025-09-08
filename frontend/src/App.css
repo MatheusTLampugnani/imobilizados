@@ -12,13 +12,16 @@
    flex: 1 0 auto;
  }
 
- .app-footer {
-   flex-shrink: 0;
+.app-footer {
+   position: fixed; /* Isso fará com que o footer fique fixo na tela */
+   bottom: 0; /* Alinha o footer à parte inferior da janela */
+   left: 0;
    width: 100%;
    text-align: center;
-   padding: 1.5rem;
+   padding: 1rem;
    color: #6c757d;
- }
+   background-color: #f4f6f9; /* Define uma cor de fundo para que o conteúdo não se misture */
+}
 
  .app-container {
    max-width: 960px;

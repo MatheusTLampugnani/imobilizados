@@ -118,7 +118,7 @@ function drawItem(doc, item) {
        .font('Helvetica').text(`${item.data_incorporacao || 'N/A'}`, rightColX + valueOffsetX, y);
     y = doc.y;
     doc.font('Helvetica-Bold').text('Inventário Antigo:', leftColX, y)
-       .font('Helvetica').text(`${item.codigo_inventario_antigo || 'N/A'}`, leftColX + valueOffsetX, y);
+       .font('Helvetica').text(`${item.codigo_inventario_antigo}`, leftColX + valueOffsetX, y);
     y = doc.y;
     doc.font('Helvetica-Bold').text('Descrição:', leftColX, y)
        .font('Helvetica').text(`${item.descricao || 'N/A'}`, leftColX + valueOffsetX, y, { width: 400 });
