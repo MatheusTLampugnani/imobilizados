@@ -4,7 +4,6 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
-const puppeteer = require('puppeteer');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
@@ -46,93 +45,18 @@ async function handlePdfReportRequest(req, res) {
     }
 }
 
-<<<<<<< HEAD
-// --- Geração de PDF (Versão Final e Robusta) ---
-async function gerarRelatorioPDF({ data, centro_custo }, res) {
-=======
 function gerarRelatorioPDF({ data, centro_custo }, res) {
     const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
->>>>>>> 361f6fbfffe8bbb11f068e92921af31ba09546d6
     const filename = `Relatorio_CC_${centro_custo}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    doc.pipe(res);
 
-<<<<<<< HEAD
-    let browser = null;
-    try {
-        // Gera o conteúdo HTML
-        const htmlContent = gerarHTMLdoRelatorio(data, centro_custo);
-
-        // Inicia o Puppeteer
-        browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-        const page = await browser.newPage();
-        
-        // Define o conteúdo da página como o nosso HTML
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-        // Gera o PDF
-        const pdfBuffer = await page.pdf({
-            format: 'A4',
-            printBackground: true,
-            margin: {
-                top: '40px',
-                right: '40px',
-                bottom: '40px',
-                left: '40px'
-            }
-        });
-
-        // Envia o PDF como resposta
-        res.end(pdfBuffer);
-
-    } catch (error) {
-        console.error("Erro ao gerar PDF com Puppeteer:", error);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: `Erro no servidor: ${error.message}` }));
-    } finally {
-        // Fecha o navegador para liberar recursos
-        if (browser) {
-            await browser.close();
-        }
-    }
-}
-
-
-// Função para desenhar o cabeçalho da página
-function drawHeader(doc, centro_custo) {
-    const logoPath = path.join(__dirname, '..', '..', 'frontend', 'public', 'videplast_logo.png');
-    if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, { fit: [150, 150], align: 'center', y: 30 });
-    }
-    doc.moveDown(4);
-    doc.fontSize(16).font('Helvetica-Bold').fillColor('#333333').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
-    doc.moveDown(1);
-    doc.fontSize(11).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, doc.page.margins.left);
-    doc.moveDown(0.5);
-    doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#aaaaaa").lineWidth(1).stroke();
-    doc.moveDown(2);
-}
-
-// Função para desenhar o rodapé da página
-function drawFooter(doc, currentPage, totalPages) {
-    const yPos = doc.page.height - 35;
-    const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-
-    doc.fontSize(8).font('Helvetica').fillColor('#666666');
-    doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
-    doc.text(`Página ${currentPage} de ${totalPages}`, 0, yPos, { 
-        align: 'right', 
-        width: doc.page.width - doc.page.margins.right - doc.page.margins.left
-    });
-}
-
-// Função para desenhar um item com o layout aprimorado
-=======
     const drawHeader = (doc) => {
         const logoPath = path.join(__dirname, '..', '..', 'frontend', 'public', 'videplast_logo.png');
         if (fs.existsSync(logoPath)) {
-            doc.image(logoPath, { fit: [150, 150], align: 'center', y: 30 });
+            doc.image(logoPath, { fit: [75, 75], align: 'center', y: 30 });
         }
         doc.moveDown(4);
         doc.fontSize(16).font('Helvetica-Bold').fillColor('#333333').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
@@ -174,7 +98,6 @@ function drawFooter(doc, currentPage, totalPages) {
     doc.end();
 }
 
->>>>>>> 361f6fbfffe8bbb11f068e92921af31ba09546d6
 function drawItem(doc, item) {
     const leftColX = doc.page.margins.left;
     const rightColX = 320;
@@ -187,7 +110,7 @@ function drawItem(doc, item) {
     doc.text('Imobilizado:', leftColX, y)
        .font('Helvetica').text(`${item.codigo_imobilizado || 'N/A'}`, leftColX + valueOffsetX, y);
     doc.font('Helvetica-Bold').text('Subnº:', rightColX, y)
-       .font('Helvetica').text(`${item.sub_numero ?? 'N/A'}`, rightColX + valueOffsetX, y);
+       .font('Helvetica').text(`${item.sub_numero}`, rightColX + valueOffsetX, y);
     y = doc.y;
     doc.font('Helvetica-Bold').text('Número de inventário:', leftColX, y)
        .font('Helvetica').text(`${item.codigo_inventario || 'N/A'}`, leftColX + valueOffsetX, y);
@@ -195,7 +118,7 @@ function drawItem(doc, item) {
        .font('Helvetica').text(`${item.data_incorporacao || 'N/A'}`, rightColX + valueOffsetX, y);
     y = doc.y;
     doc.font('Helvetica-Bold').text('Inventário Antigo:', leftColX, y)
-       .font('Helvetica').text(`${item.codigo_inventario_antigo || 'N/A'}`, leftColX + valueOffsetX, y);
+       .font('Helvetica').text(`${item.codigo_inventario_antigo}`, leftColX + valueOffsetX, y);
     y = doc.y;
     doc.font('Helvetica-Bold').text('Descrição:', leftColX, y)
        .font('Helvetica').text(`${item.descricao || 'N/A'}`, leftColX + valueOffsetX, y, { width: 400 });
