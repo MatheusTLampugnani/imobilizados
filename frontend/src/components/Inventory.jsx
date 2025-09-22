@@ -51,7 +51,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
                   <div className="ms-2 me-auto">
                     <div className="fw-bold">
                       {item.notFound ? 'Código Lido: ' : 'Plaqueta: '} 
-                      {item.Inventário || 'N/A'} 
+                      {item.Inventário || 'Sem número de inventário'} 
                       {!item.notFound && ` (Subnº: ${item['Subnº']})`}
                     </div>
                     {item.Descrição || 'Item sem descrição'}
