@@ -136,7 +136,7 @@ function App() {
     const newItem = {
       id: `not-found-${itemCodeToAdd}-${Date.now()}`,
       Inventário: itemCodeToAdd,
-      ['Subnº']: 'N/A',
+      Subnº,
       Descrição: description,
       CentroCusto: inventarioCentroCusto,
       notFound: true,
