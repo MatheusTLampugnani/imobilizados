@@ -57,11 +57,11 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
 
       const createRow = (status, item) => [
         status,
-        item.codigo_imobilizado || 'N/A',
-        item.Inventário || 'N/A',
+        item.codigo_imobilizado || 'Sem código de imobilizado',
+        item.Inventário || 'Sem código de inventário',
         item.Subnº,
         item.Descrição || 'Sem descrição',
-        item.CentroCusto || 'N/A'
+        item.CentroCusto || 'Sem centro de custo alocado'
       ];
 
       okItems.forEach(item => tableRows.push(createRow("Ok", item)));
@@ -129,13 +129,13 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     <>
       <div className="fw-bold">
         {type === 'notFound' ? 'Código Lido: ' : 'Plaqueta: '}
-        {item.Inventário || 'N/A'}
-        {type !== 'notFound' && ` (Subnº: ${item.Subnº})`}
+        {item.Inventário || 'Sem código de inventário'}
+        {type !== 'notFound' && ` (Subnº: ${item['Subnº'] || 'Sem sub-numero'})`}
       </div>
-      {type !== 'notFound' && <div>Imobilizado: {item.codigo_imobilizado || 'N/A'}</div>}
+      {type !== 'notFound' && <div>Imobilizado: {item.codigo_imobilizado || 'Sem código de imobilizado'}</div>}
       <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
-      {type === 'missing' && <div>Centro de Custo Esperado: {item.CentroCusto || 'N/A'}</div>}
-      {(type === 'wrongCc' || type === 'notFound') && <div>Centro de Custo: {item.CentroCusto || 'N/A'}</div>}
+      {type === 'missing' && <div>Centro de Custo Esperado: {item.CentroCusto || 'Sem centro de custo'}</div>}
+      {(type === 'wrongCc' || type === 'notFound') && <div>Centro de Custo: {item.CentroCusto || 'Sem centro de custo'}</div>}
     </>
   );
 

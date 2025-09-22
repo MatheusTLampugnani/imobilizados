@@ -54,12 +54,12 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
                 <Accordion.Body>
                   <Table striped bordered hover responsive size="sm">
                     <tbody>
-                      <tr><td style={{ width: '30%' }}><strong>DESCRIÇÃO</strong></td><td>{item.Descrição || 'N/A'}</td></tr>
-                      <tr><td><strong>DATA INCORPORAÇÃO</strong></td><td>{item.Data || 'N/A'}</td></tr>
-                      <tr><td><strong>INVENTÁRIO</strong></td><td>{item.Inventário || 'N/A'}</td></tr>
-                      <tr><td><strong>INVENTÁRIO ANTIGO</strong></td><td>{item.Inventário_Antigo || 'N/A'}</td></tr>
-                      <tr><td><strong>NÚMERO DE SÉRIE</strong></td><td>{item.Série || 'N/A'}</td></tr>
-                      <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'N/A'}</td></tr>
+                      <tr><td style={{ width: '30%' }}><strong>DESCRIÇÃO</strong></td><td>{item.Descrição || 'Sem descrição'}</td></tr>
+                      <tr><td><strong>DATA INCORPORAÇÃO</strong></td><td>{item.Data || 'Sem data de incorporação'}</td></tr>
+                      <tr><td><strong>INVENTÁRIO</strong></td><td>{item.Inventário || 'Sem número de inventário'}</td></tr>
+                      <tr><td><strong>INVENTÁRIO ANTIGO</strong></td><td>{item.Inventário_Antigo || 'Sem inventário anterior'}</td></tr>
+                      <tr><td><strong>NÚMERO DE SÉRIE</strong></td><td>{item.Série || 'Sem número de série'}</td></tr>
+                      <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'Sem centro de custo alocado'}</td></tr>
                       <tr><td><strong>SUB NÚMERO</strong></td><td>{item.Subnº}</td></tr>
                     </tbody>
                   </Table>
