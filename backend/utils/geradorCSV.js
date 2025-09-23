@@ -25,7 +25,7 @@ function convertToCSV(data) {
         item.codigo_inventario,
         item.codigo_inventario_antigo,
         item.numero_serie
-    ].join(','));
+    ].join(';'));
 
     return [headers.join(';'), ...rows].join('\n');
 }
