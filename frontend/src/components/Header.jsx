@@ -7,7 +7,7 @@ const Header = () => {
       <img src={videplastLogo} alt="Logo Videplast" className="logo" />
       <h1 className="h2 fw-bold text-dark mt-3">Consulta de Imobilizados</h1>
       <p className="lead text-secondary">
-        Busque por código do imobilizado, nº de inventário ou nº de série.
+        Busque por código do imobilizado, nº de inventário, nº de série ou descrição.
       </p>
     </header>
   );
