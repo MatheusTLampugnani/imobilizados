@@ -70,21 +70,40 @@ app.get('/api/imobilizado', async (req, res) => {
         const searchByField = async (field, value) => {
             const { data, error } = await supabase.from('imobilizados').select('*').eq(field, value);
             if (error) throw error;
-            return data;
+            return data || [];
         };
 
-        let itensEncontrados = await searchByField('codigo_inventario', codigoFormatado);
-        if (!itensEncontrados || itensEncontrados.length === 0) {
-            itensEncontrados = await searchByField('numero_serie', codigoFormatado);
-        }
-        if (!itensEncontrados || itensEncontrados.length === 0) {
-            itensEncontrados = await searchByField('codigo_imobilizado', codigoFormatado);
-        }
-        if (!itensEncontrados || itensEncontrados.length === 0) {
-            itensEncontrados = await searchByField('centro_custo', codigoFormatado);
+        const searchByDescription = async (value) => {
+            const { data, error } = await supabase.from('imobilizados').select('*').ilike('descricao', `%${value}%`);
+            if (error) throw error;
+            return data || [];
+        };
+        
+        const searchPromises = [];
+        const isNumeric = /^\d+$/.test(codigoFormatado);
+
+        if (isNumeric) {
+            const numericValue = parseInt(codigoFormatado, 10);
+            searchPromises.push(searchByField('codigo_inventario', numericValue));
+            searchPromises.push(searchByField('codigo_imobilizado', numericValue));
+            searchPromises.push(searchByField('centro_custo', numericValue));
         }
 
-        if (itensEncontrados && itensEncontrados.length > 0) {
+        searchPromises.push(searchByField('numero_serie', codigoFormatado));
+        searchPromises.push(searchByDescription(codigoFormatado));
+        
+        const results = await Promise.all(searchPromises);
+        const allResults = results.flat();
+        const uniqueIds = new Set();
+        const itensEncontrados = allResults.filter(item => {
+            if (uniqueIds.has(item.id)) {
+                return false;
+            }
+            uniqueIds.add(item.id);
+            return true;
+        });
+
+        if (itensEncontrados.length > 0) {
             const imobilizadoPrincipalCodigo = itensEncontrados[0].codigo_imobilizado;
             const responseData = {
                 codigo_imobilizado: imobilizadoPrincipalCodigo,
@@ -102,7 +121,7 @@ app.get('/api/imobilizado', async (req, res) => {
             };
             return res.status(200).json(responseData);
         } else {
-            return res.status(404).json({ message: 'Imobilizado, Inventário ou Nº de Série não encontrado' });
+            return res.status(404).json({ message: `Nenhum item encontrado para o termo: ${codigo}` });
         }
     } catch (dbError) {
         console.error('--- ERRO NA CONSULTA AO SUPABASE ---', dbError);

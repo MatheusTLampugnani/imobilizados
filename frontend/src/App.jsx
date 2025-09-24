@@ -1,3 +1,4 @@
+// frontend/src/App.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button } from 'react-bootstrap';
@@ -9,7 +10,8 @@ import ReportModal from './components/ReportModal';
 import DivergenceReport from './components/DivergenceReport';
 import CcInputModal from './components/CcInputModal';
 import AddNotFoundItemModal from './components/AddNotFoundItemModal';
-import { API_URL } from './apiConfig'; 
+import FilterControls from './components/FilterControls';
+import { API_URL } from './apiConfig';
 import './App.css';
 
 function App() {
@@ -26,6 +28,11 @@ function App() {
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
+
+  const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
+  const [filteredItems, setFilteredItems] = useState([]);
+
+  const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
 
   useEffect(() => {
     try {
@@ -51,6 +58,38 @@ function App() {
       console.error("Erro ao salvar estado:", e);
     }
   }, [inventario, inventarioCentroCusto]);
+  
+  useEffect(() => {
+    if (!resultado) {
+      return;
+    }
+
+    const lowercasedFilters = {
+      serie: filters.serie.toLowerCase(),
+      subn: filters.subn.toLowerCase(),
+      centroCusto: filters.centroCusto.toLowerCase(),
+    };
+
+    let items = resultado.itens.filter(item => {
+      const serieMatch = !lowercasedFilters.serie || String(item.Série || '').toLowerCase().includes(lowercasedFilters.serie);
+      const subnMatch = !lowercasedFilters.subn || String(item['Subnº'] || '').toLowerCase().includes(lowercasedFilters.subn);
+      const centroCustoMatch = !lowercasedFilters.centroCusto || String(item.CentroCusto || '').toLowerCase().includes(lowercasedFilters.centroCusto);
+      
+      return serieMatch && subnMatch && centroCustoMatch;
+    });
+
+    items.sort((a, b) => {
+      const valA = a[sortConfig.field] || '';
+      const valB = b[sortConfig.field] || '';
+
+      if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    setFilteredItems(items);
+  }, [filters, resultado, sortConfig]);
+
 
   const formatarCodigo = (valor) => {
     if (!valor) return "";
@@ -92,6 +131,7 @@ function App() {
     }
     setIsLoading(true);
     setError('');
+    handleResetFilters(); 
 
     try {
       const response = await axios.get(`${API_URL}/imobilizado?codigo=${codigo}`);
@@ -99,7 +139,7 @@ function App() {
     } catch (err) {
       setResultado(null);
       const errorMessage = err.response?.status === 404 
-        ? `Imobilizado ${codigo} não encontrado.` 
+        ? `Nenhum item encontrado para o termo: ${codigo}`
         : (err.response?.data?.message || 'Erro ao conectar ao servidor.');
       setError(errorMessage);
     } finally {
@@ -136,7 +176,7 @@ function App() {
     const newItem = {
       id: `not-found-${itemCodeToAdd}-${Date.now()}`,
       Inventário: itemCodeToAdd,
-      Subnº,
+      Subnº: '-',
       Descrição: description,
       CentroCusto: inventarioCentroCusto,
       notFound: true,
@@ -146,6 +186,19 @@ function App() {
       setInventario(prevInventario => [newItem, ...prevInventario]);
     }
     setShowAddItemModal(false);
+  };
+  
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleResetFilters = () => {
+    setFilters({ serie: '', subn: '', centroCusto: '' });
+    setSortConfig({ field: 'Descrição', order: 'asc' });
+  };
+  
+  const handleSortChange = (newSortConfig) => {
+    setSortConfig(newSortConfig);
   };
 
   const refreshData = () => {
@@ -172,10 +225,22 @@ function App() {
           onConsultar={handleCodeSearch}
           isLoading={isLoading}
         />
+
+        {resultado && resultado.itens.length > 0 && (
+          <FilterControls
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onResetFilters={handleResetFilters}
+            sortConfig={sortConfig}
+            onSortChange={handleSortChange}
+            itemsCount={filteredItems.length}
+          />
+        )}
+
         <ResultsDisplay
           isLoading={isLoading}
           error={error}
-          resultado={resultado}
+          resultado={resultado ? { ...resultado, itens: filteredItems } : null}
           onRefresh={refreshData}
         />
         <div className="main-actions-container">
