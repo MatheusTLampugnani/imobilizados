@@ -1,3 +1,4 @@
+// frontend/vite.config.js
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -22,7 +23,7 @@ export default defineConfig({
         icons: [
           {
             src: '/videplast_logo.png',
-            sizes: '512x512',
+            sizes: '192x192',
             type: 'image/png',
           },
           {
