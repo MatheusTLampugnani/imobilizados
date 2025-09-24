@@ -16,4 +16,4 @@ yarn-debug.log*
 yarn-error.log*
 
 # Ignorar o package-lock.json de qualquer pasta
-**/package-lock.json
+/package-lock.json
