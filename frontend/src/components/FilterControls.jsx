@@ -1,5 +1,5 @@
 import React from 'react';
-import { Row, Col, Form, Button } from 'react-bootstrap';
+import { Row, Col, Form, Button, InputGroup } from 'react-bootstrap';
 import { SortDown, SortUp, X } from 'react-bootstrap-icons';
 
 const FilterControls = ({
@@ -83,6 +83,7 @@ const FilterControls = ({
             </InputGroup>
           </Form.Group>
         </Col>
+
         <Col md={2} className="d-flex align-items-end">
           <Button variant="outline-secondary" onClick={onResetFilters} className="w-100">
             <X /> Limpar
