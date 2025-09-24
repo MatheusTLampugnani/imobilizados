@@ -14,7 +14,7 @@
     "bootstrap": "^5.3.6",
     "bootstrap-icons": "^1.13.1",
     "html5-qrcode": "^2.3.8",
-    "jspdf": "^3.0.1",
+    "jspdf": "^2.5.1",
     "jspdf-autotable": "^5.0.2",
     "jsqr": "^1.4.0",
     "react": "^19.1.0",
