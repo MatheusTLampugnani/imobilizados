@@ -19,13 +19,11 @@ async function handlePdfReportRequest(req, res) {
         return res.end(JSON.stringify({ message: "Centro de custo não fornecido." }));
     }
     
-    const centroCustoNumerico = parseInt(centro_custo, 10);
-
     try {
         const { data, error } = await supabase
             .from('imobilizados')
             .select('*')
-            .eq('centro_custo', centroCustoNumerico) 
+            .eq('centro_custo', centro_custo) 
             .order('codigo_imobilizado', { ascending: true })
             .order('sub_numero', { ascending: true });
 

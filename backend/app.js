@@ -22,9 +22,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 console.log('Conexão com o Supabase configurada.');
 
 function formatarValor(valor) {
-    if (valor === null || valor === undefined || valor === '') return "";
-    return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
+    if (valor === null || valor === undefined) return "";
+    return String(valor).trim();
 }
+
 app.get('/api/centro-custo/validate/:cc', async (req, res) => {
   const { cc } = req.params;
 
