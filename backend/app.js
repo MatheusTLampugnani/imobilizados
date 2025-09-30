@@ -87,9 +87,9 @@ app.get('/api/imobilizado', async (req, res) => {
             const numericValue = parseInt(codigoFormatado, 10);
             searchPromises.push(searchByField('codigo_inventario', numericValue));
             searchPromises.push(searchByField('codigo_imobilizado', numericValue));
-            searchPromises.push(searchByField('centro_custo', numericValue));
         }
 
+        searchPromises.push(searchByField('centro_custo', codigoFormatado));
         searchPromises.push(searchByField('numero_serie', codigoFormatado));
         searchPromises.push(searchByDescription(codigoFormatado));
         
