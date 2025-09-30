@@ -18,8 +18,6 @@ async function handlePdfReportRequest(req, res) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ message: "Centro de custo não fornecido." }));
     }
-    
-    const centroCustoNumerico = parseInt(centro_custo, 10);
 
     try {
         const { data, error } = await supabase
