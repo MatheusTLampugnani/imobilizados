@@ -18,7 +18,7 @@ async function handlePdfReportRequest(req, res) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ message: "Centro de custo não fornecido." }));
     }
-    
+  
     try {
         const { data, error } = await supabase
             .from('imobilizados')
