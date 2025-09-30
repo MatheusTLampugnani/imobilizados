@@ -18,12 +18,12 @@ async function handlePdfReportRequest(req, res) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ message: "Centro de custo não fornecido." }));
     }
-
+  
     try {
         const { data, error } = await supabase
             .from('imobilizados')
             .select('*')
-            .eq('centro_custo', centroCustoNumerico) 
+            .eq('centro_custo', centro_custo) 
             .order('codigo_imobilizado', { ascending: true })
             .order('sub_numero', { ascending: true });
 

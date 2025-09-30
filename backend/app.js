@@ -22,9 +22,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 console.log('Conexão com o Supabase configurada.');
 
 function formatarValor(valor) {
-    if (valor === null || valor === undefined || valor === '') return "";
-    return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
+    if (valor === null || valor === undefined) return "";
+    return String(valor).trim();
 }
+
 app.get('/api/centro-custo/validate/:cc', async (req, res) => {
   const { cc } = req.params;
 
@@ -86,9 +87,9 @@ app.get('/api/imobilizado', async (req, res) => {
             const numericValue = parseInt(codigoFormatado, 10);
             searchPromises.push(searchByField('codigo_inventario', numericValue));
             searchPromises.push(searchByField('codigo_imobilizado', numericValue));
-            searchPromises.push(searchByField('centro_custo', numericValue));
         }
 
+        searchPromises.push(searchByField('centro_custo', codigoFormatado));
         searchPromises.push(searchByField('numero_serie', codigoFormatado));
         searchPromises.push(searchByDescription(codigoFormatado));
         
