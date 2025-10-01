@@ -42,7 +42,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
     <>
       <Card className="mt-4 shadow-sm border-0">
         <Card.Header as="h5" className="bg-danger text-white">
-          CÓDIGO DO IMOBILIZADO: {resultado.codigo_imobilizado}
+          IMOBILIZADOS
         </Card.Header>
         <Card.Body>
           <Accordion defaultActiveKey={resultado.itens[0]?.id.toString()} alwaysOpen className="mt-2">
@@ -54,6 +54,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
                 <Accordion.Body>
                   <Table striped bordered hover responsive size="sm">
                     <tbody>
+                      <tr><td style={{ width: '30%' }}><strong>CÓDIGO DO IMOBILIZADO</strong></td><td>{item.codigo_imobilizado || 'Sem código'}</td></tr>
                       <tr><td style={{ width: '30%' }}><strong>DESCRIÇÃO</strong></td><td>{item.Descrição || 'Sem descrição'}</td></tr>
                       <tr><td><strong>DATA INCORPORAÇÃO</strong></td><td>{item.Data || 'Sem data de incorporação'}</td></tr>
                       <tr><td><strong>INVENTÁRIO</strong></td><td>{item.Inventário || 'Sem número de inventário'}</td></tr>
