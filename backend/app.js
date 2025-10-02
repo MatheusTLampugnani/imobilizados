@@ -61,21 +61,28 @@ app.get('/api', (req, res) => {
 app.get('/api/imobilizado', async (req, res) => {
     console.log(`[LOG DE TESTE] Rota /api/imobilizado foi chamada com o código: ${req.query.codigo}`);
     const { codigo } = req.query;
-    const codigoFormatado = formatarValor(codigo);
+    const codigoFormatado = String(codigo || '').trim(); // Simplificando a formatação para sempre tratar como string
 
     if (!codigoFormatado) {
         return res.status(400).json({ message: "Nenhum código foi fornecido." });
     }
 
     try {
+        // ATUALIZAÇÃO 1: Modifique o .select() para buscar da tabela relacionada
         const searchByField = async (field, value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*').eq(field, value);
+            const { data, error } = await supabase
+                .from('imobilizados')
+                .select('*, centros_de_custo(descricao)') // <--- ALTERAÇÃO AQUI
+                .eq(field, value);
             if (error) throw error;
             return data || [];
         };
 
         const searchByDescription = async (value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*').ilike('descricao', `%${value}%`);
+            const { data, error } = await supabase
+                .from('imobilizados')
+                .select('*, centros_de_custo(descricao)') // <--- ALTERAÇÃO AQUI
+                .ilike('descricao', `%${value}%`);
             if (error) throw error;
             return data || [];
         };
@@ -117,6 +124,7 @@ app.get('/api/imobilizado', async (req, res) => {
                     "Inventário_Antigo": item.codigo_inventario_antigo, 
                     "Série": item.numero_serie,
                     "CentroCusto": item.centro_custo,
+                    "CentroCustoNome": item.centros_de_custo ? item.centros_de_custo.descricao : 'Descrição não encontrada',
                     "codigo_imobilizado": item.codigo_imobilizado
                 }))
             };
@@ -129,6 +137,7 @@ app.get('/api/imobilizado', async (req, res) => {
         return res.status(500).json({ message: `Erro no banco de dados: ${dbError.message}` });
     }
 });
+
 
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
