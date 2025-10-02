@@ -109,14 +109,14 @@ app.get('/api/imobilizado', async (req, res) => {
             if (centroCustoCodes.length > 0) {
                 const { data: centrosCustoData, error: ccError } = await supabase
                     .from('centros_de_custo')
-                    .select('centro_custo, setores')
+                    .select('centro_custo, setores') 
                     .in('centro_custo', centroCustoCodes);
 
                 if (ccError) {
                     console.error('Erro ao buscar nomes dos centros de custo:', ccError);
                 } else {
                     centrosCustoData.forEach(cc => {
-                        centroCustoMap[cc.codigo] = cc.descricao;
+                        centroCustoMap[cc.centro_custo] = cc.setores; 
                     });
                 }
             }
@@ -146,8 +146,6 @@ app.get('/api/imobilizado', async (req, res) => {
         return res.status(500).json({ message: `Erro no banco de dados: ${dbError.message}` });
     }
 });
-
-
 
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
