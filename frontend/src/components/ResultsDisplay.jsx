@@ -42,7 +42,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
     <>
       <Card className="mt-4 shadow-sm border-0">
         <Card.Header as="h5" className="bg-danger text-white">
-          CÓDIGO DO IMOBILIZADO: {resultado.codigo_imobilizado}
+          IMOBILIZADOS
         </Card.Header>
         <Card.Body>
           <Accordion defaultActiveKey={resultado.itens[0]?.id.toString()} alwaysOpen className="mt-2">
