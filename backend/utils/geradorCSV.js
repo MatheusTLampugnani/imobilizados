@@ -5,13 +5,13 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-function convertToCSV(data) {
+function convertToCSV(data, centroCustoMap) {
     if (!data || data.length === 0) {
         return '';
     }
 
     const headers = [
-        "ID", "Subn", "Data Incorporacao", "Descricao", "Centro de Custo", 
+        "ID", "Subn", "Data Incorporacao", "Descricao", "Centro de Custo", "Setor",
         "Codigo Imobilizado", "Codigo Inventario", "Codigo Inventario Antigo", "N de Série"
     ];
     
@@ -19,8 +19,9 @@ function convertToCSV(data) {
         item.id,
         item.sub_numero,
         item.data_incorporacao,
-        `"${item.descricao.replace(/"/g, '""')}"`,
+        `"${(item.descricao || '').replace(/"/g, '""')}"`,
         item.centro_custo,
+        `"${(centroCustoMap[item.centro_custo] || '').replace(/"/g, '""')}"`,
         item.codigo_imobilizado,
         item.codigo_inventario,
         item.codigo_inventario_antigo,
@@ -54,9 +55,27 @@ async function handleCsvReportRequest(req, res) {
             return res.end(JSON.stringify({ message: `Nenhum item encontrado para o centro de custo ${centro_custo}.` }));
         }
 
-        const csvData = convertToCSV(data);
+        const centroCustoCodes = [...new Set(data.map(item => item.centro_custo).filter(Boolean))];
+        let centroCustoMap = {};
 
-        res.setHeader('Content-Type', 'text/csv');
+        if (centroCustoCodes.length > 0) {
+            const { data: centrosCustoData, error: ccError } = await supabase
+                .from('centro_de_custo')
+                .select('centro_custo, setores')
+                .in('centro_custo', centroCustoCodes);
+
+            if (ccError) {
+                console.error('Erro ao buscar nomes dos centros de custo para CSV:', ccError);
+            } else {
+                centrosCustoData.forEach(cc => {
+                    centroCustoMap[cc.centro_custo] = cc.setores;
+                });
+            }
+        }
+
+        const csvData = convertToCSV(data, centroCustoMap);
+
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="Relatorio_CC_${centro_custo}.csv"`);
         res.writeHead(200);
         res.end(csvData);

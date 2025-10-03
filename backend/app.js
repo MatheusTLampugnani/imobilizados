@@ -61,7 +61,7 @@ app.get('/api', (req, res) => {
 app.get('/api/imobilizado', async (req, res) => {
     console.log(`[LOG DE TESTE] Rota /api/imobilizado foi chamada com o código: ${req.query.codigo}`);
     const { codigo } = req.query;
-    const codigoFormatado = formatarValor(codigo);
+    const codigoFormatado = String(codigo || '').trim();
 
     if (!codigoFormatado) {
         return res.status(400).json({ message: "Nenhum código foi fornecido." });
@@ -97,14 +97,31 @@ app.get('/api/imobilizado', async (req, res) => {
         const allResults = results.flat();
         const uniqueIds = new Set();
         const itensEncontrados = allResults.filter(item => {
-            if (uniqueIds.has(item.id)) {
-                return false;
-            }
+            if (uniqueIds.has(item.id)) return false;
             uniqueIds.add(item.id);
             return true;
         });
 
         if (itensEncontrados.length > 0) {
+            const centroCustoCodes = [...new Set(itensEncontrados.map(item => item.centro_custo).filter(Boolean))];
+            let centroCustoMap = {};
+
+            if (centroCustoCodes.length > 0) {
+                const { data: centrosCustoData, error: ccError } = await supabase
+                    .from('centro_de_custo') 
+                    .select('centro_custo, setores')
+                    .in('centro_custo', centroCustoCodes);
+
+
+                if (ccError) {
+                    console.error('Erro ao buscar nomes dos centros de custo:', ccError);
+                } else {
+                    centrosCustoData.forEach(cc => {
+                        centroCustoMap[cc.centro_custo] = cc.setores; 
+                    });
+                }
+            }
+            
             const imobilizadoPrincipalCodigo = itensEncontrados[0].codigo_imobilizado;
             const responseData = {
                 codigo_imobilizado: imobilizadoPrincipalCodigo,
@@ -117,6 +134,7 @@ app.get('/api/imobilizado', async (req, res) => {
                     "Inventário_Antigo": item.codigo_inventario_antigo, 
                     "Série": item.numero_serie,
                     "CentroCusto": item.centro_custo,
+                    "CentroCustoNome": centroCustoMap[item.centro_custo] || '',
                     "codigo_imobilizado": item.codigo_imobilizado
                 }))
             };
