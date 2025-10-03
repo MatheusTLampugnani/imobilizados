@@ -18,7 +18,7 @@ async function handlePdfReportRequest(req, res) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ message: "Centro de custo não fornecido." }));
     }
-  
+
     try {
         const { data, error } = await supabase
             .from('imobilizados')
@@ -33,7 +33,21 @@ async function handlePdfReportRequest(req, res) {
             res.writeHead(404, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({ message: `Nenhum imobilizado encontrado para o Centro de Custo ${centro_custo}.` }));
         }
-        gerarRelatorioPDF({ data, centro_custo }, res);
+        
+        const { data: centroCustoData, error: ccError } = await supabase
+            .from('centro_de_custo') 
+            .select('setores')
+            .eq('centro_custo', centro_custo)
+            .single();
+
+
+        if (ccError) {
+            console.error("Erro ao buscar nome do CC para o PDF:", ccError);
+        }
+
+        const centroCustoNome = centroCustoData ? centroCustoData.setores : '';
+        
+        gerarRelatorioPDF({ data, centro_custo, centro_custo_nome: centroCustoNome }, res);
 
     } catch (dbError) {
         console.error('ERRO AO GERAR PDF:', dbError);
@@ -43,7 +57,7 @@ async function handlePdfReportRequest(req, res) {
     }
 }
 
-function gerarRelatorioPDF({ data, centro_custo }, res) {
+function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
     const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
     const filename = `Relatorio_CC_${centro_custo}.pdf`;
 
@@ -59,7 +73,7 @@ function gerarRelatorioPDF({ data, centro_custo }, res) {
         doc.moveDown(4);
         doc.fontSize(16).font('Helvetica-Bold').fillColor('#333333').text('RELATÓRIO DE IMOBILIZADOS', { align: 'center' });
         doc.moveDown(1);
-        doc.fontSize(11).font('Helvetica').text(`Centro de Custo: ${centro_custo}`, doc.page.margins.left);
+        doc.fontSize(11).font('Helvetica').text(`Centro de Custo: ${centro_custo} - ${centro_custo_nome || ''}`, doc.page.margins.left);
         doc.moveDown(0.5);
         doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#aaaaaa").lineWidth(1).stroke();
         doc.moveDown(1);

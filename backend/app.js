@@ -108,9 +108,10 @@ app.get('/api/imobilizado', async (req, res) => {
 
             if (centroCustoCodes.length > 0) {
                 const { data: centrosCustoData, error: ccError } = await supabase
-                    .from('centros_de_custo')
-                    .select('centro_custo, setores') 
+                    .from('centro_de_custo') 
+                    .select('centro_custo, setores')
                     .in('centro_custo', centroCustoCodes);
+
 
                 if (ccError) {
                     console.error('Erro ao buscar nomes dos centros de custo:', ccError);
