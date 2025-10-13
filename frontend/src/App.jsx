@@ -149,7 +149,7 @@ function App() {
 
   const handleAddItemToInventory = async (codeToAdd) => {
     try {
-      const response = await axios.get(`${API_URL}/imobilizado?codigo=${codeToAdd}`);
+      const response = await axios.get(`${API_URL}/inventory-item?codigo=${codeToAdd}`);
       const dados = response.data;
       
       if (dados && dados.itens && dados.itens.length > 0) {

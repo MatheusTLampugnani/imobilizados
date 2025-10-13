@@ -108,16 +108,15 @@ app.get('/api/imobilizado', async (req, res) => {
 
             if (centroCustoCodes.length > 0) {
                 const { data: centrosCustoData, error: ccError } = await supabase
-                    .from('centro_de_custo') 
+                    .from('centro_de_custo')
                     .select('centro_custo, setores')
                     .in('centro_custo', centroCustoCodes);
-
 
                 if (ccError) {
                     console.error('Erro ao buscar nomes dos centros de custo:', ccError);
                 } else {
                     centrosCustoData.forEach(cc => {
-                        centroCustoMap[cc.centro_custo] = cc.setores; 
+                        centroCustoMap[cc.centro_custo] = cc.setores;
                     });
                 }
             }
@@ -144,6 +143,58 @@ app.get('/api/imobilizado', async (req, res) => {
         }
     } catch (dbError) {
         console.error('--- ERRO NA CONSULTA AO SUPABASE ---', dbError);
+        return res.status(500).json({ message: `Erro no banco de dados: ${dbError.message}` });
+    }
+});
+
+
+app.get('/api/inventory-item', async (req, res) => {
+    const { codigo } = req.query;
+    const codigoFormatado = String(codigo || '').trim();
+
+    if (!codigoFormatado) {
+        return res.status(400).json({ message: "Nenhum código foi fornecido." });
+    }
+
+    try {
+        const searchByField = async (field, value) => {
+            const { data, error } = await supabase.from('imobilizados').select('*, centro_de_custo(setores)').eq(field, value);
+            if (error) throw error;
+            return data || [];
+        };
+
+        const searchPromises = [];
+        const isNumeric = /^\d+$/.test(codigoFormatado);
+
+        if (isNumeric) {
+            const numericValue = parseInt(codigoFormatado, 10);
+            searchPromises.push(searchByField('codigo_inventario', numericValue));
+            searchPromises.push(searchByField('codigo_imobilizado', numericValue));
+        }
+        searchPromises.push(searchByField('numero_serie', codigoFormatado));
+
+        const results = await Promise.all(searchPromises);
+        const itemEncontrado = results.flat()[0];
+
+        if (itemEncontrado) {
+            const responseData = {
+                id: itemEncontrado.id,
+                "Subnº": itemEncontrado.sub_numero,
+                "Data": itemEncontrado.data_incorporacao,
+                "Descrição": itemEncontrado.descricao,
+                "Inventário": itemEncontrado.codigo_inventario,
+                "Inventário_Antigo": itemEncontrado.codigo_inventario_antigo,
+                "Série": itemEncontrado.numero_serie,
+                "CentroCusto": itemEncontrado.centro_custo,
+                "CentroCustoNome": itemEncontrado.centro_de_custo ? itemEncontrado.centro_de_custo.setores : '',
+                "codigo_imobilizado": itemEncontrado.codigo_imobilizado
+            };
+            return res.status(200).json({ itens: [responseData] });
+        } else {
+            return res.status(404).json({ message: `Nenhum item encontrado para o código: ${codigo}` });
+        }
+    } catch (dbError) {
+        console.error('--- ERRO NA CONSULTA DE INVENTÁRIO ---', dbError);
         return res.status(500).json({ message: `Erro no banco de dados: ${dbError.message}` });
     }
 });
