@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Button, ListGroup, Alert, Spinner } from 'react-bootstrap';
+import { Modal, Button, ListGroup, Alert, Spinner, Form } from 'react-bootstrap';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import logoVideplast from '../assets/videplast-brand.png';
@@ -17,6 +17,14 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
   const [wrongCcItems, setWrongCcItems] = useState([]);
   const [notFoundItems, setNotFoundItems] = useState([]);
   const [isGenerating, setIsGenerating] = useState(null);
+  
+  // Novo estado para os filtros
+  const [filters, setFilters] = useState({
+    ok: true,
+    missing: true,
+    wrongCc: true,
+    notFound: true,
+  });
 
   useEffect(() => {
     if (show) {
@@ -47,6 +55,13 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     }
   }, [show, collectedItems, expectedItems, inventoryCc]);
 
+  const handleFilterChange = (event) => {
+    setFilters({
+      ...filters,
+      [event.target.name]: event.target.checked,
+    });
+  };
+
   const handleGenerateReport = async (format) => {
     setIsGenerating(format);
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -64,10 +79,11 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         item.CentroCusto || 'Sem centro de custo alocado'
       ];
 
-      okItems.forEach(item => tableRows.push(createRow("Ok", item)));
-      missingItems.forEach(item => tableRows.push(createRow("Faltante", item)));
-      wrongCcItems.forEach(item => tableRows.push(createRow("CC Errado", item)));
-      notFoundItems.forEach(item => tableRows.push(createRow("Não Cadastrado", item)));
+      // Adiciona linhas apenas se o filtro estiver ativo
+      if (filters.ok) okItems.forEach(item => tableRows.push(createRow("Ok", item)));
+      if (filters.missing) missingItems.forEach(item => tableRows.push(createRow("Faltante", item)));
+      if (filters.wrongCc) wrongCcItems.forEach(item => tableRows.push(createRow("CC Errado", item)));
+      if (filters.notFound) notFoundItems.forEach(item => tableRows.push(createRow("Não Cadastrado", item)));
       
       if (format === 'pdf') {
         const doc = new jsPDF();
@@ -139,67 +155,79 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     </>
   );
 
+  // Função para renderizar a lista de itens, aplicando o filtro
+  const renderItemList = (items, title, type, variant) => {
+    if (items.length === 0 || !filters[type]) return null;
+
+    return (
+      <div className="mb-4">
+        <h5>{title} ({items.length})</h5>
+        <ListGroup>
+          {items.map((item, index) => (
+            <ListGroup.Item key={item.id || index} variant={variant}>
+              {renderItemDetails(item, type)}
+            </ListGroup.Item>
+          ))}
+        </ListGroup>
+      </div>
+    );
+  };
+
   return (
     <Modal show={show} onHide={onClose} centered size="xl" backdrop="static">
       <Modal.Header closeButton className="bg-dark text-white">
         <Modal.Title>Relatório de Divergências do Inventário</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        <div className="mb-3 p-3 border rounded">
+          <h6 className="mb-2">Filtros de Visualização:</h6>
+          <Form>
+            <div className="d-flex flex-wrap gap-3">
+              <Form.Check 
+                type="checkbox"
+                id="filter-ok"
+                label={`Itens Corretos (${okItems.length})`}
+                name="ok"
+                checked={filters.ok}
+                onChange={handleFilterChange}
+              />
+              <Form.Check 
+                type="checkbox"
+                id="filter-missing"
+                label={`Itens Faltantes (${missingItems.length})`}
+                name="missing"
+                checked={filters.missing}
+                onChange={handleFilterChange}
+              />
+              <Form.Check 
+                type="checkbox"
+                id="filter-wrongCc"
+                label={`Itens em Outro CC (${wrongCcItems.length})`}
+                name="wrongCc"
+                checked={filters.wrongCc}
+                onChange={handleFilterChange}
+              />
+              <Form.Check 
+                type="checkbox"
+                id="filter-notFound"
+                label={`Itens Não Cadastrados (${notFoundItems.length})`}
+                name="notFound"
+                checked={filters.notFound}
+                onChange={handleFilterChange}
+              />
+            </div>
+          </Form>
+        </div>
+
         {okItems.length === 0 && missingItems.length === 0 && wrongCcItems.length === 0 && notFoundItems.length === 0 && (
           <Alert variant="success" className="text-center">Nenhuma divergência encontrada!</Alert>
         )}
 
-        {okItems.length > 0 && (
-          <div className="mb-4">
-            <h5>✅ Itens Corretos ({okItems.length})</h5>
-            <ListGroup>
-              {okItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} variant="success">
-                  {renderItemDetails(item, 'ok')}
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          </div>
-        )}
+        {renderItemList(okItems, '✅ Itens Corretos', 'ok', 'success')}
+        {renderItemList(missingItems, '❌ Itens Faltantes', 'missing', 'danger')}
+        {renderItemList(wrongCcItems, '⚠️ Itens em Outro Centro de Custo', 'wrongCc', 'warning')}
+        {renderItemList(notFoundItems, '➕ Itens Não Cadastrados', 'notFound', 'info')}
 
-        {missingItems.length > 0 && (
-          <div className="mb-4">
-            <h5>❌ Itens Faltantes ({missingItems.length})</h5>
-            <ListGroup>
-              {missingItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} variant="danger">
-                  {renderItemDetails(item, 'missing')}
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          </div>
-        )}
-
-        {wrongCcItems.length > 0 && (
-          <div className="mb-4">
-            <h5>⚠️ Itens em Outro Centro de Custo ({wrongCcItems.length})</h5>
-            <ListGroup>
-              {wrongCcItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} variant="warning">
-                  {renderItemDetails(item, 'wrongCc')}
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          </div>
-        )}
-
-        {notFoundItems.length > 0 && (
-          <div className="mb-4">
-            <h5>➕ Itens Não Cadastrados ({notFoundItems.length})</h5>
-            <ListGroup>
-              {notFoundItems.map((item, index) => (
-                <ListGroup.Item key={item.id || index} variant="info">
-                   {renderItemDetails(item, 'notFound')}
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          </div>
-        )}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onFinishAndReset}>Voltar ao Início</Button>
