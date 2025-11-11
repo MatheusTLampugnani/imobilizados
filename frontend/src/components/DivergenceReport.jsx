@@ -33,11 +33,15 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         }
       });
 
-      const collectedInventarioMap = new Map();
-      collectedItems.forEach(item => collectedInventarioMap.set(String(item.Inventário).trim(), item));
+      const collectedIdMap = new Map();
+      collectedItems.forEach(item => {
+        if (!item.notFound) {
+          collectedIdMap.set(item.id, item);
+        }
+      });
       
       const newMissing = expectedItems.filter(expected => {
-        return !collectedInventarioMap.has(String(expected.Inventário).trim());
+        return !collectedIdMap.has(expected.id);
       });
 
       setOkItems(newOk);
