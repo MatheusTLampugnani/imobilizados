@@ -37,7 +37,7 @@ app.get('/api/centro-custo/validate/:cc', async (req, res) => {
     const { data, error, count } = await supabase
       .from('imobilizados')
       .select('centro_custo', { count: 'exact', head: true })
-      .eq('centro_custo', cc);
+      .ilike('centro_custo', cc); 
 
     if (error) {
       throw error;
@@ -68,7 +68,13 @@ app.get('/api/imobilizado', async (req, res) => {
     }
 
     try {
-        const searchByField = async (field, value) => {
+        const searchByText = async (field, value) => {
+            const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, value);
+            if (error) throw error;
+            return data || [];
+        };
+
+        const searchByNumber = async (field, value) => {
             const { data, error } = await supabase.from('imobilizados').select('*').eq(field, value);
             if (error) throw error;
             return data || [];
@@ -82,14 +88,14 @@ app.get('/api/imobilizado', async (req, res) => {
         
         const searchPromises = [];
         
-        searchPromises.push(searchByField('codigo_inventario', codigoFormatado));
-        searchPromises.push(searchByField('numero_serie', codigoFormatado));
-        searchPromises.push(searchByField('centro_custo', codigoFormatado));
+        searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
+        searchPromises.push(searchByText('numero_serie', codigoFormatado));
+        searchPromises.push(searchByText('centro_custo', codigoFormatado));
 
         const isNumeric = /^\d+$/.test(codigoFormatado);
         if (isNumeric) {
             const numericValue = parseInt(codigoFormatado, 10);
-            searchPromises.push(searchByField('codigo_imobilizado', numericValue));
+            searchPromises.push(searchByNumber('codigo_imobilizado', numericValue));
         }
 
         searchPromises.push(searchByDescription(codigoFormatado));
@@ -158,7 +164,12 @@ app.get('/api/inventory-item', async (req, res) => {
     }
 
     try {
-        const searchByField = async (field, value) => {
+        const searchByText = async (field, value) => {
+            const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, value);
+            if (error) throw error;
+            return data || [];
+        };
+        const searchByNumber = async (field, value) => {
             const { data, error } = await supabase.from('imobilizados').select('*').eq(field, value);
             if (error) throw error;
             return data || [];
@@ -166,17 +177,17 @@ app.get('/api/inventory-item', async (req, res) => {
 
         const searchPromises = [];
         
-        searchPromises.push(searchByField('codigo_inventario', codigoFormatado));
-        searchPromises.push(searchByField('numero_serie', codigoFormatado));
+        searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
+        searchPromises.push(searchByText('numero_serie', codigoFormatado));
 
         const isNumeric = /^\d+$/.test(codigoFormatado);
         if (isNumeric) {
             const numericValue = parseInt(codigoFormatado, 10);
-            searchPromises.push(searchByField('codigo_imobilizado', numericValue));
+            searchPromises.push(searchByNumber('codigo_imobilizado', numericValue));
         }
 
         const results = await Promise.all(searchPromises);
-        const itemEncontrado = results.flat()[0];
+        const itemEncontrado = results.flat()[0]; 
 
         if (itemEncontrado) {
             let nomeSetor = '';
