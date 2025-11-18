@@ -81,20 +81,22 @@ app.get('/api/imobilizado', async (req, res) => {
         };
         
         const searchPromises = [];
-        const isNumeric = /^\d+$/.test(codigoFormatado);
+        
+        searchPromises.push(searchByField('codigo_inventario', codigoFormatado));
+        searchPromises.push(searchByField('numero_serie', codigoFormatado));
+        searchPromises.push(searchByField('centro_custo', codigoFormatado));
 
+        const isNumeric = /^\d+$/.test(codigoFormatado);
         if (isNumeric) {
             const numericValue = parseInt(codigoFormatado, 10);
-            searchPromises.push(searchByField('codigo_inventario', numericValue));
             searchPromises.push(searchByField('codigo_imobilizado', numericValue));
         }
 
-        searchPromises.push(searchByField('centro_custo', codigoFormatado));
-        searchPromises.push(searchByField('numero_serie', codigoFormatado));
         searchPromises.push(searchByDescription(codigoFormatado));
         
         const results = await Promise.all(searchPromises);
         const allResults = results.flat();
+        
         const uniqueIds = new Set();
         const itensEncontrados = allResults.filter(item => {
             if (uniqueIds.has(item.id)) return false;
@@ -147,7 +149,6 @@ app.get('/api/imobilizado', async (req, res) => {
     }
 });
 
-
 app.get('/api/inventory-item', async (req, res) => {
     const { codigo } = req.query;
     const codigoFormatado = String(codigo || '').trim();
@@ -158,25 +159,36 @@ app.get('/api/inventory-item', async (req, res) => {
 
     try {
         const searchByField = async (field, value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*, centro_de_custo(setores)').eq(field, value);
+            const { data, error } = await supabase.from('imobilizados').select('*').eq(field, value);
             if (error) throw error;
             return data || [];
         };
 
         const searchPromises = [];
-        const isNumeric = /^\d+$/.test(codigoFormatado);
+        
+        searchPromises.push(searchByField('codigo_inventario', codigoFormatado));
+        searchPromises.push(searchByField('numero_serie', codigoFormatado));
 
+        const isNumeric = /^\d+$/.test(codigoFormatado);
         if (isNumeric) {
             const numericValue = parseInt(codigoFormatado, 10);
-            searchPromises.push(searchByField('codigo_inventario', numericValue));
             searchPromises.push(searchByField('codigo_imobilizado', numericValue));
         }
-        searchPromises.push(searchByField('numero_serie', codigoFormatado));
 
         const results = await Promise.all(searchPromises);
         const itemEncontrado = results.flat()[0];
 
         if (itemEncontrado) {
+            let nomeSetor = '';
+            if (itemEncontrado.centro_custo) {
+                 const { data: ccData } = await supabase
+                    .from('centro_de_custo')
+                    .select('setores')
+                    .eq('centro_custo', itemEncontrado.centro_custo)
+                    .single();
+                 if (ccData) nomeSetor = ccData.setores;
+            }
+
             const responseData = {
                 id: itemEncontrado.id,
                 "Subnº": itemEncontrado.sub_numero,
@@ -186,7 +198,7 @@ app.get('/api/inventory-item', async (req, res) => {
                 "Inventário_Antigo": itemEncontrado.codigo_inventario_antigo,
                 "Série": itemEncontrado.numero_serie,
                 "CentroCusto": itemEncontrado.centro_custo,
-                "CentroCustoNome": itemEncontrado.centro_de_custo ? itemEncontrado.centro_de_custo.setores : '',
+                "CentroCustoNome": nomeSetor,
                 "codigo_imobilizado": itemEncontrado.codigo_imobilizado
             };
             return res.status(200).json({ itens: [responseData] });
@@ -202,9 +214,9 @@ app.get('/api/inventory-item', async (req, res) => {
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
         const { itemId, newInventoryCode } = req.body;
-        const newCodeNumeric = parseInt(newInventoryCode, 10);
+        const newCode = String(newInventoryCode).trim(); 
 
-        if (!itemId || isNaN(newCodeNumeric)) {
+        if (!itemId || !newCode) {
             return res.status(400).json({ message: 'Dados inválidos fornecidos.' });
         }
 
@@ -212,7 +224,7 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
         if (fetchError) throw fetchError;
 
         const { error: updateError } = await supabase.from('imobilizados').update({
-            codigo_inventario: newCodeNumeric,
+            codigo_inventario: newCode,
             codigo_inventario_antigo: currentItem.codigo_inventario
         }).eq('id', itemId);
         if (updateError) throw updateError;
