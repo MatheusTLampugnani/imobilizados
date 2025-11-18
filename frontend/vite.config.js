@@ -21,17 +21,17 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: '/videplast_logo.png',
+            src: '/public/videplast_logo.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: '/videplast_logo.png',
+            src: '/public//videplast_logo.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: '/videplast_logo.png',
+            src: '/public//videplast_logo.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
