@@ -19,6 +19,11 @@ const InputArea = ({ codigo, setCodigo, onConsultar, isLoading }) => {
             aria-label="Código do imobilizado"
             autoFocus
           />
+          {codigo && (
+            <Button variant="outline-secundary" onClick={handleClear} title="Limpar busca">
+              <X size={24}/>
+            </Button>
+          )}
           <Button type="submit" variant="danger" disabled={isLoading}>
             {isLoading ? 'Buscando...' : 'Consultar'}
           </Button>
