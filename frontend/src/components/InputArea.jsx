@@ -1,10 +1,16 @@
 import React from 'react';
 import { Form, Button, InputGroup } from 'react-bootstrap';
+import {X} from 'react-bootstrap-icons'
 
-const InputArea = ({ codigo, setCodigo, onConsultar, isLoading }) => {
+const InputArea = ({ codigo, setCodigo, onConsultar, onLimpar, isLoading }) => {
   const handleFormSubmit = (e) => {
     e.preventDefault();
     onConsultar();
+  };
+
+  const handleClear = () => {
+    setCodigo('');
+    onLimpar();
   };
 
   return (
