@@ -215,6 +215,12 @@ function App() {
     sessionStorage.removeItem('appState');
   };
 
+  const handleClearSearch = () => {
+    setCodigo('');
+    setResultado(null);
+    setError('');
+  };
+
   return (
     <div className="app-wrapper">
       <Container>
@@ -223,6 +229,7 @@ function App() {
           codigo={codigo}
           setCodigo={setCodigo}
           onConsultar={handleCodeSearch}
+          onLimpar={handleClearSearch}
           isLoading={isLoading}
         />
 
