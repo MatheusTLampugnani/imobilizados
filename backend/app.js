@@ -22,8 +22,13 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 console.log('Conexão com o Supabase configurada.');
 
 function formatarValor(valor) {
-    if (valor === null || valor === undefined) return "";
-    return String(valor).trim();
+    if (valor === null || valor === undefined || valor === '') return "";
+    const str = String(valor).trim();
+    
+    if (/^\d+$/.test(str)) {
+        return String(parseInt(str, 10));
+    }
+    return str;
 }
 
 app.get('/api/centro-custo/validate/:cc', async (req, res) => {
@@ -37,7 +42,7 @@ app.get('/api/centro-custo/validate/:cc', async (req, res) => {
     const { data, error, count } = await supabase
       .from('imobilizados')
       .select('centro_custo', { count: 'exact', head: true })
-      .ilike('centro_custo', cc); 
+      .ilike('centro_custo', cc);
 
     if (error) {
       throw error;
@@ -61,7 +66,8 @@ app.get('/api', (req, res) => {
 app.get('/api/imobilizado', async (req, res) => {
     console.log(`[LOG DE TESTE] Rota /api/imobilizado foi chamada com o código: ${req.query.codigo}`);
     const { codigo } = req.query;
-    const codigoFormatado = String(codigo || '').trim();
+    
+    const codigoFormatado = formatarValor(codigo);
 
     if (!codigoFormatado) {
         return res.status(400).json({ message: "Nenhum código foi fornecido." });
@@ -87,7 +93,7 @@ app.get('/api/imobilizado', async (req, res) => {
         };
         
         const searchPromises = [];
-        
+
         searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
         searchPromises.push(searchByText('numero_serie', codigoFormatado));
         searchPromises.push(searchByText('centro_custo', codigoFormatado));
@@ -157,7 +163,8 @@ app.get('/api/imobilizado', async (req, res) => {
 
 app.get('/api/inventory-item', async (req, res) => {
     const { codigo } = req.query;
-    const codigoFormatado = String(codigo || '').trim();
+    
+    const codigoFormatado = formatarValor(codigo);
 
     if (!codigoFormatado) {
         return res.status(400).json({ message: "Nenhum código foi fornecido." });
@@ -185,6 +192,7 @@ app.get('/api/inventory-item', async (req, res) => {
             const numericValue = parseInt(codigoFormatado, 10);
             searchPromises.push(searchByNumber('codigo_imobilizado', numericValue));
         }
+
 
         const results = await Promise.all(searchPromises);
         const itemEncontrado = results.flat()[0]; 
@@ -225,7 +233,8 @@ app.get('/api/inventory-item', async (req, res) => {
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
         const { itemId, newInventoryCode } = req.body;
-        const newCode = String(newInventoryCode).trim(); 
+        
+        const newCode = formatarValor(newInventoryCode);
 
         if (!itemId || !newCode) {
             return res.status(400).json({ message: 'Dados inválidos fornecidos.' });
