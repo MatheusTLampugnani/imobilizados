@@ -93,7 +93,7 @@ app.get('/api/imobilizado', async (req, res) => {
         };
         
         const searchPromises = [];
-        
+
         searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
         searchPromises.push(searchByText('numero_serie', codigoFormatado));
         searchPromises.push(searchByText('centro_custo', codigoFormatado));
