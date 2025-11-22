@@ -15,3 +15,5 @@ lerna-debug.log*
 Thumbs.db
 .idea/
 .vscode/
+atualizar_lote.js
+linhas_para_correcao.csv
