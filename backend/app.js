@@ -232,7 +232,7 @@ app.get('/api/inventory-item', async (req, res) => {
 
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
-        const { itemId, newInventoryCode } = req.body;
+        const { itemId, newInventoryCode, user } = req.body; 
         
         const newCode = formatarValor(newInventoryCode);
 
@@ -245,8 +245,10 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
 
         const { error: updateError } = await supabase.from('imobilizados').update({
             codigo_inventario: newCode,
-            codigo_inventario_antigo: currentItem.codigo_inventario
+            codigo_inventario_antigo: currentItem.codigo_inventario,
+            usuario_atualizacao: user || 'Sistema' 
         }).eq('id', itemId);
+        
         if (updateError) throw updateError;
 
         return res.status(200).json({ message: 'Inventário atualizado com sucesso!' });
