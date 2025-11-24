@@ -1,4 +1,3 @@
-// frontend/src/App.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button } from 'react-bootstrap';
@@ -28,6 +27,7 @@ function App() {
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
+  const [inventarioUsuario, setInventarioUsuario] = useState('');
 
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
@@ -41,6 +41,7 @@ function App() {
         const parsedData = JSON.parse(savedData);
         setInventario(parsedData.inventario || []);
         setInventarioCentroCusto(parsedData.inventarioCentroCusto || '');
+        setInventarioUsuario(parsedData.inventarioUsuario || '');
       }
     } catch (e) {
       console.error("Erro ao carregar estado:", e);
@@ -52,12 +53,13 @@ function App() {
       const appState = {
         inventario,
         inventarioCentroCusto,
+        inventarioUsuario,
       };
       sessionStorage.setItem('appState', JSON.stringify(appState));
     } catch (e) {
       console.error("Erro ao salvar estado:", e);
     }
-  }, [inventario, inventarioCentroCusto]);
+  }, [inventario, inventarioCentroCusto, inventarioUsuario]);
   
   useEffect(() => {
     if (!resultado) {
@@ -107,14 +109,18 @@ function App() {
     }
   };
 
-  const handleStartInventory = async (cc) => {
+  const handleStartInventory = async (cc, userCracha) => {
     try {
       await axios.get(`${API_URL}/centro-custo/validate/${cc}`);
+
       setInventarioCentroCusto(cc);
+      setInventarioUsuario(userCracha);
       setInventarioAtivo(true);
       fetchExpectedItems(cc);
       setInventario([]);
+
       sessionStorage.removeItem('appState');
+
       return true;
     } catch (error) {
       console.error("Validação do Centro de Custo falhou:", error);
@@ -172,20 +178,42 @@ function App() {
     }
   };
 
-  const handleConfirmAddItem = (description) => {
-    const newItem = {
-      id: `not-found-${itemCodeToAdd}-${Date.now()}`,
-      Inventário: itemCodeToAdd,
-      Subnº: '-',
-      Descrição: description,
-      CentroCusto: inventarioCentroCusto,
-      notFound: true,
+  const handleConfirmAddItem = async (description, inventoryCode, serialNumber, itemLocal) => {
+    
+    const newItemData = {
+      descricao: description,
+      codigo_inventario: inventoryCode,
+      numero_serie: serialNumber,
+      centro_custo: inventarioCentroCusto,
+      user: inventarioUsuario,
+      local: itemLocal || inventarioLocal 
     };
 
-    if (!inventario.some(item => item.Inventário === itemCodeToAdd && item.notFound)) {
-      setInventario(prevInventario => [newItem, ...prevInventario]);
+    try {
+      const response = await axios.post(`${API_URL}/imobilizado`, newItemData);
+      const savedItem = response.data;
+
+      const itemParaLista = {
+        id: savedItem.id,
+        "Subnº": savedItem.sub_numero || 0,
+        "Data": savedItem.data_incorporacao,
+        "Descrição": savedItem.descricao,
+        "Inventário": savedItem.codigo_inventario,
+        "Inventário_Antigo": null,
+        "Série": savedItem.numero_serie,
+        "CentroCusto": savedItem.centro_custo,
+        "CentroCustoNome": "",
+        "codigo_imobilizado": savedItem.codigo_imobilizado,
+        notFound: false 
+      };
+
+      setInventario(prevInventario => [itemParaLista, ...prevInventario]);
+      setShowAddItemModal(false);
+
+    } catch (error) {
+      console.error("Erro ao cadastrar item:", error);
+      alert("Erro ao cadastrar o item. Tente novamente.");
     }
-    setShowAddItemModal(false);
   };
   
   const handleFilterChange = (newFilters) => {
@@ -211,6 +239,7 @@ function App() {
     setInventario([]);
     setExpectedItems([]);
     setInventarioCentroCusto('');
+    setInventarioUsuario('');
     setResultado(null);
     sessionStorage.removeItem('appState');
   };
@@ -296,6 +325,7 @@ function App() {
         onClose={() => setShowAddItemModal(false)}
         onConfirm={handleConfirmAddItem}
         itemCode={itemCodeToAdd}
+        defaultLocal={inventarioLocal}
       />
 
       <footer className="app-footer">
