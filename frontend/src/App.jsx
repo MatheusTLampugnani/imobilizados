@@ -184,41 +184,38 @@ function App() {
     }
   };
 
-const handleConfirmAddItem = async (description, inventoryCode, serialNumber, itemLocal) => {
+  const handleConfirmAddItem = async (description, inventoryCode, serialNumber, itemLocal) => {
     const newItemData = {
       descricao: description,
       codigo_inventario: inventoryCode,
       numero_serie: serialNumber,
-      centro_custo: inventarioCentroCusto,
+      centro_custo: inventarioCentroCusto, 
       user: inventarioUsuario,
-      local: itemLocal || inventarioLocal 
+      local: itemLocal || inventarioLocal,
     };
 
     try {
       const response = await axios.post(`${API_URL}/imobilizado`, newItemData);
       const savedItem = response.data;
-      
       const itemParaLista = {
-        id: `novo_${savedItem.id}`,
+        id: `novo_${savedItem.id}`, 
         "Subnº": 0,
         "Data": new Date().toISOString().split('T')[0],
         "Descrição": savedItem.descricao,
         "Inventário": savedItem.codigo_inventario,
-        "Inventário_Antigo": null,
         "Série": savedItem.numero_serie,
         "CentroCusto": savedItem.centro_custo,
-        "CentroCustoNome": "Item Novo (Aguardando Oficialização)",
+        "CentroCustoNome": "Novo Cadastro",
         "codigo_imobilizado": "PENDENTE",
-        notFound: false,
-        isNewItem: true
+        notFound: false
       };
 
       setInventario(prevInventario => [itemParaLista, ...prevInventario]);
       setShowAddItemModal(false);
 
     } catch (error) {
-      console.error("Erro ao cadastrar item:", error);
-      alert("Erro ao cadastrar o item. Tente novamente.");
+      console.error("Erro ao cadastrar:", error);
+      alert("Erro ao salvar. Verifique se o backend foi atualizado.");
     }
   };
   

@@ -231,21 +231,21 @@ app.post('/api/imobilizado', async (req, res) => {
     const { descricao, codigo_inventario, centro_custo, user, numero_serie, local } = req.body;
 
     if (!descricao || !codigo_inventario || !centro_custo || !user) {
-        return res.status(400).json({ message: 'Campos obrigatórios faltando.' });
+        return res.status(400).json({ message: 'Campos obrigatórios (Descrição, Inv, CC, Crachá) faltando.' });
     }
 
     try {
         const invCodeClean = formatarValor(codigo_inventario);
 
         const { data, error } = await supabase
-            .from('imobilizados_cadastrados')
+            .from('imobilizados_cadastrados') 
             .insert([
                 {
                     descricao: descricao,
                     codigo_inventario: invCodeClean,
                     numero_serie: numero_serie || null,
-                    centro_custo: centro_custo,
                     local: local || null,
+                    centro_custo: centro_custo,
                     usuario_cadastro: user,
                 }
             ])
@@ -267,7 +267,7 @@ app.post('/api/imobilizado', async (req, res) => {
 
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
-        const { itemId, newInventoryCode, user } = req.body; // Recebe user também
+        const { itemId, newInventoryCode, user } = req.body;
         const newCode = formatarValor(newInventoryCode);
 
         if (!itemId || !newCode) {
