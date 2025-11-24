@@ -84,6 +84,7 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal
               <Form.Control
                 type="text"
                 value={local}
+                placeholder='Ex: Sala de Treinamento 01'
                 onChange={(e) => setLocal(e.target.value)}
               />
             </Form.Group>
