@@ -19,19 +19,21 @@ function App() {
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
+  const [inventarioUsuario, setInventarioUsuario] = useState('');
+  const [inventarioLocal, setInventarioLocal] = useState('');
   const [expectedItems, setExpectedItems] = useState([]);
+  
+  const [showReportModal, setShowReportModal] = useState(false);
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
-  const [inventarioUsuario, setInventarioUsuario] = useState('');
 
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
-
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
 
   useEffect(() => {
@@ -42,6 +44,7 @@ function App() {
         setInventario(parsedData.inventario || []);
         setInventarioCentroCusto(parsedData.inventarioCentroCusto || '');
         setInventarioUsuario(parsedData.inventarioUsuario || '');
+        setInventarioLocal(parsedData.inventarioLocal || '');
       }
     } catch (e) {
       console.error("Erro ao carregar estado:", e);
@@ -54,12 +57,13 @@ function App() {
         inventario,
         inventarioCentroCusto,
         inventarioUsuario,
+        inventarioLocal,
       };
       sessionStorage.setItem('appState', JSON.stringify(appState));
     } catch (e) {
       console.error("Erro ao salvar estado:", e);
     }
-  }, [inventario, inventarioCentroCusto, inventarioUsuario]);
+  }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal]);
   
   useEffect(() => {
     if (!resultado) {
@@ -109,18 +113,19 @@ function App() {
     }
   };
 
-  const handleStartInventory = async (cc, userCracha) => {
+  const handleStartInventory = async (cc, userCracha, localFisico) => {
     try {
       await axios.get(`${API_URL}/centro-custo/validate/${cc}`);
-
+      
       setInventarioCentroCusto(cc);
       setInventarioUsuario(userCracha);
+      setInventarioLocal(localFisico);
       setInventarioAtivo(true);
+      
       fetchExpectedItems(cc);
       setInventario([]);
-
+      
       sessionStorage.removeItem('appState');
-
       return true;
     } catch (error) {
       console.error("Validação do Centro de Custo falhou:", error);
@@ -160,6 +165,7 @@ function App() {
       
       if (dados && dados.itens && dados.itens.length > 0) {
         const itemParaAdicionar = dados.itens[0];
+        
         if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
           setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
         }
@@ -179,7 +185,6 @@ function App() {
   };
 
   const handleConfirmAddItem = async (description, inventoryCode, serialNumber, itemLocal) => {
-    
     const newItemData = {
       descricao: description,
       codigo_inventario: inventoryCode,
@@ -202,7 +207,7 @@ function App() {
         "Inventário_Antigo": null,
         "Série": savedItem.numero_serie,
         "CentroCusto": savedItem.centro_custo,
-        "CentroCustoNome": "",
+        "CentroCustoNome": "", 
         "codigo_imobilizado": savedItem.codigo_imobilizado,
         notFound: false 
       };
@@ -233,6 +238,12 @@ function App() {
     if (codigo) handleCodeSearch(codigo);
   };
 
+  const handleClearSearch = () => {
+    setCodigo('');
+    setResultado(null);
+    setError('');
+  };
+
   const handleFinishAndReset = () => {
     setShowDivergenceReport(false);
     setInventarioAtivo(false);
@@ -240,14 +251,9 @@ function App() {
     setExpectedItems([]);
     setInventarioCentroCusto('');
     setInventarioUsuario('');
+    setInventarioLocal('');
     setResultado(null);
     sessionStorage.removeItem('appState');
-  };
-
-  const handleClearSearch = () => {
-    setCodigo('');
-    setResultado(null);
-    setError('');
   };
 
   return (
