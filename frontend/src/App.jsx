@@ -184,7 +184,7 @@ function App() {
     }
   };
 
-  const handleConfirmAddItem = async (description, inventoryCode, serialNumber, itemLocal) => {
+const handleConfirmAddItem = async (description, inventoryCode, serialNumber, itemLocal) => {
     const newItemData = {
       descricao: description,
       codigo_inventario: inventoryCode,
@@ -197,19 +197,20 @@ function App() {
     try {
       const response = await axios.post(`${API_URL}/imobilizado`, newItemData);
       const savedItem = response.data;
-
+      
       const itemParaLista = {
-        id: savedItem.id,
-        "Subnº": savedItem.sub_numero || 0,
-        "Data": savedItem.data_incorporacao,
+        id: `novo_${savedItem.id}`,
+        "Subnº": 0,
+        "Data": new Date().toISOString().split('T')[0],
         "Descrição": savedItem.descricao,
         "Inventário": savedItem.codigo_inventario,
         "Inventário_Antigo": null,
         "Série": savedItem.numero_serie,
         "CentroCusto": savedItem.centro_custo,
-        "CentroCustoNome": "", 
-        "codigo_imobilizado": savedItem.codigo_imobilizado,
-        notFound: false 
+        "CentroCustoNome": "Item Novo (Aguardando Oficialização)",
+        "codigo_imobilizado": "PENDENTE",
+        notFound: false,
+        isNewItem: true
       };
 
       setInventario(prevInventario => [itemParaLista, ...prevInventario]);

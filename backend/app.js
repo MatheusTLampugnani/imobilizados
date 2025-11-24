@@ -238,7 +238,7 @@ app.post('/api/imobilizado', async (req, res) => {
         const invCodeClean = formatarValor(codigo_inventario);
 
         const { data, error } = await supabase
-            .from('imobilizados')
+            .from('imobilizados_cadastrados')
             .insert([
                 {
                     descricao: descricao,
@@ -246,20 +246,21 @@ app.post('/api/imobilizado', async (req, res) => {
                     numero_serie: numero_serie || null,
                     centro_custo: centro_custo,
                     local: local || null,
-                    usuario_atualizacao: user,
-                    data_incorporacao: new Date(),
-                    sub_numero: 0
+                    usuario_cadastro: user,
                 }
             ])
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error("Erro detalhado do Supabase:", error); 
+            throw error;
+        }
 
         return res.status(201).json(data);
 
     } catch (error) {
-        console.error("ERRO AO CADASTRAR ITEM: ", error);
+        console.error("ERRO AO CADASTRAR ITEM NOVO: ", error);
         return res.status(500).json({ message: `Erro no servidor: ${error.message}` });
     }
 });
