@@ -23,8 +23,8 @@ function App() {
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
-  const [inventarioUsuario, setInventarioUsuario] = useState(''); // Crachá
-  const [inventarioLocal, setInventarioLocal] = useState('');     // Local
+  const [inventarioUsuario, setInventarioUsuario] = useState('');
+  const [inventarioLocal, setInventarioLocal] = useState('');
   const [expectedItems, setExpectedItems] = useState([]);
   
   const [showReportModal, setShowReportModal] = useState(false);
