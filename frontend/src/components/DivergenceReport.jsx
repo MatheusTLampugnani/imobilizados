@@ -18,7 +18,6 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
   const [notFoundItems, setNotFoundItems] = useState([]);
   const [isGenerating, setIsGenerating] = useState(null);
   
-  // Novo estado para os filtros
   const [filters, setFilters] = useState({
     ok: true,
     missing: true,
@@ -83,7 +82,6 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
         item.CentroCusto || 'Sem centro de custo alocado'
       ];
 
-      // Adiciona linhas apenas se o filtro estiver ativo
       if (filters.ok) okItems.forEach(item => tableRows.push(createRow("Ok", item)));
       if (filters.missing) missingItems.forEach(item => tableRows.push(createRow("Faltante", item)));
       if (filters.wrongCc) wrongCcItems.forEach(item => tableRows.push(createRow("CC Errado", item)));
@@ -159,7 +157,6 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     </>
   );
 
-  // Função para renderizar a lista de itens, aplicando o filtro
   const renderItemList = (items, title, type, variant) => {
     if (items.length === 0 || !filters[type]) return null;
 
