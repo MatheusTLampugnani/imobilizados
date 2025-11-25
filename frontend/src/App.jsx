@@ -23,8 +23,8 @@ function App() {
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
-  const [inventarioUsuario, setInventarioUsuario] = useState('');
-  const [inventarioLocal, setInventarioLocal] = useState('');
+  const [inventarioUsuario, setInventarioUsuario] = useState(''); // Crachá
+  const [inventarioLocal, setInventarioLocal] = useState('');     // Local
   const [expectedItems, setExpectedItems] = useState([]);
   
   const [showReportModal, setShowReportModal] = useState(false);
@@ -35,7 +35,7 @@ function App() {
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
-
+  
   useEffect(() => {
     try {
       const savedData = sessionStorage.getItem('appState');
@@ -66,9 +66,7 @@ function App() {
   }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal]);
   
   useEffect(() => {
-    if (!resultado) {
-      return;
-    }
+    if (!resultado) return;
 
     const lowercasedFilters = {
       serie: filters.serie.toLowerCase(),
@@ -80,14 +78,12 @@ function App() {
       const serieMatch = !lowercasedFilters.serie || String(item.Série || '').toLowerCase().includes(lowercasedFilters.serie);
       const subnMatch = !lowercasedFilters.subn || String(item['Subnº'] || '').toLowerCase().includes(lowercasedFilters.subn);
       const centroCustoMatch = !lowercasedFilters.centroCusto || String(item.CentroCusto || '').toLowerCase().includes(lowercasedFilters.centroCusto);
-      
       return serieMatch && subnMatch && centroCustoMatch;
     });
 
     items.sort((a, b) => {
       const valA = a[sortConfig.field] || '';
       const valB = b[sortConfig.field] || '';
-
       if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
       if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
       return 0;
@@ -95,12 +91,6 @@ function App() {
 
     setFilteredItems(items);
   }, [filters, resultado, sortConfig]);
-
-
-  const formatarCodigo = (valor) => {
-    if (!valor) return "";
-    return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
-  };
 
   const fetchExpectedItems = async (cc) => {
     if (!cc) return;
@@ -124,13 +114,97 @@ function App() {
       
       fetchExpectedItems(cc);
       setInventario([]);
-      
       sessionStorage.removeItem('appState');
       return true;
     } catch (error) {
       console.error("Validação do Centro de Custo falhou:", error);
       return false;
     }
+  };
+
+  const handleAddItemToInventory = async (codeToAdd) => {
+    try {
+      const response = await axios.get(`${API_URL}/inventory-item?codigo=${codeToAdd}`);
+      const dados = response.data;
+      
+      if (dados && dados.itens && dados.itens.length > 0) {
+        const itemParaAdicionar = dados.itens[0];
+        
+        if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
+          setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
+        }
+        return true;
+      }
+      return false;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        setItemCodeToAdd(codeToAdd);
+        setShowAddItemModal(true);
+      } else {
+        console.error("Erro ao adicionar item:", error);
+        setError('Erro de comunicação com o servidor.');
+      }
+      return false;
+    }
+  };
+
+  const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLocal) => {
+    
+    const tempId = `temp_${Date.now()}`;
+
+    const itemParaLista = {
+      id: tempId,
+      "Subnº": 0,
+      "Data": new Date().toISOString().split('T')[0],
+      "Descrição": description,
+      "Inventário": inventoryCode,
+      "Série": serialNumber,
+      "CentroCusto": inventarioCentroCusto,
+      "CentroCustoNome": "Novo (Aguardando Gravação)",
+      "codigo_imobilizado": "PENDENTE",
+      notFound: true,
+      pendingSave: true,
+      
+      rawNewData: {
+        descricao: description,
+        codigo_inventario: inventoryCode,
+        numero_serie: serialNumber,
+        centro_custo: inventarioCentroCusto,
+        user: inventarioUsuario,
+        local: itemLocal || inventarioLocal
+      }
+    };
+
+    setInventario(prevInventario => [itemParaLista, ...prevInventario]);
+    setShowAddItemModal(false);
+  };
+
+  const handleRemoveItem = (itemId) => {
+    if (window.confirm('Tem certeza que deseja remover este item da contagem?')) {
+      setInventario(prev => prev.filter(item => item.id !== itemId));
+    }
+  };
+
+  const handleFinalizeInventory = async () => {
+    setIsLoading(true);
+    
+    const itemsToSave = inventario.filter(item => item.pendingSave && item.rawNewData);
+
+    if (itemsToSave.length > 0) {
+      try {
+        await Promise.all(itemsToSave.map(item => {
+          return axios.post(`${API_URL}/imobilizado`, item.rawNewData);
+        }));
+        
+        alert(`${itemsToSave.length} novos itens foram cadastrados com sucesso!`);
+      } catch (error) {
+        console.error("Erro ao salvar itens novos:", error);
+        alert("Houve um erro ao salvar alguns itens novos. Verifique o console.");
+      }
+    }
+
+    setIsLoading(false);
+    setShowDivergenceReport(true);
   };
 
   const handleCodeSearch = async () => {
@@ -158,79 +232,14 @@ function App() {
     }
   };
 
-  const handleAddItemToInventory = async (codeToAdd) => {
-    try {
-      const response = await axios.get(`${API_URL}/inventory-item?codigo=${codeToAdd}`);
-      const dados = response.data;
-      
-      if (dados && dados.itens && dados.itens.length > 0) {
-        const itemParaAdicionar = dados.itens[0];
-        
-        if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
-          setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
-        }
-        return true;
-      }
-      return false;
-    } catch (error) {
-      if (error.response?.status === 404) {
-        setItemCodeToAdd(codeToAdd);
-        setShowAddItemModal(true);
-      } else {
-        console.error("Erro ao adicionar item ao inventário:", error);
-        setError('Erro de comunicação com o servidor.');
-      }
-      return false;
-    }
-  };
-
-  const handleConfirmAddItem = async (description, inventoryCode, serialNumber, itemLocal) => {
-    const newItemData = {
-      descricao: description,
-      codigo_inventario: inventoryCode,
-      numero_serie: serialNumber,
-      centro_custo: inventarioCentroCusto, 
-      user: inventarioUsuario,
-      local: itemLocal || inventarioLocal,
-    };
-
-    try {
-      const response = await axios.post(`${API_URL}/imobilizado`, newItemData);
-      const savedItem = response.data;
-      const itemParaLista = {
-        id: `novo_${savedItem.id}`, 
-        "Subnº": 0,
-        "Data": new Date().toISOString().split('T')[0],
-        "Descrição": savedItem.descricao,
-        "Inventário": savedItem.codigo_inventario,
-        "Série": savedItem.numero_serie,
-        "CentroCusto": savedItem.centro_custo,
-        "CentroCustoNome": "Novo Cadastro",
-        "codigo_imobilizado": "PENDENTE",
-        notFound: false
-      };
-
-      setInventario(prevInventario => [itemParaLista, ...prevInventario]);
-      setShowAddItemModal(false);
-
-    } catch (error) {
-      console.error("Erro ao cadastrar:", error);
-      alert("Erro ao salvar. Verifique se o backend foi atualizado.");
-    }
-  };
+  const handleFilterChange = (newFilters) => setFilters(newFilters);
   
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-  };
-
   const handleResetFilters = () => {
     setFilters({ serie: '', subn: '', centroCusto: '' });
     setSortConfig({ field: 'Descrição', order: 'asc' });
   };
   
-  const handleSortChange = (newSortConfig) => {
-    setSortConfig(newSortConfig);
-  };
+  const handleSortChange = (newSortConfig) => setSortConfig(newSortConfig);
 
   const refreshData = () => {
     if (codigo) handleCodeSearch(codigo);
@@ -300,7 +309,8 @@ function App() {
             onAddItem={handleAddItemToInventory}
             inventarioCentroCusto={inventarioCentroCusto}
             expectedItems={expectedItems}
-            onFinishInventory={() => setShowDivergenceReport(true)}
+            onFinishInventory={handleFinalizeInventory}
+            onRemoveItem={handleRemoveItem}
           />
         )}
       </Container>

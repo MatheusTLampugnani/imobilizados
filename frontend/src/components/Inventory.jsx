@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Modal, Button, ListGroup, Badge, Alert } from 'react-bootstrap';
-import { BoxArrowUpRight, QrCodeScan, Trash } from 'react-bootstrap-icons';
+import { QrCodeScan, Trash, TrashFill } from 'react-bootstrap-icons';
 import BatchScannerModal from './BatchScannerModal';
 
-const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, onFinishInventory }) => {
+const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, onFinishInventory, onRemoveItem }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [feedback, setFeedback] = useState({ message: '', type: 'info' });
   const [isAdding, setIsAdding] = useState(false);
@@ -56,9 +56,20 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
                     </div>
                     {item.Descrição || 'Item sem descrição'}
                   </div>
-                  <Badge bg={item.notFound ? "secondary" : "danger"} pill>
-                    {item.notFound ? 'NÃO CADASTRADO' : `ID: ${item.id}`}
+                  
+                  <Badge bg={item.notFound ? "secondary" : "danger"} pill className="me-3">
+                    {item.notFound ? (item.pendingSave ? 'NOVO (PENDENTE)' : 'NÃO CADASTRADO') : `ID: ${item.id}`}
                   </Badge>
+
+                  <Button 
+                    variant="outline-danger" 
+                    size="sm" 
+                    onClick={() => onRemoveItem(item.id)}
+                    title="Remover este item"
+                  >
+                    <TrashFill />
+                  </Button>
+
                 </ListGroup.Item>
               ))
             ) : (
@@ -68,7 +79,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
         </Modal.Body>
         <Modal.Footer>
           <Button variant="outline-secondary" onClick={() => setInventario([])} disabled={inventario.length === 0}>
-            <Trash /> Limpar Lista
+            <Trash /> Limpar Tudo
           </Button>
           <Button variant="danger" onClick={() => setIsScanning(true)}>
             <QrCodeScan /> Escanear Itens em Lote

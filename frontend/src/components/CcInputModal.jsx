@@ -67,7 +67,7 @@ const CcInputModal = ({ show, onClose, onConfirm }) => {
           <Form.Control
             type="text"
             value={cc}
-            onChange={(e) => setCc(e.target.value)}
+            onChange={(e) => setCc(e.target.value.toUpperCase())}
             placeholder="Ex: 1005ADMI03"
             autoFocus
             onKeyDown={handleCcKeyDown}
