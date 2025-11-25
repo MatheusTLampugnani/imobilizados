@@ -1,4 +1,3 @@
-// frontend/src/App.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button } from 'react-bootstrap';
@@ -20,18 +19,21 @@ function App() {
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
+  const [inventarioUsuario, setInventarioUsuario] = useState('');
+  const [inventarioLocal, setInventarioLocal] = useState('');
   const [expectedItems, setExpectedItems] = useState([]);
+  
+  const [showReportModal, setShowReportModal] = useState(false);
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
 
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
-
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
 
   useEffect(() => {
@@ -41,6 +43,8 @@ function App() {
         const parsedData = JSON.parse(savedData);
         setInventario(parsedData.inventario || []);
         setInventarioCentroCusto(parsedData.inventarioCentroCusto || '');
+        setInventarioUsuario(parsedData.inventarioUsuario || '');
+        setInventarioLocal(parsedData.inventarioLocal || '');
       }
     } catch (e) {
       console.error("Erro ao carregar estado:", e);
@@ -52,12 +56,14 @@ function App() {
       const appState = {
         inventario,
         inventarioCentroCusto,
+        inventarioUsuario,
+        inventarioLocal,
       };
       sessionStorage.setItem('appState', JSON.stringify(appState));
     } catch (e) {
       console.error("Erro ao salvar estado:", e);
     }
-  }, [inventario, inventarioCentroCusto]);
+  }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal]);
   
   useEffect(() => {
     if (!resultado) {
@@ -107,13 +113,18 @@ function App() {
     }
   };
 
-  const handleStartInventory = async (cc) => {
+  const handleStartInventory = async (cc, userCracha, localFisico) => {
     try {
       await axios.get(`${API_URL}/centro-custo/validate/${cc}`);
+      
       setInventarioCentroCusto(cc);
+      setInventarioUsuario(userCracha);
+      setInventarioLocal(localFisico);
       setInventarioAtivo(true);
+      
       fetchExpectedItems(cc);
       setInventario([]);
+      
       sessionStorage.removeItem('appState');
       return true;
     } catch (error) {
@@ -154,6 +165,7 @@ function App() {
       
       if (dados && dados.itens && dados.itens.length > 0) {
         const itemParaAdicionar = dados.itens[0];
+        
         if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
           setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
         }
@@ -172,20 +184,39 @@ function App() {
     }
   };
 
-  const handleConfirmAddItem = (description) => {
-    const newItem = {
-      id: `not-found-${itemCodeToAdd}-${Date.now()}`,
-      Inventário: itemCodeToAdd,
-      Subnº: '-',
-      Descrição: description,
-      CentroCusto: inventarioCentroCusto,
-      notFound: true,
+  const handleConfirmAddItem = async (description, inventoryCode, serialNumber, itemLocal) => {
+    const newItemData = {
+      descricao: description,
+      codigo_inventario: inventoryCode,
+      numero_serie: serialNumber,
+      centro_custo: inventarioCentroCusto, 
+      user: inventarioUsuario,
+      local: itemLocal || inventarioLocal,
     };
 
-    if (!inventario.some(item => item.Inventário === itemCodeToAdd && item.notFound)) {
-      setInventario(prevInventario => [newItem, ...prevInventario]);
+    try {
+      const response = await axios.post(`${API_URL}/imobilizado`, newItemData);
+      const savedItem = response.data;
+      const itemParaLista = {
+        id: `novo_${savedItem.id}`, 
+        "Subnº": 0,
+        "Data": new Date().toISOString().split('T')[0],
+        "Descrição": savedItem.descricao,
+        "Inventário": savedItem.codigo_inventario,
+        "Série": savedItem.numero_serie,
+        "CentroCusto": savedItem.centro_custo,
+        "CentroCustoNome": "Novo Cadastro",
+        "codigo_imobilizado": "PENDENTE",
+        notFound: false
+      };
+
+      setInventario(prevInventario => [itemParaLista, ...prevInventario]);
+      setShowAddItemModal(false);
+
+    } catch (error) {
+      console.error("Erro ao cadastrar:", error);
+      alert("Erro ao salvar. Verifique se o backend foi atualizado.");
     }
-    setShowAddItemModal(false);
   };
   
   const handleFilterChange = (newFilters) => {
@@ -205,20 +236,22 @@ function App() {
     if (codigo) handleCodeSearch(codigo);
   };
 
+  const handleClearSearch = () => {
+    setCodigo('');
+    setResultado(null);
+    setError('');
+  };
+
   const handleFinishAndReset = () => {
     setShowDivergenceReport(false);
     setInventarioAtivo(false);
     setInventario([]);
     setExpectedItems([]);
     setInventarioCentroCusto('');
+    setInventarioUsuario('');
+    setInventarioLocal('');
     setResultado(null);
     sessionStorage.removeItem('appState');
-  };
-
-  const handleClearSearch = () => {
-    setCodigo('');
-    setResultado(null);
-    setError('');
   };
 
   return (
@@ -296,6 +329,7 @@ function App() {
         onClose={() => setShowAddItemModal(false)}
         onConfirm={handleConfirmAddItem}
         itemCode={itemCodeToAdd}
+        defaultLocal={inventarioLocal}
       />
 
       <footer className="app-footer">

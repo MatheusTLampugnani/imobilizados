@@ -42,7 +42,7 @@ app.get('/api/centro-custo/validate/:cc', async (req, res) => {
     const { data, error, count } = await supabase
       .from('imobilizados')
       .select('centro_custo', { count: 'exact', head: true })
-      .ilike('centro_custo', cc);
+      .ilike('centro_custo', cc); 
 
     if (error) {
       throw error;
@@ -93,7 +93,7 @@ app.get('/api/imobilizado', async (req, res) => {
         };
         
         const searchPromises = [];
-
+        
         searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
         searchPromises.push(searchByText('numero_serie', codigoFormatado));
         searchPromises.push(searchByText('centro_custo', codigoFormatado));
@@ -163,7 +163,6 @@ app.get('/api/imobilizado', async (req, res) => {
 
 app.get('/api/inventory-item', async (req, res) => {
     const { codigo } = req.query;
-    
     const codigoFormatado = formatarValor(codigo);
 
     if (!codigoFormatado) {
@@ -183,7 +182,6 @@ app.get('/api/inventory-item', async (req, res) => {
         };
 
         const searchPromises = [];
-        
         searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
         searchPromises.push(searchByText('numero_serie', codigoFormatado));
 
@@ -192,7 +190,6 @@ app.get('/api/inventory-item', async (req, res) => {
             const numericValue = parseInt(codigoFormatado, 10);
             searchPromises.push(searchByNumber('codigo_imobilizado', numericValue));
         }
-
 
         const results = await Promise.all(searchPromises);
         const itemEncontrado = results.flat()[0]; 
@@ -230,10 +227,47 @@ app.get('/api/inventory-item', async (req, res) => {
     }
 });
 
+app.post('/api/imobilizado', async (req, res) => {
+    const { descricao, codigo_inventario, centro_custo, user, numero_serie, local } = req.body;
+
+    if (!descricao || !codigo_inventario || !centro_custo || !user) {
+        return res.status(400).json({ message: 'Campos obrigatórios faltando.' });
+    }
+
+    try {
+        const invCodeClean = formatarValor(codigo_inventario);
+
+        const { data, error } = await supabase
+            .from('imobilizados_cadastrados')
+            .insert([
+                {
+                    descricao: descricao,
+                    codigo_inventario: invCodeClean,
+                    numero_serie: numero_serie || null,
+                    centro_custo: centro_custo,
+                    local: local || null,
+                    cracha: user 
+                }
+            ])
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Erro detalhado do Supabase:", error); 
+            throw error;
+        }
+
+        return res.status(201).json(data);
+
+    } catch (error) {
+        console.error("ERRO AO CADASTRAR ITEM NOVO: ", error);
+        return res.status(500).json({ message: `Erro no servidor: ${error.message}` });
+    }
+});
+
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
-        const { itemId, newInventoryCode, user } = req.body; 
-        
+        const { itemId, newInventoryCode, user } = req.body;
         const newCode = formatarValor(newInventoryCode);
 
         if (!itemId || !newCode) {
@@ -246,9 +280,8 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
         const { error: updateError } = await supabase.from('imobilizados').update({
             codigo_inventario: newCode,
             codigo_inventario_antigo: currentItem.codigo_inventario,
-            usuario_atualizacao: user || 'Sistema' 
+            usuario_atualizacao: user || 'Sistema'
         }).eq('id', itemId);
-        
         if (updateError) throw updateError;
 
         return res.status(200).json({ message: 'Inventário atualizado com sucesso!' });
