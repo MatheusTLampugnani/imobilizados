@@ -61,6 +61,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
                       <tr><td><strong>INVENTÁRIO ANTIGO</strong></td><td>{item.Inventário_Antigo || 'Sem inventário anterior'}</td></tr>
                       <tr><td><strong>NÚMERO DE SÉRIE</strong></td><td>{item.Série || 'Sem número de série'}</td></tr>
                       <tr><td><strong>CENTRO DE CUSTO</strong></td><td>{item.CentroCusto || 'N/A'} - {item.CentroCustoNome || ''}</td></tr>
+                      <tr><td><strong>LOCAL</strong></td><td>{item.Local || 'Não informado'}</td></tr>
                       <tr><td><strong>SUB NÚMERO</strong></td><td>{item.Subnº}</td></tr>
                     </tbody>
                   </Table>

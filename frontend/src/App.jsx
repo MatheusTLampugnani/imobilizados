@@ -140,11 +140,10 @@ function App() {
       
       if (dados && dados.itens && dados.itens.length > 0) {
         const itemParaAdicionar = dados.itens[0];
-        
         if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
           setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
         }
-        return true;
+        return true; 
       }
       return false;
     } catch (error) {
@@ -153,7 +152,7 @@ function App() {
         setShowAddItemModal(true);
       } else {
         console.error("Erro ao adicionar item:", error);
-        setError('Erro de comunicação com o servidor.');
+        showStatus('error', 'Erro de comunicação com o servidor.');
       }
       return false;
     }
@@ -172,6 +171,7 @@ function App() {
       "CentroCusto": inventarioCentroCusto,
       "CentroCustoNome": "Novo (Aguardando Gravação)",
       "codigo_imobilizado": "PENDENTE",
+      "Local": itemLocal || inventarioLocal,
       notFound: true,
       pendingSave: true,
       rawNewData: {
@@ -187,7 +187,7 @@ function App() {
     setInventario(prevInventario => [itemParaLista, ...prevInventario]);
     setShowAddItemModal(false);
     
-    showStatus('success', 'Item adicionado à lista!');
+    showStatus('success', 'Item adicionado à lista com sucesso!');
   };
 
   const handleRemoveItem = (itemId) => {
@@ -207,18 +207,17 @@ function App() {
           return axios.post(`${API_URL}/imobilizado`, item.rawNewData);
         }));
         
-        showStatus('success', `${itemsToSave.length} novos itens foram cadastrados com sucesso!`);
+        showStatus('success', `${itemsToSave.length} novos itens cadastrados com sucesso!`);
         
       } catch (error) {
         console.error("Erro ao salvar itens novos:", error);
-        showStatus('error', "Houve um erro ao salvar alguns itens. Verifique o console.");
+        showStatus('error', "Houve um erro ao salvar alguns itens novos.");
       }
     } else {
         showStatus('success', "Inventário finalizado com sucesso!");
     }
 
     setIsLoading(false);
-    
     setTimeout(() => {
         setShowDivergenceReport(true);
     }, 2000);

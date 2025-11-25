@@ -123,21 +123,30 @@ function drawItem(doc, item) {
        .font('Helvetica').text(`${item.codigo_imobilizado || 'Sem código de imobilizado'}`, leftColX + valueOffsetX, y);
     doc.font('Helvetica-Bold').text('Subnº:', rightColX, y)
        .font('Helvetica').text(`${item.sub_numero}`, rightColX + valueOffsetX, y);
+    
     y = doc.y;
     doc.font('Helvetica-Bold').text('Número de inventário:', leftColX, y)
        .font('Helvetica').text(`${item.codigo_inventario || 'Sem código de inventario'}`, leftColX + valueOffsetX, y);
     doc.font('Helvetica-Bold').text('Data incorporação:', rightColX, y)
        .font('Helvetica').text(`${item.data_incorporacao || 'Sem data de incorporação'}`, rightColX + valueOffsetX, y);
+    
     y = doc.y;
     doc.font('Helvetica-Bold').text('Inventário Antigo:', leftColX, y)
-       .font('Helvetica').text(`${item.codigo_inventario_antigo}`, leftColX + valueOffsetX, y);
+       .font('Helvetica').text(`${item.codigo_inventario_antigo || ''}`, leftColX + valueOffsetX, y);
+    
+    doc.font('Helvetica-Bold').text('Local:', rightColX, y)
+       .font('Helvetica').text(`${item.local || 'Não informado'}`, rightColX + valueOffsetX, y);
+
     y = doc.y;
     doc.font('Helvetica-Bold').text('Descrição:', leftColX, y)
        .font('Helvetica').text(`${item.descricao || 'Sem descrição'}`, leftColX + valueOffsetX, y, { width: 400 });
+    
     const descHeight = doc.heightOfString(`${item.descricao || 'Sem descrição'}`, { width: 400 });
     const serieY = y + descHeight;
+    
     doc.font('Helvetica-Bold').text('Nº Série:', leftColX, serieY)
        .font('Helvetica').text(`${item.numero_serie || 'Sem número de série'}`, leftColX + valueOffsetX, serieY);
+    
     doc.y = serieY + 15;
     doc.moveTo(leftColX, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor("#cccccc").lineWidth(0.5).stroke();
     doc.moveDown(1.5);
