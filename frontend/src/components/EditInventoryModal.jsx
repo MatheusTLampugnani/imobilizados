@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Form, Button, Spinner, Alert } from 'react-bootstrap';
+import { Modal, Form, Button, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import { API_URL } from '../apiConfig';
 import imgSuccess from '../assets/verificado.png';
@@ -10,16 +10,17 @@ const EditInventoryModal = ({ show, onClose, item, onUpdateSuccess }) => {
   const [cracha, setCracha] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
-  
   const [viewState, setViewState] = useState('form'); 
 
   const handleUpdate = async () => {
     if (!newInventoryCode) {
       setError('Por favor, digite o novo código de inventário.');
+      setViewState('error'); 
       return;
     }
     if (!cracha.trim()) {
       setError('É obrigatório informar o número do crachá.');
+      setViewState('error');
       return;
     }
 
@@ -34,25 +35,29 @@ const EditInventoryModal = ({ show, onClose, item, onUpdateSuccess }) => {
       });
       
       setViewState('success');
-
+      
       setTimeout(() => {
         onUpdateSuccess();
-        setViewState('form');
-        setNewInventoryCode('');
-        setCracha('');
+        resetModal();
       }, 1500);
       
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao atualizar. Tente novamente.');
+      setViewState('error');
+    } finally {
       setIsUpdating(false);
     }
   };
 
+  const resetModal = () => {
+    setViewState('form');
+    setNewInventoryCode('');
+    setCracha('');
+    setError('');
+  };
+
   const handleCloseInternal = () => {
-      setViewState('form');
-      setNewInventoryCode('');
-      setCracha('');
-      setError('');
+      resetModal();
       onClose();
   };
 
@@ -67,6 +72,17 @@ const EditInventoryModal = ({ show, onClose, item, onUpdateSuccess }) => {
             <div className="text-center py-4">
                 <img src={imgSuccess} alt="Sucesso" style={{ width: '80px', marginBottom: '15px' }} />
                 <h4 className="text-success">Atualizado com Sucesso!</h4>
+            </div>
+        )}
+
+        {viewState === 'error' && (
+            <div className="text-center py-4">
+                <img src={imgError} alt="Erro" style={{ width: '80px', marginBottom: '15px' }} />
+                <h4 className="text-danger">Erro!</h4>
+                <p className="text-muted">{error}</p>
+                <Button variant="secondary" onClick={() => setViewState('form')}>
+                    Tentar Novamente
+                </Button>
             </div>
         )}
 
@@ -96,13 +112,6 @@ const EditInventoryModal = ({ show, onClose, item, onUpdateSuccess }) => {
                     placeholder="Digite ou bipe o crachá"
                   />
                 </Form.Group>
-
-                {error && (
-                    <div className="text-center mt-3">
-                        <img src={imgError} alt="Erro" style={{ width: '40px', marginBottom: '10px' }} />
-                        <Alert variant="danger">{error}</Alert>
-                    </div>
-                )}
             </>
         )}
       </Modal.Body>

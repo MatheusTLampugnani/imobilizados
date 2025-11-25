@@ -1,29 +1,40 @@
 import React, { useState } from 'react';
-import { Modal, Button, ListGroup, Badge, Alert } from 'react-bootstrap';
+import { Modal, Button, ListGroup, Badge } from 'react-bootstrap';
 import { QrCodeScan, Trash, TrashFill } from 'react-bootstrap-icons';
 import BatchScannerModal from './BatchScannerModal';
+import StatusModal from './StatusModal';
 
 const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, onFinishInventory, onRemoveItem }) => {
   const [isScanning, setIsScanning] = useState(false);
-  const [feedback, setFeedback] = useState({ message: '', type: 'info' });
   const [isAdding, setIsAdding] = useState(false);
+  const [statusFeedback, setStatusFeedback] = useState({ show: false, type: 'success', message: '' });
 
   const handleAddItem = async (code) => {
     if (!code || isAdding) return;
 
     setIsAdding(true);
-    setFeedback({ message: '', type: 'info' });
 
     const success = await onAddItem(code);
 
     if (success) {
-      setFeedback({ message: `Item ${code} adicionado com sucesso!`, type: 'success' });
+      setStatusFeedback({
+        show: true,
+        type: 'success',
+        message: `Item ${code} contabilizado com sucesso!`
+      });
     } else {
-      setFeedback({ message: `Verificando item ${code}...`, type: 'info' });
+      setStatusFeedback({
+        show: true,
+        type: 'error',
+        message: `O item ${code} não foi encontrado ou houve um problema.`
+      });
     }
 
     setIsAdding(false);
-    setTimeout(() => setFeedback({ message: '', type: 'info' }), 2000);
+  };
+
+  const handleCloseStatus = () => {
+    setStatusFeedback({ ...statusFeedback, show: false });
   };
 
   return (
@@ -33,13 +44,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           <Modal.Title>Inventário de Ativos - Centro de Custo {inventarioCentroCusto}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="text-center mb-3">
-            {feedback.message && (
-              <Alert variant={feedback.type} className="py-2">
-                {feedback.message}
-              </Alert>
-            )}
-          </div>
+
           <ListGroup variant="flush">
             {inventario.length > 0 ? (
               inventario.map((item) => (
@@ -90,6 +95,13 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           <Button variant="secondary" onClick={onClose}>Fechar</Button>
         </Modal.Footer>
       </Modal>
+
+      <StatusModal 
+        show={statusFeedback.show}
+        type={statusFeedback.type}
+        message={statusFeedback.message}
+        onClose={handleCloseStatus}
+      />
 
       {isScanning && (
         <BatchScannerModal
