@@ -10,6 +10,7 @@ import DivergenceReport from './components/DivergenceReport';
 import CcInputModal from './components/CcInputModal';
 import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import FilterControls from './components/FilterControls';
+import StatusModal from './components/StatusModal';
 import { API_URL } from './apiConfig';
 import './App.css';
 
@@ -31,11 +32,13 @@ function App() {
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
+  
+  const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
 
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
-  
+
   useEffect(() => {
     try {
       const savedData = sessionStorage.getItem('appState');
@@ -92,6 +95,14 @@ function App() {
     setFilteredItems(items);
   }, [filters, resultado, sortConfig]);
 
+  const showStatus = (type, message) => {
+    setStatusModal({ show: true, type, message });
+  };
+
+  const handleCloseStatus = () => {
+    setStatusModal({ ...statusModal, show: false });
+  };
+
   const fetchExpectedItems = async (cc) => {
     if (!cc) return;
     try {
@@ -113,7 +124,7 @@ function App() {
       setInventarioAtivo(true);
       
       fetchExpectedItems(cc);
-      setInventario([]);
+      setInventario([]); 
       sessionStorage.removeItem('appState');
       return true;
     } catch (error) {
@@ -149,7 +160,6 @@ function App() {
   };
 
   const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLocal) => {
-    
     const tempId = `temp_${Date.now()}`;
 
     const itemParaLista = {
@@ -164,7 +174,6 @@ function App() {
       "codigo_imobilizado": "PENDENTE",
       notFound: true,
       pendingSave: true,
-      
       rawNewData: {
         descricao: description,
         codigo_inventario: inventoryCode,
@@ -177,6 +186,8 @@ function App() {
 
     setInventario(prevInventario => [itemParaLista, ...prevInventario]);
     setShowAddItemModal(false);
+    
+    showStatus('success', 'Item adicionado à lista!');
   };
 
   const handleRemoveItem = (itemId) => {
@@ -196,15 +207,21 @@ function App() {
           return axios.post(`${API_URL}/imobilizado`, item.rawNewData);
         }));
         
-        alert(`${itemsToSave.length} novos itens foram cadastrados com sucesso!`);
+        showStatus('success', `${itemsToSave.length} novos itens foram cadastrados com sucesso!`);
+        
       } catch (error) {
         console.error("Erro ao salvar itens novos:", error);
-        alert("Houve um erro ao salvar alguns itens novos. Verifique o console.");
+        showStatus('error', "Houve um erro ao salvar alguns itens. Verifique o console.");
       }
+    } else {
+        showStatus('success', "Inventário finalizado com sucesso!");
     }
 
     setIsLoading(false);
-    setShowDivergenceReport(true);
+    
+    setTimeout(() => {
+        setShowDivergenceReport(true);
+    }, 2000);
   };
 
   const handleCodeSearch = async () => {
@@ -340,6 +357,13 @@ function App() {
         onConfirm={handleConfirmAddItem}
         itemCode={itemCodeToAdd}
         defaultLocal={inventarioLocal}
+      />
+
+      <StatusModal 
+        show={statusModal.show} 
+        type={statusModal.type} 
+        message={statusModal.message} 
+        onClose={handleCloseStatus} 
       />
 
       <footer className="app-footer">
