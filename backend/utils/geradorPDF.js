@@ -80,20 +80,35 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
     };
 
     const drawFooter = (doc) => {
-        const pageCount = doc.bufferedPageRange().count;
-        for (let i = 0; i < pageCount; i++) {
-            doc.switchToPage(i);
-            const yPos = doc.page.height - 35;
-            const datetime = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+    const range = doc.bufferedPageRange();
+    const pageCount = range.count;
 
-            doc.fontSize(8).font('Helvetica').fillColor('#666666');
-            doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
-            doc.text(`Página ${i + 1} de ${pageCount}`, 0, yPos, { 
-                align: 'right', 
-                width: doc.page.width - doc.page.margins.left - doc.page.margins.right 
+    doc.switchToPage(pageCount - 1);
+    const lastPageY = doc.y;
+
+    if (lastPageY < 100) {  
+        doc.bufferedPageRange().count--;
+    }
+
+    const finalCount = doc.bufferedPageRange().count;
+
+    for (let i = 0; i < finalCount; i++) {
+        doc.switchToPage(i);
+        const yPos = doc.page.height - 35;
+        const datetime = new Date().toLocaleString('pt-BR', {
+            dateStyle: 'short',
+            timeStyle: 'short'
+        });
+
+        doc.fontSize(8).font('Helvetica').fillColor('#666666');
+        doc.text(`Gerado em: ${datetime}`, doc.page.margins.left, yPos, { align: 'left' });
+        doc.text(`Página ${i + 1} de ${finalCount}`, 0, yPos, {
+                align: 'right',
+                width: doc.page.width - doc.page.margins.left - doc.page.margins.right
             });
         }
     };
+
     
     drawHeader(doc);
 
