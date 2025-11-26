@@ -70,7 +70,7 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
     doc.pipe(res);
 
     function drawHeader() {
-        doc.image(path.join(__dirname, '..', '..', 'frontend', 'public', 'videplast_logo.png'), {
+        doc.image(path.join(__dirname, '..', 'assets', 'videplast-brand.png'), {
             fit: [75, 75],
             align: 'center',
             y: doc.y
