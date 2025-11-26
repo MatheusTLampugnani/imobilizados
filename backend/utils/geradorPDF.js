@@ -1,7 +1,6 @@
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 const PDFDocument = require('pdfkit');
-const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
@@ -70,19 +69,25 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
     doc.pipe(res);
 
     function drawHeader() {
-        doc.image(path.join(__dirname, '..', 'assets', 'videplast-brand.png'), {
-            fit: [75, 75],
-            align: 'center',
-            y: doc.y
-        });
+        try {
+            doc.image(path.join(__dirname, '..', 'assets', 'videplast-brand.png'), {
+                fit: [100, 50],
+                align: 'center',
+                x: (doc.page.width - 100) / 2,
+                y: 30
+            });
+        } catch (e) {
+            console.log("Logo não encontrado, gerando sem imagem.");
+        }
+        
         doc.moveDown(4);
 
         doc.fontSize(16).font("Helvetica-Bold").fillColor("#333")
             .text("RELATÓRIO DE IMOBILIZADOS", { align: "center" });
 
-        doc.moveDown(1);
+        doc.moveDown(0.5);
         doc.fontSize(11).font("Helvetica")
-            .text(`Centro de Custo: ${centro_custo} - ${centro_custo_nome}`);
+            .text(`Centro de Custo: ${centro_custo} - ${centro_custo_nome}`, { align: "center" });
 
         doc.moveDown(0.5);
         doc.moveTo(doc.page.margins.left, doc.y)
@@ -129,65 +134,91 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
     newPage();
 
     data.forEach(item => {
-        const spaceNeeded = 120;
+        doc.fontSize(9).font("Helvetica");
+        const descWidth = 380;
+        const descText = item.descricao || "Sem descrição";
+        const descHeight = doc.heightOfString(descText, { width: descWidth });
+        
+        const itemBlockHeight = 85 + descHeight; 
 
-        if (doc.y + spaceNeeded > doc.page.height - 60) {
+        if (doc.y + itemBlockHeight > doc.page.height - 50) {
             newPage();
         }
 
-        drawItem(doc, item);
+        drawItem(doc, item, descHeight);
     });
 
     doc.end();
 }
 
-function drawItem(doc, item) {
+function drawItem(doc, item, descHeight) {
     const leftX = doc.page.margins.left;
     const rightX = 320;
-    const valueOffsetX = 115;
+    const labelOffset = 110;
+    const valueX = leftX + labelOffset;
+    const valueXRight = rightX + 60;
 
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#333");
+    const startY = doc.y;
+    let currentY = startY;
 
-    let y = doc.y;
-    doc.text("Imobilizado:", leftX, y)
-       .font("Helvetica").text(item.codigo_imobilizado || "Sem código", leftX + valueOffsetX, y);
+    doc.fontSize(9).fillColor("#333");
 
-    doc.font("Helvetica-Bold").text("Subnº:", rightX, y)
-       .font("Helvetica").text(item.sub_numero, rightX + valueOffsetX, y);
+    doc.font("Helvetica-Bold").text("Imobilizado:", leftX, currentY);
+    doc.font("Helvetica").text(item.codigo_imobilizado || "Sem código", valueX, currentY);
+    
+    doc.font("Helvetica-Bold").text("Subnº:", rightX, currentY);
+    doc.font("Helvetica").text(item.sub_numero, valueXRight, currentY);
+    
+    currentY += 14;
 
-    y = doc.y;
-    doc.font("Helvetica-Bold").text("Número de inventário:", leftX, y)
-       .font("Helvetica").text(item.codigo_inventario || "Sem código", leftX + valueOffsetX, y);
+    doc.font("Helvetica-Bold").text("Nº Inventário:", leftX, currentY);
+    doc.font("Helvetica").text(item.codigo_inventario || "Sem código", valueX, currentY);
 
-    doc.font("Helvetica-Bold").text("Data incorporação:", rightX, y)
-       .font("Helvetica").text(item.data_incorporacao || "Sem data", rightX + valueOffsetX, y);
+    doc.font("Helvetica-Bold").text("Data Incorp.:", rightX, currentY);
+    
+    let dataFormatada = item.data_incorporacao;
+    try {
+        if (item.data_incorporacao) {
+            const dateObj = new Date(item.data_incorporacao);
+            dataFormatada = dateObj.toLocaleDateString('pt-BR');
+        }
+    } catch (e) {}
 
-    y = doc.y;
-    doc.font("Helvetica-Bold").text("Inventário Antigo:", leftX, y)
-       .font("Helvetica").text(item.codigo_inventario_antigo || "", leftX + valueOffsetX, y);
+    doc.font("Helvetica").text(dataFormatada || "Sem data", valueXRight, currentY);
 
-    doc.font("Helvetica-Bold").text("Local:", rightX, y)
-       .font("Helvetica").text(item.local || "Não informado", rightX + valueOffsetX, y);
+    currentY += 14;
 
-    y = doc.y;
-    doc.font("Helvetica-Bold").text("Descrição:", leftX, y);
-    doc.font("Helvetica").text(item.descricao || "Sem descrição", leftX + valueOffsetX, y, { width: 400 });
+    doc.font("Helvetica-Bold").text("Inv. Antigo:", leftX, currentY);
+    doc.font("Helvetica").text(item.codigo_inventario_antigo || "", valueX, currentY);
 
-    const descHeight = doc.heightOfString(item.descricao || "Sem descrição", { width: 400 });
-    const serieY = y + descHeight;
+    doc.font("Helvetica-Bold").text("Local:", rightX, currentY);
+    doc.font("Helvetica").text(item.local || "Não informado", valueXRight, currentY);
 
-    doc.font("Helvetica-Bold").text("Nº Série:", leftX, serieY)
-       .font("Helvetica").text(item.numero_serie || "Sem número", leftX + valueOffsetX, serieY);
+    currentY += 14;
 
-    doc.y = serieY + 15;
+    doc.font("Helvetica-Bold").text("Descrição:", leftX, currentY);
+    
+    const descY = currentY;
+    
+    doc.font("Helvetica").text(item.descricao || "Sem descrição", valueX, descY, { 
+        width: 380,
+        align: 'left'
+    });
 
-    doc.moveTo(leftX, doc.y)
-       .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-       .strokeColor("#CCCCCC")
-       .lineWidth(0.5)
-       .stroke();
+    currentY = descY + Math.max(descHeight, 14) + 6; 
 
-    doc.moveDown(1.5);
+    doc.font("Helvetica-Bold").text("Nº Série:", leftX, currentY);
+    doc.font("Helvetica").text(item.numero_serie || "Sem número", valueX, currentY);
+
+    currentY += 18;
+
+    doc.moveTo(leftX, currentY)
+        .lineTo(doc.page.width - doc.page.margins.right, currentY)
+        .strokeColor("#DDDDDD")
+        .lineWidth(0.5)
+        .stroke();
+
+    doc.y = currentY + 10;
 }
 
 module.exports = {
