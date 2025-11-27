@@ -216,7 +216,7 @@ app.get('/api/inventory-item', async (req, res) => {
                 "CentroCusto": itemEncontrado.centro_custo,
                 "CentroCustoNome": nomeSetor,
                 "codigo_imobilizado": itemEncontrado.codigo_imobilizado,
-                "Local": item.local,
+                "Local": itemEncontrado.local,
             };
             return res.status(200).json({ itens: [responseData] });
         } else {
