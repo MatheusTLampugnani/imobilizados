@@ -32,7 +32,7 @@ async function handlePdfReportRequest(req, res) {
         if (!data || data.length === 0) {
             res.writeHead(404, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({
-                message: `Nenhum imobilizado encontrado para o Centro de Custo ${centro_custo}.`
+                message: `Nenhum imobilizado encontrado.`
             }));
         }
 
@@ -42,7 +42,7 @@ async function handlePdfReportRequest(req, res) {
             .eq('centro_custo', centro_custo)
             .single();
 
-        gerarRelatorioPDF(
+        gerarRelatorioRustico(
             {
                 data,
                 centro_custo,
@@ -52,155 +52,169 @@ async function handlePdfReportRequest(req, res) {
         );
 
     } catch (dbError) {
-        console.error('ERRO AO GERAR PDF:', dbError);
+        console.error('ERRO PDF:', dbError);
         if (!res.headersSent) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ message: `Erro no servidor: ${dbError.message}` }));
+            res.end(JSON.stringify({ message: dbError.message }));
         }
     }
 }
 
-function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
+function gerarRelatorioRustico({ data, centro_custo, centro_custo_nome }, res) {
+    // CONFIGURAÇÕES "RÚSTICAS" (Valores fixos para controle total)
+    const PAGE_HEIGHT = 841.89; // Altura A4
+    const MARGIN_TOP = 30;
+    const MARGIN_BOTTOM = 50;
+    const HEADER_HEIGHT = 100; // Espaço reservado para o cabeçalho
+    const LIMIT_Y = PAGE_HEIGHT - MARGIN_BOTTOM; // Onde devemos parar de escrever
+    
     const doc = new PDFDocument({ 
         size: 'A4', 
-        margins: { top: 30, bottom: 50, left: 30, right: 30 },
-        autoFirstPage: false 
+        margins: { top: MARGIN_TOP, bottom: MARGIN_BOTTOM, left: 30, right: 30 },
+        autoFirstPage: false // NÓS criaremos as páginas
     });
 
     const filename = `Relatorio_CC_${centro_custo}.pdf`;
-
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     doc.pipe(res);
 
-    let pageNumber = 0;
+    let pageCount = 0;
 
-    // --- FUNÇÕES DE DESENHO ---
+    // --- FUNÇÕES DE APOIO ---
+
+    function addPage() {
+        // Se não é a primeira página, desenha o rodapé da anterior antes de criar a nova
+        if (pageCount > 0) {
+            drawFooter();
+        }
+        
+        doc.addPage();
+        pageCount++;
+        drawHeader();
+        
+        // Define o cursor Y logo após o cabeçalho
+        doc.y = MARGIN_TOP + HEADER_HEIGHT + 10;
+    }
 
     function drawHeader() {
-        pageNumber++;
-        
-        let logoPath = null;
+        // Logo
         try {
-            const possiblePath = path.join(__dirname, '..', 'assets', 'videplast-brand.png');
-            if (fs.existsSync(possiblePath)) logoPath = possiblePath;
+            const logoPath = path.join(__dirname, '..', 'assets', 'videplast-brand.png');
+            if (fs.existsSync(logoPath)) {
+                doc.image(logoPath, 30, 30, { width: 100 });
+            }
         } catch (e) {}
 
-        if (logoPath) {
-            doc.image(logoPath, 30, 30, { width: 100 });
-        }
-
-        const headerX = 150;
+        const startX = 150;
         doc.fontSize(14).font("Helvetica-Bold").fillColor("#000")
-           .text("RELATÓRIO DE IMOBILIZADOS", headerX, 35, { align: 'left' });
+           .text("RELATÓRIO DE IMOBILIZADOS", startX, 35, { align: 'left' });
         
         doc.fontSize(9).font("Helvetica").fillColor("#555");
-        doc.text(`Centro de Custo: ${centro_custo}`, headerX, 55);
-        doc.text(`Setor: ${centro_custo_nome || ''}`, headerX, 68);
+        doc.text(`Centro de Custo: ${centro_custo}`, startX, 55);
+        doc.text(`Setor: ${centro_custo_nome || ''}`, startX, 68);
         
-        const agora = new Date();
-        doc.text(`Emissão: ${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR')}`, headerX, 81);
+        const dataStr = new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR');
+        doc.text(`Emissão: ${dataStr}`, startX, 81);
 
-        doc.moveTo(30, 100).lineTo(565, 100).strokeColor("#333").lineWidth(1.5).stroke();
-        
-        // Define o início do conteúdo útil da página
-        doc.y = 115; 
+        // Linha grossa
+        const lineY = MARGIN_TOP + HEADER_HEIGHT;
+        doc.moveTo(30, lineY).lineTo(565, lineY).strokeColor("#000").lineWidth(2).stroke();
     }
 
     function drawFooter() {
-        const bottomY = doc.page.height - 40;
+        const footerY = PAGE_HEIGHT - 30;
         doc.fontSize(8).fillColor("#999");
-        doc.text("Sistema de Controle de Ativos - Videplast", 30, bottomY, { align: "left", continued: false });
-        doc.text(`Página ${pageNumber}`, 500, bottomY, { align: "right", width: 65 });
+        doc.text("Videplast - Controle de Ativos", 30, footerY, { align: 'left', continued: false });
+        doc.text(`Página ${pageCount}`, 500, footerY, { align: 'right', width: 65 });
     }
 
-    function startNewPage() {
-        if (pageNumber > 0) {
-            drawFooter(); // Fecha a página anterior
-        }
-        doc.addPage();
-        drawHeader(); // Inicia a nova
-    }
+    // --- INÍCIO ---
+    addPage();
 
-    // Função CRÍTICA: Verifica se cabe
-    function checkSpace(heightNeeded) {
-        const limitY = doc.page.height - 50; // Margem inferior segura
-        if (doc.y + heightNeeded > limitY) {
-            startNewPage();
-            return true; // Indicador que mudou de página
-        }
-        return false;
-    }
-
-    // --- INÍCIO DO RELATÓRIO ---
-    startNewPage();
-
+    // --- LOOP PRINCIPAL (LÓGICA RÚSTICA) ---
     data.forEach((item, index) => {
-        // Dados
-        const descricao = item.descricao || "SEM DESCRIÇÃO";
-        const imob = item.codigo_imobilizado || "-";
+        // 1. Preparar textos (sanitização)
+        const descricao = (item.descricao || "SEM DESCRIÇÃO").replace(/[\r\n]+/g, " "); // Remove quebras de linha que bugam o cálculo
+        const imob = String(item.codigo_imobilizado || "-");
         const sub = String(item.sub_numero);
-        const inv = item.codigo_inventario || "-";
-        const local = item.local || "-";
-        const serie = item.numero_serie || "-";
-        const invAntigo = item.codigo_inventario_antigo || "-";
-        const dataInc = item.data_incorporacao ? new Date(item.data_incorporacao).toLocaleDateString('pt-BR') : "-";
+        const inv = String(item.codigo_inventario || "-");
+        const invAntigo = String(item.codigo_inventario_antigo || "-");
+        const local = String(item.local || "-");
+        const serie = String(item.numero_serie || "-");
+        let dataInc = "-";
+        if (item.data_incorporacao) {
+            try { dataInc = new Date(item.data_incorporacao).toLocaleDateString('pt-BR'); } catch(e){}
+        }
 
-        // Cálculo de Altura
+        // 2. Calcular ALTURA REAL necessária
         doc.fontSize(9).font("Helvetica");
-        const descHeight = doc.heightOfString(descricao, { width: 515, align: 'justify' });
-        // Altura Fixa (Cabeçalho do Item) + Altura Variável (Descrição) + Margem (20px)
-        const itemTotalHeight = 65 + descHeight + 10;
+        
+        // A altura da descrição é a parte variável. Calculamos com precisão.
+        const descWidth = 515;
+        const descHeight = doc.heightOfString(descricao, { width: descWidth });
+        
+        // Altura fixa dos outros campos + margens
+        // (Linha 1 dados + margem) + (Label Descrição + margem) + (Texto Descrição) + (Margem final)
+        const itemTotalHeight = 15 + 15 + descHeight + 15; 
 
-        // Verifica espaço ANTES de começar a desenhar
-        checkSpace(itemTotalHeight);
+        // 3. O CHECK DECISIVO: Cabe nesta página?
+        // Se a posição atual + altura do item for maior que o limite (fim da folha - margem)
+        if (doc.y + itemTotalHeight > LIMIT_Y) {
+            addPage(); // Cria nova página e reseta o doc.y para o topo
+        }
 
+        // 4. Desenhar o item (Agora sabemos que cabe!)
         const startY = doc.y;
 
-        // Fundo Zebrado
+        // Fundo zebrado
         if (index % 2 === 0) {
             doc.rect(30, startY - 5, 535, itemTotalHeight).fillColor("#F5F5F5").fill();
         }
         
         doc.fillColor("#000");
 
-        // Linha 1 (Grid)
+        // Linha 1: Grid de Dados
         const row1 = startY;
         const row2 = startY + 12;
         
-        const col = (lbl, val, x, w) => {
+        // Funçãozinha para desenhar coluna
+        const drawCol = (lbl, val, x, w) => {
             doc.fontSize(7).font("Helvetica-Bold").fillColor("#666").text(lbl, x, row1, { width: w, lineBreak: false });
-            doc.fontSize(9).font("Helvetica").fillColor("#000").text(val, x, row2, { width: w, lineBreak: false });
+            doc.fontSize(9).font("Helvetica").fillColor("#000").text(val, x, row2, { width: w, lineBreak: false, ellipsis: true });
         };
 
-        col("IMOBILIZADO", imob, 35, 70);
-        col("SUBNº", sub, 105, 40);
-        col("INVENTÁRIO", inv, 150, 70);
-        col("INV. ANTIGO", invAntigo, 225, 70);
-        col("DATA INC.", dataInc, 300, 65);
-        col("LOCAL", local, 370, 90);
-        col("SÉRIE", serie, 465, 95);
+        drawCol("IMOBILIZADO", imob, 35, 60);
+        drawCol("SUBNº", sub, 100, 30);
+        drawCol("INVENTÁRIO", inv, 135, 70);
+        drawCol("INV. ANTIGO", invAntigo, 210, 70);
+        drawCol("DATA", dataInc, 285, 60);
+        drawCol("LOCAL", local, 350, 90);
+        drawCol("SÉRIE", serie, 445, 90);
 
-        // Linha 2 (Descrição)
-        const descLabelY = row2 + 20;
-        const descTextY = descLabelY + 10;
-
+        // Linha 2: Descrição
+        const descLabelY = row2 + 15;
         doc.fontSize(7).font("Helvetica-Bold").fillColor("#666").text("DESCRIÇÃO", 35, descLabelY);
-        doc.fontSize(9).font("Helvetica").fillColor("#000")
-           .text(descricao, 35, descTextY, { width: 515, align: 'justify' });
-
-        // Espaçamento final
-        doc.moveDown(0.5); 
         
-        // Linha pontilhada apenas se não for o último item da página
-        const nextY = doc.y + 10;
-        if (nextY < doc.page.height - 50) {
-             doc.moveTo(30, doc.y).lineTo(565, doc.y).strokeColor("#E0E0E0").lineWidth(0.5).stroke();
-             doc.moveDown(0.5);
-        }
+        const descTextY = descLabelY + 10;
+        doc.fontSize(9).font("Helvetica").fillColor("#000")
+           .text(descricao, 35, descTextY, { 
+               width: descWidth, 
+               align: 'justify',
+               lineBreak: true 
+           });
+
+        // Atualiza Y para o próximo item
+        // Forçamos o Y para baixo da descrição desenhada
+        doc.y = descTextY + descHeight + 10; 
+
+        // Linha pontilhada separadora
+        doc.moveTo(30, doc.y).lineTo(565, doc.y).strokeColor("#DDD").lineWidth(0.5).dash(2, {space: 2}).stroke().undash();
+        doc.moveDown(0.5);
     });
 
-    drawFooter(); // Fecha a última página
+    // 5. Finalizar
+    drawFooter(); // Desenha rodapé da última página
     doc.end();
 }
 
