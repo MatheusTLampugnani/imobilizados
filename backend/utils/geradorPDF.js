@@ -1,7 +1,6 @@
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
-const puppeteer = require('puppeteer');
-const fs = require('fs');
+const PDFDocument = require('pdfkit');
 const path = require('path');
 const url = require('url');
 
@@ -31,145 +30,139 @@ async function handlePdfReportRequest(req, res) {
 
         if (!data || data.length === 0) {
             res.writeHead(404, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ message: "Nenhum dado encontrado." }));
+            return res.end(JSON.stringify({
+                message: `Nenhum imobilizado encontrado para o Centro de Custo ${centro_custo}.`
+            }));
         }
 
-        const { data: ccData } = await supabase
+        const { data: centroCustoData } = await supabase
             .from('centro_de_custo')
             .select('setores')
             .eq('centro_custo', centro_custo)
             .single();
 
-        await gerarRelatorioHTMLtoPDF(
+        gerarRelatorioPDF(
             {
                 data,
                 centro_custo,
-                centro_custo_nome: ccData ? ccData.setores : ""
+                centro_custo_nome: centroCustoData ? centroCustoData.setores : ""
             },
             res
         );
 
     } catch (dbError) {
-        console.error('ERRO:', dbError);
+        console.error('ERRO AO GERAR PDF:', dbError);
         if (!res.headersSent) {
-            res.writeHead(500);
-            res.end(JSON.stringify({ message: dbError.message }));
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
         }
     }
 }
 
-async function gerarRelatorioHTMLtoPDF({ data, centro_custo, centro_custo_nome }, res) {
-    try {
-        const logoPath = path.join(__dirname, '..', 'assets', 'videplast-brand.png');
-        let logoBase64 = '';
-        if (fs.existsSync(logoPath)) {
-            const bitmap = fs.readFileSync(logoPath);
-            logoBase64 = `data:image/png;base64,${bitmap.toString('base64')}`;
+function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
+    const doc = new PDFDocument({ 
+        size: 'A4', 
+        margins: { top: 110, bottom: 50, left: 30, right: 30 },
+        autoFirstPage: true
+    });
+
+    const filename = `Relatorio_CC_${centro_custo}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    doc.pipe(res);
+
+    doc.on('pageAdded', () => {
+        desenharCabecalho(doc, centro_custo, centro_custo_nome);
+        desenharRodape(doc);
+    });
+
+    desenharCabecalho(doc, centro_custo, centro_custo_nome);
+    desenharRodape(doc);
+    
+    data.forEach((item, index) => {
+        const descricao = item.descricao || "SEM DESCRIÇÃO";
+        const imob = item.codigo_imobilizado || "-";
+        const sub = String(item.sub_numero);
+        const inv = item.codigo_inventario || "-";
+        const local = item.local || "-";
+        const serie = item.numero_serie || "-";
+        const dataInc = item.data_incorporacao ? new Date(item.data_incorporacao).toLocaleDateString('pt-BR') : "-";
+
+        doc.fontSize(9).font("Helvetica");
+        const descHeight = doc.heightOfString(descricao, { width: 515, align: 'justify' });
+        const boxHeight = 60 + descHeight; 
+
+        if (doc.y + boxHeight > doc.page.height - 50) {
+            doc.addPage();
         }
 
-        const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                body { font-family: Helvetica, Arial, sans-serif; margin: 40px; font-size: 10px; }
-                .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-                .logo { width: 100px; margin-bottom: 10px; }
-                h1 { font-size: 16px; margin: 5px 0; color: #333; }
-                h2 { font-size: 12px; margin: 0; color: #555; font-weight: normal; }
-                
-                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                
-                /* O segredo para não quebrar página errado: */
-                tr { page-break-inside: avoid; } 
-                
-                td, th { border: 1px solid #ddd; padding: 6px; vertical-align: top; }
-                
-                .label { font-weight: bold; color: #444; width: 90px; background-color: #f0f0f0; }
-                .value { color: #000; }
-                
-                .item-container { margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
-                
-                /* Estilo Zebrado */
-                .row-container:nth-child(even) { background-color: #f9f9f9; }
+        const startY = doc.y;
 
-                .grid-info { display: flex; flex-wrap: wrap; }
-                .grid-item { width: 14%; box-sizing: border-box; padding: 5px; border-right: 1px solid #eee; border-bottom: 1px solid #eee; }
-                .grid-item strong { display: block; font-size: 7px; color: #666; text-transform: uppercase; margin-bottom: 2px; }
-                .grid-item span { font-size: 9px; font-weight: bold; }
-                
-                .desc-box { padding: 8px; border-top: 1px solid #eee; }
-                .desc-title { font-size: 7px; color: #666; font-weight: bold; text-transform: uppercase; }
-                .desc-text { font-size: 10px; margin-top: 2px; line-height: 1.3; }
-
-                .footer { position: fixed; bottom: 0; left: 0; right: 0; height: 30px; font-size: 8px; color: #999; text-align: right; background: white; padding-top: 5px;}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                ${logoBase64 ? `<img src="${logoBase64}" class="logo" />` : ''}
-                <h1>RELATÓRIO DE IMOBILIZADOS</h1>
-                <h2>Centro de Custo: ${centro_custo} - ${centro_custo_nome}</h2>
-                <h2>Data Emissão: ${new Date().toLocaleDateString('pt-BR')}</h2>
-            </div>
-
-            ${data.map(item => {
-                const dataInc = item.data_incorporacao ? new Date(item.data_incorporacao).toLocaleDateString('pt-BR') : '-';
-                return `
-                <div class="item-container row-container">
-                    <div class="grid-info">
-                        <div class="grid-item"><strong>Imobilizado</strong><span>${item.codigo_imobilizado || '-'}</span></div>
-                        <div class="grid-item"><strong>Subnº</strong><span>${item.sub_numero}</span></div>
-                        <div class="grid-item"><strong>Inventário</strong><span>${item.codigo_inventario || '-'}</span></div>
-                        <div class="grid-item"><strong>Inv. Antigo</strong><span>${item.codigo_inventario_antigo || '-'}</span></div>
-                        <div class="grid-item"><strong>Data</strong><span>${dataInc}</span></div>
-                        <div class="grid-item"><strong>Local</strong><span>${item.local || '-'}</span></div>
-                        <div class="grid-item" style="border-right: none;"><strong>Série</strong><span>${item.numero_serie || '-'}</span></div>
-                    </div>
-                    <div class="desc-box">
-                        <div class="desc-title">Descrição do Ativo</div>
-                        <div class="desc-text">${item.descricao || 'SEM DESCRIÇÃO'}</div>
-                    </div>
-                </div>
-                `;
-            }).join('')}
-        </body>
-        </html>
-        `;
-
-        const browser = await puppeteer.launch({ 
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+        if (index % 2 === 0) {
+            doc.rect(30, startY - 5, 535, boxHeight).fillColor("#F5F5F5").fill();
+        }
         
-        const page = await browser.newPage();
+        doc.fillColor("#000");
+
+        const row1 = startY;
+        const row2 = startY + 12;
         
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        const col = (lbl, val, x, w) => {
+            doc.fontSize(7).font("Helvetica-Bold").fillColor("#666").text(lbl, x, row1, { width: w });
+            doc.fontSize(9).font("Helvetica").fillColor("#000").text(val, x, row2, { width: w });
+        };
 
-        const pdfBuffer = await page.pdf({
-            format: 'A4',
-            printBackground: true,
-            margin: { top: '30px', bottom: '40px', left: '30px', right: '30px' },
-            displayHeaderFooter: true,
-            headerTemplate: '<div></div>',
-            footerTemplate: `
-                <div style="font-size: 8px; color: #999; width: 100%; text-align: right; padding-right: 30px;">
-                    Página <span class="pageNumber"></span> de <span class="totalPages"></span>
-                </div>
-            `
-        });
+        col("IMOBILIZADO", imob, 35, 70);
+        col("SUBNº", sub, 105, 40);
+        col("INVENTÁRIO", inv, 150, 80);
+        col("DATA", dataInc, 240, 70);
+        col("LOCAL", local, 320, 110);
+        col("SÉRIE", serie, 440, 90);
 
-        await browser.close();
+        const descY = row2 + 20;
+        doc.fontSize(7).font("Helvetica-Bold").fillColor("#666").text("DESCRIÇÃO", 35, descY - 10);
+        doc.fontSize(9).font("Helvetica").fillColor("#000")
+           .text(descricao, 35, descY, { width: 515, align: 'justify' });
 
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="Relatorio_CC_${centro_custo}.pdf"`);
-        res.end(pdfBuffer);
+        doc.moveDown(1);
+        
+        doc.moveTo(30, doc.y).lineTo(565, doc.y).strokeColor("#DDD").lineWidth(0.5).stroke();
+        doc.moveDown(0.5);
+    });
 
-    } catch (err) {
-        console.error("Erro Puppeteer:", err);
-        res.writeHead(500);
-        res.end(JSON.stringify({ message: "Erro ao gerar PDF com Puppeteer" }));
-    }
+    doc.end();
+}
+
+function desenharCabecalho(doc, cc, ccNome) {
+    const oldY = doc.y;
+    
+    try {
+        const logoPath = path.join(__dirname, '..', 'assets', 'videplast-brand.png');
+        doc.image(logoPath, 30, 30, { width: 90 });
+    } catch (e) {}
+
+    doc.fontSize(14).font("Helvetica-Bold").fillColor("#000")
+       .text("RELATÓRIO DE IMOBILIZADOS", 140, 35, { align: 'left' });
+
+    doc.fontSize(9).font("Helvetica").fillColor("#444");
+    doc.text(`Centro de Custo: ${cc}`, 140, 55);
+    doc.text(`Setor: ${ccNome || ''}`, 140, 68);
+    doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 400, 55, { align: 'right' });
+
+    doc.moveTo(30, 90).lineTo(565, 90).strokeColor("#000").lineWidth(1.5).stroke();
+
+    doc.y = 110;
+}
+
+function desenharRodape(doc) {
+    const bottom = doc.page.height - 40;
+    
+    doc.fontSize(8).fillColor("#999");
+    doc.text("Sistema de Controle de Ativos - Videplast", 30, bottom, { align: 'left', continued: false });
+    
+    const range = doc.bufferedPageRange();
+    doc.text(`Página ${range.count + 1}`, 500, bottom, { align: 'right', width: 65 });
 }
 
 module.exports = {
