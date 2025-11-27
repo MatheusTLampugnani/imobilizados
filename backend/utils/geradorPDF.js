@@ -64,7 +64,7 @@ async function handlePdfReportRequest(req, res) {
 function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
     const doc = new PDFDocument({ 
         size: 'A4', 
-        margin: 30,
+        margins: { top: 30, bottom: 50, left: 30, right: 30 },
         autoFirstPage: false 
     });
 
@@ -75,7 +75,6 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
     doc.pipe(res);
 
     let pageNumber = 0;
-    const bottomMargin = 40;
 
     function drawHeader() {
         pageNumber++;
@@ -83,8 +82,7 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
         try {
             const logoPath = path.join(__dirname, '..', 'assets', 'videplast-brand.png');
             doc.image(logoPath, 30, 20, { width: 100 });
-        } catch (e) {
-        }
+        } catch (e) { }
 
         const headerX = 150;
         doc.fontSize(14).font("Helvetica-Bold").text("RELATÓRIO DE IMOBILIZADOS", headerX, 25, { align: 'left' });
@@ -100,19 +98,20 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
     }
 
     function drawFooter() {
-        const bottomY = doc.page.height - 30;
+        const bottomY = doc.page.height - 40;
+        
         doc.fontSize(8).fillColor("#999");
-        
         doc.text("Sistema de Controle de Ativos", 30, bottomY, { align: "left", continued: false });
-        
         doc.text(`Página ${pageNumber}`, 500, bottomY, { align: "right", width: 65 });
     }
 
     function checkPageBreak(heightNeeded) {
-        if (doc.y + heightNeeded > doc.page.height - bottomMargin) {
-            drawFooter();
+        const safetyLimit = doc.page.height - doc.page.margins.bottom - 10;
+
+        if (doc.y + heightNeeded > safetyLimit) {
+            drawFooter(); 
             doc.addPage();
-            drawHeader();
+            drawHeader(); 
             return true;
         }
         return false;
@@ -137,9 +136,8 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
         const descricao = item.descricao || "SEM DESCRIÇÃO";
 
         doc.fontSize(9).font("Helvetica");
-        const descWidth = 515; // Largura da página menos margens
-        const descHeight = doc.heightOfString(descricao, { width: descWidth });
-        
+        const descWidth = 515; 
+        const descHeight = doc.heightOfString(descricao, { width: descWidth }) + 10;
         const blockHeight = 65 + descHeight;
 
         checkPageBreak(blockHeight);
@@ -150,9 +148,8 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
             doc.rect(30, startY - 5, 535, blockHeight).fillColor("#F9F9F9").fill();
         }
         
-        doc.fillColor("#000");
+        doc.fillColor("#000"); 
 
-        const colW = 100; 
         const row1Y = startY;
         const row2Y = startY + 12;
 
@@ -189,11 +186,11 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
            .strokeColor("#CCC")
            .stroke();
         
-        doc.undash();
-        doc.moveDown(0.8);
+        doc.undash(); 
+        doc.moveDown(0.8); 
     });
 
-    drawFooter();
+    drawFooter(); 
     doc.end();
 }
 
