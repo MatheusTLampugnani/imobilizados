@@ -54,13 +54,19 @@ async function handlePdfReportRequest(req, res) {
 
     } catch (dbError) {
         console.error('ERRO AO GERAR PDF:', dbError);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
+        if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: `Erro no banco de dados: ${dbError.message}` }));
+        }
     }
 }
 
 function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
-    const doc = new PDFDocument({ size: 'A4', margin: 40, autoFirstPage: false });
+    const doc = new PDFDocument({ 
+        size: 'A4', 
+        margin: 30,
+        autoFirstPage: false 
+    });
 
     const filename = `Relatorio_CC_${centro_custo}.pdf`;
 
@@ -68,157 +74,127 @@ function gerarRelatorioPDF({ data, centro_custo, centro_custo_nome }, res) {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     doc.pipe(res);
 
+    let pageNumber = 0;
+    const bottomMargin = 40;
+
     function drawHeader() {
-        try {
-            doc.image(path.join(__dirname, '..', 'assets', 'videplast-brand.png'), {
-                fit: [100, 50],
-                align: 'center',
-                x: (doc.page.width - 100) / 2,
-                y: 30
-            });
-        } catch (e) {
-            console.log("Logo não encontrado, gerando sem imagem.");
-        }
+        pageNumber++;
         
-        doc.moveDown(4);
+        try {
+            const logoPath = path.join(__dirname, '..', 'assets', 'videplast-brand.png');
+            doc.image(logoPath, 30, 20, { width: 100 });
+        } catch (e) {
+        }
 
-        doc.fontSize(16).font("Helvetica-Bold").fillColor("#333")
-            .text("RELATÓRIO DE IMOBILIZADOS", { align: "center" });
+        const headerX = 150;
+        doc.fontSize(14).font("Helvetica-Bold").text("RELATÓRIO DE IMOBILIZADOS", headerX, 25, { align: 'left' });
+        
+        doc.fontSize(9).font("Helvetica").fillColor("#555");
+        doc.text(`Centro de Custo: ${centro_custo}`, headerX, 45);
+        doc.text(`Setor: ${centro_custo_nome}`, headerX, 58);
+        doc.text(`Data Emissão: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, headerX, 71);
 
-        doc.moveDown(0.5);
-        doc.fontSize(11).font("Helvetica")
-            .text(`Centro de Custo: ${centro_custo} - ${centro_custo_nome}`, { align: "center" });
-
-        doc.moveDown(0.5);
-        doc.moveTo(doc.page.margins.left, doc.y)
-            .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-            .strokeColor("#AAAAAA")
-            .lineWidth(1)
-            .stroke();
-
-        doc.moveDown(1);
+        doc.moveTo(30, 90).lineTo(565, 90).strokeColor("#333").lineWidth(2).stroke();
+        
+        doc.y = 105;
     }
 
     function drawFooter() {
-        const bottomY = doc.page.height - 40;
-        const datetime = new Date().toLocaleString("pt-BR", {
-            dateStyle: "short",
-            timeStyle: "short"
-        });
-
-        doc.fontSize(8).fillColor("#666");
-
-        doc.text(`Gerado em: ${datetime}`,
-            doc.page.margins.left,
-            bottomY,
-            { align: "left" }
-        );
-
-        doc.text(
-            `Página ${doc.pageNumber}`,
-            doc.page.margins.left,
-            bottomY,
-            {
-                align: "right",
-                width: doc.page.width - doc.page.margins.left - doc.page.margins.right
-            }
-        );
-    }
-
-    function newPage() {
-        doc.addPage();
-        drawHeader();
-        drawFooter();
-    }
-
-    newPage();
-
-    data.forEach(item => {
-        doc.fontSize(9).font("Helvetica");
-        const descWidth = 380;
-        const descText = item.descricao || "Sem descrição";
-        const descHeight = doc.heightOfString(descText, { width: descWidth });
+        const bottomY = doc.page.height - 30;
+        doc.fontSize(8).fillColor("#999");
         
-        const itemBlockHeight = 85 + descHeight; 
+        doc.text("Sistema de Controle de Ativos", 30, bottomY, { align: "left", continued: false });
+        
+        doc.text(`Página ${pageNumber}`, 500, bottomY, { align: "right", width: 65 });
+    }
 
-        if (doc.y + itemBlockHeight > doc.page.height - 50) {
-            newPage();
+    function checkPageBreak(heightNeeded) {
+        if (doc.y + heightNeeded > doc.page.height - bottomMargin) {
+            drawFooter();
+            doc.addPage();
+            drawHeader();
+            return true;
         }
+        return false;
+    }
 
-        drawItem(doc, item, descHeight);
-    });
+    doc.addPage();
+    drawHeader();
 
-    doc.end();
-}
-
-function drawItem(doc, item, descHeight) {
-    const leftX = doc.page.margins.left;
-    const rightX = 320;
-    const labelOffset = 110;
-    const valueX = leftX + labelOffset;
-    const valueXRight = rightX + 60;
-
-    const startY = doc.y;
-    let currentY = startY;
-
-    doc.fontSize(9).fillColor("#333");
-
-    doc.font("Helvetica-Bold").text("Imobilizado:", leftX, currentY);
-    doc.font("Helvetica").text(item.codigo_imobilizado || "Sem código", valueX, currentY);
-    
-    doc.font("Helvetica-Bold").text("Subnº:", rightX, currentY);
-    doc.font("Helvetica").text(item.sub_numero, valueXRight, currentY);
-    
-    currentY += 14;
-
-    doc.font("Helvetica-Bold").text("Nº Inventário:", leftX, currentY);
-    doc.font("Helvetica").text(item.codigo_inventario || "Sem código", valueX, currentY);
-
-    doc.font("Helvetica-Bold").text("Data Incorp.:", rightX, currentY);
-    
-    let dataFormatada = item.data_incorporacao;
-    try {
+    data.forEach((item, index) => {
+        const imob = item.codigo_imobilizado || "-";
+        const sub = String(item.sub_numero);
+        const inv = item.codigo_inventario || "-";
+        const invAntigo = item.codigo_inventario_antigo || "-";
+        const local = item.local || "-";
+        const serie = item.numero_serie || "-";
+        
+        let dataInc = "-";
         if (item.data_incorporacao) {
-            const dateObj = new Date(item.data_incorporacao);
-            dataFormatada = dateObj.toLocaleDateString('pt-BR');
+            try { dataInc = new Date(item.data_incorporacao).toLocaleDateString('pt-BR'); } catch(e){}
         }
-    } catch (e) {}
 
-    doc.font("Helvetica").text(dataFormatada || "Sem data", valueXRight, currentY);
+        const descricao = item.descricao || "SEM DESCRIÇÃO";
 
-    currentY += 14;
+        doc.fontSize(9).font("Helvetica");
+        const descWidth = 515; // Largura da página menos margens
+        const descHeight = doc.heightOfString(descricao, { width: descWidth });
+        
+        const blockHeight = 65 + descHeight;
 
-    doc.font("Helvetica-Bold").text("Inv. Antigo:", leftX, currentY);
-    doc.font("Helvetica").text(item.codigo_inventario_antigo || "", valueX, currentY);
+        checkPageBreak(blockHeight);
 
-    doc.font("Helvetica-Bold").text("Local:", rightX, currentY);
-    doc.font("Helvetica").text(item.local || "Não informado", valueXRight, currentY);
+        const startY = doc.y;
+        
+        if (index % 2 === 0) {
+            doc.rect(30, startY - 5, 535, blockHeight).fillColor("#F9F9F9").fill();
+        }
+        
+        doc.fillColor("#000");
 
-    currentY += 14;
+        const colW = 100; 
+        const row1Y = startY;
+        const row2Y = startY + 12;
 
-    doc.font("Helvetica-Bold").text("Descrição:", leftX, currentY);
-    
-    const descY = currentY;
-    
-    doc.font("Helvetica").text(item.descricao || "Sem descrição", valueX, descY, { 
-        width: 380,
-        align: 'left'
+        const drawField = (label, value, x, w) => {
+            doc.fontSize(7).font("Helvetica-Bold").fillColor("#666").text(label, x, row1Y, { width: w, align: 'left' });
+            doc.fontSize(9).font("Helvetica").fillColor("#000").text(value, x, row2Y, { width: w, align: 'left' });
+        };
+
+        drawField("IMOBILIZADO", imob, 35, 70);
+        drawField("SUBNº", sub, 105, 40);
+        drawField("INVENTÁRIO", inv, 150, 80);
+        drawField("INV. ANTIGO", invAntigo, 235, 80);
+        drawField("DATA INCORP.", dataInc, 320, 70);
+        drawField("LOCAL", local, 400, 100);
+        drawField("SÉRIE", serie, 505, 60);
+
+        const descLabelY = row2Y + 18;
+        const descTextY = descLabelY + 10;
+
+        doc.fontSize(7).font("Helvetica-Bold").fillColor("#666").text("DESCRIÇÃO DO ATIVO", 35, descLabelY);
+        
+        doc.fontSize(9).font("Helvetica").fillColor("#000")
+           .text(descricao, 35, descTextY, {
+               width: descWidth,
+               align: 'justify'
+           });
+
+        doc.moveDown(0.5); 
+        
+        doc.moveTo(30, doc.y)
+           .lineTo(565, doc.y)
+           .lineWidth(0.5)
+           .dash(2, { space: 2 })
+           .strokeColor("#CCC")
+           .stroke();
+        
+        doc.undash();
+        doc.moveDown(0.8);
     });
 
-    currentY = descY + Math.max(descHeight, 14) + 6; 
-
-    doc.font("Helvetica-Bold").text("Nº Série:", leftX, currentY);
-    doc.font("Helvetica").text(item.numero_serie || "Sem número", valueX, currentY);
-
-    currentY += 18;
-
-    doc.moveTo(leftX, currentY)
-        .lineTo(doc.page.width - doc.page.margins.right, currentY)
-        .strokeColor("#DDDDDD")
-        .lineWidth(0.5)
-        .stroke();
-
-    doc.y = currentY + 10;
+    drawFooter();
+    doc.end();
 }
 
 module.exports = {
