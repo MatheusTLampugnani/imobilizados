@@ -70,21 +70,29 @@ function gerarPDFMake({ data, centro_custo, centro_custo_nome }, res) {
 
     const printer = new PdfPrinter(fonts);
 
-    const tableBody = [
-        [
-            { text: 'IMOBILIZADO', style: 'tableHeader' },
-            { text: 'SUBNº', style: 'tableHeader' },
-            { text: 'INVENTÁRIO', style: 'tableHeader' },
-            { text: 'DATA INC.', style: 'tableHeader' },
-            { text: 'LOCAL', style: 'tableHeader' },
-            { text: 'SÉRIE', style: 'tableHeader' }
-        ]
-    ];
+    let logoPath = null;
+    try {
+        const possiblePath = path.join(__dirname, '..', 'assets', 'videplast-brand.png');
+        if (fs.existsSync(possiblePath)) logoPath = possiblePath;
+    } catch (e) {}
+
+    const tableBody = [];
+
+    tableBody.push([
+        { text: 'IMOBILIZADO', style: 'tableHeader' },
+        { text: 'SUBNº', style: 'tableHeader', alignment: 'center' },
+        { text: 'INVENTÁRIO', style: 'tableHeader' },
+        { text: 'ANTIGO', style: 'tableHeader' },
+        { text: 'DATA', style: 'tableHeader' },
+        { text: 'LOCAL', style: 'tableHeader' },
+        { text: 'SÉRIE', style: 'tableHeader' }
+    ]);
 
     data.forEach((item, index) => {
         const imob = item.codigo_imobilizado ? String(item.codigo_imobilizado) : "-";
         const sub = String(item.sub_numero);
         const inv = item.codigo_inventario ? String(item.codigo_inventario) : "-";
+        const invAnt = item.codigo_inventario_antigo ? String(item.codigo_inventario_antigo) : "-";
         const local = item.local || "-";
         const serie = item.numero_serie || "-";
         
@@ -94,65 +102,66 @@ function gerarPDFMake({ data, centro_custo, centro_custo_nome }, res) {
         }
 
         const descricao = item.descricao || "SEM DESCRIÇÃO";
-        const fillColor = index % 2 === 0 ? '#f5f5f5' : null;
+        
+        const rowColor = index % 2 === 0 ? '#f9f9f9' : '#ffffff';
 
         tableBody.push([
-            { text: imob, style: 'tableCell', fillColor: fillColor },
-            { text: sub, style: 'tableCell', fillColor: fillColor },
-            { text: inv, style: 'tableCell', fillColor: fillColor },
-            { text: dataInc, style: 'tableCell', fillColor: fillColor },
-            { text: local, style: 'tableCell', fillColor: fillColor },
-            { text: serie, style: 'tableCell', fillColor: fillColor }
+            { text: imob, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] },
+            { text: sub, style: 'tableCell', alignment: 'center', fillColor: rowColor, border: [false, true, false, false] },
+            { text: inv, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] },
+            { text: invAnt, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] },
+            { text: dataInc, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] },
+            { text: local, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] },
+            { text: serie, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] }
         ]);
 
         tableBody.push([
             { 
+                colSpan: 7, 
                 text: [
-                    { text: 'DESCRIÇÃO: ', bold: true, color: '#555', fontSize: 7 }, 
-                    { text: descricao }
-                ], 
-                colSpan: 6, 
-                style: 'descCell',
-                fillColor: fillColor,
-                border: [false, false, false, true]
+                    { text: 'DESCRIÇÃO: ', bold: true, color: '#666', fontSize: 7 }, 
+                    { text: descricao, fontSize: 9, color: '#000' }
+                ],
+                fillColor: rowColor,
+                margin: [0, 2, 0, 8], 
+                border: [false, false, false, false] 
             },
-            {}, {}, {}, {}, {}
+            {}, {}, {}, {}, {}, {}
         ]);
     });
 
     const docDefinition = {
         defaultStyle: { font: 'Helvetica' },
         pageSize: 'A4',
-        pageMargins: [30, 100, 30, 40], 
+        pageMargins: [30, 110, 30, 40],
 
         header: function(currentPage, pageCount) {
             return {
                 margin: [30, 20, 30, 0],
-                columns: [
+                stack: [
                     {
-                        text: 'VIDEPLAST',
-                        fontSize: 20,
-                        bold: true,
-                        width: 120,
-                        alignment: 'center',
-                        margin: [0, 10, 0, 0]
-                    },
-                    {
-                        stack: [
-                            { text: 'RELATÓRIO DE IMOBILIZADOS', style: 'headerTitle' },
-                            { 
-                                text: [
-                                    { text: 'Centro de Custo: ', bold: true }, 
-                                    `${centro_custo} - ${centro_custo_nome || ''}`
-                                ], 
-                                style: 'headerSub' 
-                            },
-                            { 
-                                text: `Emissão: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 
-                                style: 'headerSub' 
+                        columns: [
+                            logoPath ? { image: logoPath, width: 100 } : { text: 'VIDEPLAST', bold: true, fontSize: 18 },
+                            
+                            {
+                                stack: [
+                                    { text: 'RELATÓRIO DE IMOBILIZADOS', style: 'headerTitle', alignment: 'right' },
+                                    { text: `Centro de Custo: ${centro_custo}`, style: 'headerInfo', alignment: 'right' },
+                                    { text: `Setor: ${centro_custo_nome || ''}`, style: 'headerInfo', alignment: 'right' },
+                                    { 
+                                        text: `Emissão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 
+                                        style: 'headerInfo', 
+                                        alignment: 'right',
+                                        margin: [0, 5, 0, 0]
+                                    }
+                                ],
+                                width: '*'
                             }
-                        ],
-                        width: '*'
+                        ]
+                    },
+                    { 
+                        canvas: [{ type: 'line', x1: 0, y1: 10, x2: 535, y2: 10, lineWidth: 2, lineColor: '#b91c1c' }],
+                        margin: [0, 10, 0, 0]
                     }
                 ]
             };
@@ -162,8 +171,8 @@ function gerarPDFMake({ data, centro_custo, centro_custo_nome }, res) {
             return {
                 margin: [30, 0, 30, 0],
                 columns: [
-                    { text: 'Sistema de Controle de Ativos', fontSize: 8, color: '#999' },
-                    { text: `Página ${currentPage} de ${pageCount}`, alignment: 'right', fontSize: 8, color: '#999' }
+                    { text: 'Sistema de Controle de Ativos', style: 'footerText' },
+                    { text: `Página ${currentPage} de ${pageCount}`, style: 'footerText', alignment: 'right' }
                 ]
             };
         },
@@ -172,49 +181,33 @@ function gerarPDFMake({ data, centro_custo, centro_custo_nome }, res) {
             {
                 table: {
                     headerRows: 1,
-                    widths: [60, 30, 70, 60, 90, 80],
+                    widths: ['auto', 30, 70, 60, 60, '*', 70],
                     body: tableBody,
                     dontBreakRows: true
                 },
                 layout: {
-                    hLineWidth: function (i, node) {
-                        return (i === 0 || i === node.table.body.length) ? 1 : 0.5;
-                    },
-                    vLineWidth: function (i, node) { return 0; },
-                    hLineColor: function (i, node) { return '#ddd'; },
-                    paddingLeft: function(i) { return 4; },
-                    paddingRight: function(i) { return 4; },
-                    paddingTop: function(i) { return 4; },
-                    paddingBottom: function(i) { return 4; }
+                    hLineWidth: function (i) { return 0; },
+                    vLineWidth: function (i) { return 0; },
+                    paddingLeft: function(i) { return 5; },
+                    paddingRight: function(i) { return 5; },
+                    paddingTop: function(i) { return 5; },
+                    paddingBottom: function(i) { return 2; }
                 }
             }
         ],
 
         styles: {
-            headerTitle: { fontSize: 14, bold: true, margin: [0, 0, 0, 5] },
-            headerSub: { fontSize: 9, color: '#444', margin: [0, 2, 0, 2] },
-            tableHeader: { fontSize: 8, bold: true, color: 'white', fillColor: '#333', alignment: 'center' },
-            tableCell: { fontSize: 8, color: '#000' },
-            descCell: { fontSize: 9, alignment: 'justify', margin: [5, 0, 5, 5] }
+            headerTitle: { fontSize: 16, bold: true, color: '#333' },
+            headerInfo: { fontSize: 9, color: '#555', margin: [0, 2, 0, 0] },
+            tableHeader: { fontSize: 8, bold: true, color: '#ffffff', fillColor: '#333333', margin: [0, 5, 0, 5] },
+            tableCell: { fontSize: 8, color: '#333' },
+            footerText: { fontSize: 8, color: '#999' }
         }
     };
 
-    try {
-        const logoPath = path.join(__dirname, '..', 'assets', 'videplast-brand.png');
-        if (fs.existsSync(logoPath)) {
-            docDefinition.header.columns[0] = {
-                image: logoPath,
-                width: 100,
-                alignment: 'center'
-            };
-        }
-    } catch(e) {}
-
     const pdfDoc = printer.createPdfKitDocument(docDefinition);
-    
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Relatorio_CC_${centro_custo}.pdf"`);
-    
     pdfDoc.pipe(res);
     pdfDoc.end();
 }
