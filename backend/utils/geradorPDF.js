@@ -76,23 +76,13 @@ function gerarPDFMake({ data, centro_custo, centro_custo_nome }, res) {
         if (fs.existsSync(possiblePath)) logoPath = possiblePath;
     } catch (e) {}
 
-    const tableBody = [];
-
-    tableBody.push([
-        { text: 'IMOBILIZADO', style: 'tableHeader' },
-        { text: 'SUBNº', style: 'tableHeader', alignment: 'center' },
-        { text: 'INVENTÁRIO', style: 'tableHeader' },
-        { text: 'ANTIGO', style: 'tableHeader' },
-        { text: 'DATA', style: 'tableHeader' },
-        { text: 'LOCAL', style: 'tableHeader' },
-        { text: 'SÉRIE', style: 'tableHeader' }
-    ]);
+    const contentBody = [];
 
     data.forEach((item, index) => {
-        const imob = item.codigo_imobilizado ? String(item.codigo_imobilizado) : "-";
+        const imob = item.codigo_imobilizado || "-";
         const sub = String(item.sub_numero);
-        const inv = item.codigo_inventario ? String(item.codigo_inventario) : "-";
-        const invAnt = item.codigo_inventario_antigo ? String(item.codigo_inventario_antigo) : "-";
+        const inv = item.codigo_inventario || "-";
+        const invAnt = item.codigo_inventario_antigo || "-";
         const local = item.local || "-";
         const serie = item.numero_serie || "-";
         
@@ -102,32 +92,49 @@ function gerarPDFMake({ data, centro_custo, centro_custo_nome }, res) {
         }
 
         const descricao = item.descricao || "SEM DESCRIÇÃO";
-        
         const rowColor = index % 2 === 0 ? '#f9f9f9' : '#ffffff';
 
-        tableBody.push([
-            { text: imob, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] },
-            { text: sub, style: 'tableCell', alignment: 'center', fillColor: rowColor, border: [false, true, false, false] },
-            { text: inv, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] },
-            { text: invAnt, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] },
-            { text: dataInc, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] },
-            { text: local, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] },
-            { text: serie, style: 'tableCell', fillColor: rowColor, border: [false, true, false, false] }
-        ]);
+        const field = (label, value) => ({
+            stack: [
+                { text: label, style: 'label' },
+                { text: value, style: 'value' }
+            ]
+        });
 
-        tableBody.push([
-            { 
-                colSpan: 7, 
-                text: [
-                    { text: 'DESCRIÇÃO: ', bold: true, color: '#666', fontSize: 7 }, 
-                    { text: descricao, fontSize: 9, color: '#000' }
-                ],
-                fillColor: rowColor,
-                margin: [0, 2, 0, 8], 
-                border: [false, false, false, false] 
+        contentBody.push({
+            table: {
+                widths: ['16%', '8%', '14%', '14%', '14%', '18%', '16%'],
+                body: [
+                    [
+                        { ...field('IMOBILIZADO', imob), fillColor: rowColor, border: [false, true, false, false] },
+                        { ...field('SUBNº', sub), fillColor: rowColor, border: [false, true, false, false] },
+                        { ...field('INVENTÁRIO', inv), fillColor: rowColor, border: [false, true, false, false] },
+                        { ...field('INV. ANTIGO', invAnt), fillColor: rowColor, border: [false, true, false, false] },
+                        { ...field('DATA INC.', dataInc), fillColor: rowColor, border: [false, true, false, false] },
+                        { ...field('LOCAL', local), fillColor: rowColor, border: [false, true, false, false] },
+                        { ...field('SÉRIE', serie), fillColor: rowColor, border: [false, true, false, false] }
+                    ],
+                    [{ 
+                        colSpan: 7, 
+                        text: [
+                            { text: 'DESCRIÇÃO: ', style: 'labelDesc' },
+                            { text: descricao, style: 'valueDesc' }
+                        ],
+                        fillColor: rowColor,
+                        border: [false, false, false, false],
+                        margin: [0, 2, 0, 8]
+                    }, {}, {}, {}, {}, {}, {}]
+                ]
             },
-            {}, {}, {}, {}, {}, {}
-        ]);
+            layout: 'noBorders',
+            unbreakable: true,   
+            margin: [0, 0, 0, 5]
+        });
+        
+        contentBody.push({
+            canvas: [{ type: 'line', x1: 0, y1: 0, x2: 535, y2: 0, lineWidth: 0.5, lineColor: '#ddd', dash: { length: 2 } }],
+            margin: [0, 0, 0, 5]
+        });
     });
 
     const docDefinition = {
@@ -142,7 +149,6 @@ function gerarPDFMake({ data, centro_custo, centro_custo_nome }, res) {
                     {
                         columns: [
                             logoPath ? { image: logoPath, width: 100 } : { text: 'VIDEPLAST', bold: true, fontSize: 18 },
-                            
                             {
                                 stack: [
                                     { text: 'RELATÓRIO DE IMOBILIZADOS', style: 'headerTitle', alignment: 'right' },
@@ -177,31 +183,17 @@ function gerarPDFMake({ data, centro_custo, centro_custo_nome }, res) {
             };
         },
 
-        content: [
-            {
-                table: {
-                    headerRows: 1,
-                    widths: ['auto', 30, 70, 60, 60, '*', 70],
-                    body: tableBody,
-                    dontBreakRows: true
-                },
-                layout: {
-                    hLineWidth: function (i) { return 0; },
-                    vLineWidth: function (i) { return 0; },
-                    paddingLeft: function(i) { return 5; },
-                    paddingRight: function(i) { return 5; },
-                    paddingTop: function(i) { return 5; },
-                    paddingBottom: function(i) { return 2; }
-                }
-            }
-        ],
+        content: contentBody,
 
         styles: {
             headerTitle: { fontSize: 16, bold: true, color: '#333' },
             headerInfo: { fontSize: 9, color: '#555', margin: [0, 2, 0, 0] },
-            tableHeader: { fontSize: 8, bold: true, color: '#ffffff', fillColor: '#333333', margin: [0, 5, 0, 5] },
-            tableCell: { fontSize: 8, color: '#333' },
-            footerText: { fontSize: 8, color: '#999' }
+            footerText: { fontSize: 8, color: '#999' },
+            
+            label: { fontSize: 6, bold: true, color: '#666', margin: [0, 0, 0, 1] },
+            value: { fontSize: 8, color: '#000' },
+            labelDesc: { fontSize: 7, bold: true, color: '#666' },
+            valueDesc: { fontSize: 9, color: '#000' }
         }
     };
 
