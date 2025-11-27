@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
-const PDFDocument = require('pdfkit');
+const PdfPrinter = require('pdfmake');
 const path = require('path');
 const url = require('url');
 const fs = require('fs');
@@ -31,22 +31,20 @@ async function handlePdfReportRequest(req, res) {
 
         if (!data || data.length === 0) {
             res.writeHead(404, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({
-                message: `Nenhum imobilizado encontrado.`
-            }));
+            return res.end(JSON.stringify({ message: "Nenhum dado encontrado." }));
         }
 
-        const { data: centroCustoData } = await supabase
+        const { data: ccData } = await supabase
             .from('centro_de_custo')
             .select('setores')
             .eq('centro_custo', centro_custo)
             .single();
 
-        gerarRelatorioRustico(
+        gerarPDFMake(
             {
                 data,
                 centro_custo,
-                centro_custo_nome: centroCustoData ? centroCustoData.setores : ""
+                centro_custo_nome: ccData ? ccData.setores : ""
             },
             res
         );
@@ -60,162 +58,165 @@ async function handlePdfReportRequest(req, res) {
     }
 }
 
-function gerarRelatorioRustico({ data, centro_custo, centro_custo_nome }, res) {
-    // CONFIGURAÇÕES "RÚSTICAS" (Valores fixos para controle total)
-    const PAGE_HEIGHT = 841.89; // Altura A4
-    const MARGIN_TOP = 30;
-    const MARGIN_BOTTOM = 50;
-    const HEADER_HEIGHT = 100; // Espaço reservado para o cabeçalho
-    const LIMIT_Y = PAGE_HEIGHT - MARGIN_BOTTOM; // Onde devemos parar de escrever
-    
-    const doc = new PDFDocument({ 
-        size: 'A4', 
-        margins: { top: MARGIN_TOP, bottom: MARGIN_BOTTOM, left: 30, right: 30 },
-        autoFirstPage: false // NÓS criaremos as páginas
-    });
-
-    const filename = `Relatorio_CC_${centro_custo}.pdf`;
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    doc.pipe(res);
-
-    let pageCount = 0;
-
-    // --- FUNÇÕES DE APOIO ---
-
-    function addPage() {
-        // Se não é a primeira página, desenha o rodapé da anterior antes de criar a nova
-        if (pageCount > 0) {
-            drawFooter();
+function gerarPDFMake({ data, centro_custo, centro_custo_nome }, res) {
+    const fonts = {
+        Helvetica: {
+            normal: 'Helvetica',
+            bold: 'Helvetica-Bold',
+            italics: 'Helvetica-Oblique',
+            bolditalics: 'Helvetica-BoldOblique'
         }
-        
-        doc.addPage();
-        pageCount++;
-        drawHeader();
-        
-        // Define o cursor Y logo após o cabeçalho
-        doc.y = MARGIN_TOP + HEADER_HEIGHT + 10;
-    }
+    };
 
-    function drawHeader() {
-        // Logo
-        try {
-            const logoPath = path.join(__dirname, '..', 'assets', 'videplast-brand.png');
-            if (fs.existsSync(logoPath)) {
-                doc.image(logoPath, 30, 30, { width: 100 });
-            }
-        } catch (e) {}
+    const printer = new PdfPrinter(fonts);
 
-        const startX = 150;
-        doc.fontSize(14).font("Helvetica-Bold").fillColor("#000")
-           .text("RELATÓRIO DE IMOBILIZADOS", startX, 35, { align: 'left' });
-        
-        doc.fontSize(9).font("Helvetica").fillColor("#555");
-        doc.text(`Centro de Custo: ${centro_custo}`, startX, 55);
-        doc.text(`Setor: ${centro_custo_nome || ''}`, startX, 68);
-        
-        const dataStr = new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR');
-        doc.text(`Emissão: ${dataStr}`, startX, 81);
+    const tableBody = [
+        [
+            { text: 'IMOBILIZADO', style: 'tableHeader' },
+            { text: 'SUBNº', style: 'tableHeader' },
+            { text: 'INVENTÁRIO', style: 'tableHeader' },
+            { text: 'DATA INC.', style: 'tableHeader' },
+            { text: 'LOCAL', style: 'tableHeader' },
+            { text: 'SÉRIE', style: 'tableHeader' }
+        ]
+    ];
 
-        // Linha grossa
-        const lineY = MARGIN_TOP + HEADER_HEIGHT;
-        doc.moveTo(30, lineY).lineTo(565, lineY).strokeColor("#000").lineWidth(2).stroke();
-    }
-
-    function drawFooter() {
-        const footerY = PAGE_HEIGHT - 30;
-        doc.fontSize(8).fillColor("#999");
-        doc.text("Videplast - Controle de Ativos", 30, footerY, { align: 'left', continued: false });
-        doc.text(`Página ${pageCount}`, 500, footerY, { align: 'right', width: 65 });
-    }
-
-    // --- INÍCIO ---
-    addPage();
-
-    // --- LOOP PRINCIPAL (LÓGICA RÚSTICA) ---
     data.forEach((item, index) => {
-        // 1. Preparar textos (sanitização)
-        const descricao = (item.descricao || "SEM DESCRIÇÃO").replace(/[\r\n]+/g, " "); // Remove quebras de linha que bugam o cálculo
-        const imob = String(item.codigo_imobilizado || "-");
+        const imob = item.codigo_imobilizado ? String(item.codigo_imobilizado) : "-";
         const sub = String(item.sub_numero);
-        const inv = String(item.codigo_inventario || "-");
-        const invAntigo = String(item.codigo_inventario_antigo || "-");
-        const local = String(item.local || "-");
-        const serie = String(item.numero_serie || "-");
+        const inv = item.codigo_inventario ? String(item.codigo_inventario) : "-";
+        const local = item.local || "-";
+        const serie = item.numero_serie || "-";
+        
         let dataInc = "-";
         if (item.data_incorporacao) {
             try { dataInc = new Date(item.data_incorporacao).toLocaleDateString('pt-BR'); } catch(e){}
         }
 
-        // 2. Calcular ALTURA REAL necessária
-        doc.fontSize(9).font("Helvetica");
-        
-        // A altura da descrição é a parte variável. Calculamos com precisão.
-        const descWidth = 515;
-        const descHeight = doc.heightOfString(descricao, { width: descWidth });
-        
-        // Altura fixa dos outros campos + margens
-        // (Linha 1 dados + margem) + (Label Descrição + margem) + (Texto Descrição) + (Margem final)
-        const itemTotalHeight = 15 + 15 + descHeight + 15; 
+        const descricao = item.descricao || "SEM DESCRIÇÃO";
+        const fillColor = index % 2 === 0 ? '#f5f5f5' : null;
 
-        // 3. O CHECK DECISIVO: Cabe nesta página?
-        // Se a posição atual + altura do item for maior que o limite (fim da folha - margem)
-        if (doc.y + itemTotalHeight > LIMIT_Y) {
-            addPage(); // Cria nova página e reseta o doc.y para o topo
-        }
+        tableBody.push([
+            { text: imob, style: 'tableCell', fillColor: fillColor },
+            { text: sub, style: 'tableCell', fillColor: fillColor },
+            { text: inv, style: 'tableCell', fillColor: fillColor },
+            { text: dataInc, style: 'tableCell', fillColor: fillColor },
+            { text: local, style: 'tableCell', fillColor: fillColor },
+            { text: serie, style: 'tableCell', fillColor: fillColor }
+        ]);
 
-        // 4. Desenhar o item (Agora sabemos que cabe!)
-        const startY = doc.y;
-
-        // Fundo zebrado
-        if (index % 2 === 0) {
-            doc.rect(30, startY - 5, 535, itemTotalHeight).fillColor("#F5F5F5").fill();
-        }
-        
-        doc.fillColor("#000");
-
-        // Linha 1: Grid de Dados
-        const row1 = startY;
-        const row2 = startY + 12;
-        
-        // Funçãozinha para desenhar coluna
-        const drawCol = (lbl, val, x, w) => {
-            doc.fontSize(7).font("Helvetica-Bold").fillColor("#666").text(lbl, x, row1, { width: w, lineBreak: false });
-            doc.fontSize(9).font("Helvetica").fillColor("#000").text(val, x, row2, { width: w, lineBreak: false, ellipsis: true });
-        };
-
-        drawCol("IMOBILIZADO", imob, 35, 60);
-        drawCol("SUBNº", sub, 100, 30);
-        drawCol("INVENTÁRIO", inv, 135, 70);
-        drawCol("INV. ANTIGO", invAntigo, 210, 70);
-        drawCol("DATA", dataInc, 285, 60);
-        drawCol("LOCAL", local, 350, 90);
-        drawCol("SÉRIE", serie, 445, 90);
-
-        // Linha 2: Descrição
-        const descLabelY = row2 + 15;
-        doc.fontSize(7).font("Helvetica-Bold").fillColor("#666").text("DESCRIÇÃO", 35, descLabelY);
-        
-        const descTextY = descLabelY + 10;
-        doc.fontSize(9).font("Helvetica").fillColor("#000")
-           .text(descricao, 35, descTextY, { 
-               width: descWidth, 
-               align: 'justify',
-               lineBreak: true 
-           });
-
-        // Atualiza Y para o próximo item
-        // Forçamos o Y para baixo da descrição desenhada
-        doc.y = descTextY + descHeight + 10; 
-
-        // Linha pontilhada separadora
-        doc.moveTo(30, doc.y).lineTo(565, doc.y).strokeColor("#DDD").lineWidth(0.5).dash(2, {space: 2}).stroke().undash();
-        doc.moveDown(0.5);
+        tableBody.push([
+            { 
+                text: [
+                    { text: 'DESCRIÇÃO: ', bold: true, color: '#555', fontSize: 7 }, 
+                    { text: descricao }
+                ], 
+                colSpan: 6, 
+                style: 'descCell',
+                fillColor: fillColor,
+                border: [false, false, false, true]
+            },
+            {}, {}, {}, {}, {}
+        ]);
     });
 
-    // 5. Finalizar
-    drawFooter(); // Desenha rodapé da última página
-    doc.end();
+    const docDefinition = {
+        defaultStyle: { font: 'Helvetica' },
+        pageSize: 'A4',
+        pageMargins: [30, 100, 30, 40], 
+
+        header: function(currentPage, pageCount) {
+            return {
+                margin: [30, 20, 30, 0],
+                columns: [
+                    {
+                        text: 'VIDEPLAST',
+                        fontSize: 20,
+                        bold: true,
+                        width: 120,
+                        alignment: 'center',
+                        margin: [0, 10, 0, 0]
+                    },
+                    {
+                        stack: [
+                            { text: 'RELATÓRIO DE IMOBILIZADOS', style: 'headerTitle' },
+                            { 
+                                text: [
+                                    { text: 'Centro de Custo: ', bold: true }, 
+                                    `${centro_custo} - ${centro_custo_nome || ''}`
+                                ], 
+                                style: 'headerSub' 
+                            },
+                            { 
+                                text: `Emissão: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 
+                                style: 'headerSub' 
+                            }
+                        ],
+                        width: '*'
+                    }
+                ]
+            };
+        },
+
+        footer: function(currentPage, pageCount) {
+            return {
+                margin: [30, 0, 30, 0],
+                columns: [
+                    { text: 'Sistema de Controle de Ativos', fontSize: 8, color: '#999' },
+                    { text: `Página ${currentPage} de ${pageCount}`, alignment: 'right', fontSize: 8, color: '#999' }
+                ]
+            };
+        },
+
+        content: [
+            {
+                table: {
+                    headerRows: 1,
+                    widths: [60, 30, 70, 60, 90, 80],
+                    body: tableBody,
+                    dontBreakRows: true
+                },
+                layout: {
+                    hLineWidth: function (i, node) {
+                        return (i === 0 || i === node.table.body.length) ? 1 : 0.5;
+                    },
+                    vLineWidth: function (i, node) { return 0; },
+                    hLineColor: function (i, node) { return '#ddd'; },
+                    paddingLeft: function(i) { return 4; },
+                    paddingRight: function(i) { return 4; },
+                    paddingTop: function(i) { return 4; },
+                    paddingBottom: function(i) { return 4; }
+                }
+            }
+        ],
+
+        styles: {
+            headerTitle: { fontSize: 14, bold: true, margin: [0, 0, 0, 5] },
+            headerSub: { fontSize: 9, color: '#444', margin: [0, 2, 0, 2] },
+            tableHeader: { fontSize: 8, bold: true, color: 'white', fillColor: '#333', alignment: 'center' },
+            tableCell: { fontSize: 8, color: '#000' },
+            descCell: { fontSize: 9, alignment: 'justify', margin: [5, 0, 5, 5] }
+        }
+    };
+
+    try {
+        const logoPath = path.join(__dirname, '..', 'assets', 'videplast-brand.png');
+        if (fs.existsSync(logoPath)) {
+            docDefinition.header.columns[0] = {
+                image: logoPath,
+                width: 100,
+                alignment: 'center'
+            };
+        }
+    } catch(e) {}
+
+    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Relatorio_CC_${centro_custo}.pdf"`);
+    
+    pdfDoc.pipe(res);
+    pdfDoc.end();
 }
 
 module.exports = {
