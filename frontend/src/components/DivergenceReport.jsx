@@ -70,16 +70,17 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     await new Promise(resolve => setTimeout(resolve, 50));
 
     try {
-      const tableColumns = ["Status", "Imobilizado", "Inventario", "Subnº", "Descrição", "Centro de Custo"];
+      const tableColumns = ["Status", "Imobilizado", "Inventario", "Subnº", "Descrição", "Centro de Custo", "Local"];
       const tableRows = [];
 
       const createRow = (status, item) => [
         status,
-        item.codigo_imobilizado || 'Sem código de imobilizado',
-        item.Inventário || 'Sem código de inventário',
+        item.codigo_imobilizado || 'Sem código',
+        item.Inventário || 'Sem código',
         item.Subnº,
         item.Descrição || 'Sem descrição',
-        item.CentroCusto || 'Sem centro de custo alocado'
+        item.CentroCusto || 'N/A',
+        item.Local || item.local || 'Não informado' 
       ];
 
       if (filters.ok) okItems.forEach(item => tableRows.push(createRow("Ok", item)));
@@ -116,7 +117,8 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
               }
             }
           },
-          headStyles: { fillColor: [41, 46, 51], textColor: [255, 255, 255] }
+          headStyles: { fillColor: [41, 46, 51], textColor: [255, 255, 255] },
+          styles: { fontSize: 8 },
         });
 
         doc.save(`Relatorio_Divergencias_CC_${inventoryCc}.pdf`);
@@ -152,6 +154,9 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       </div>
       {type !== 'notFound' && <div>Imobilizado: {item.codigo_imobilizado || 'Sem código de imobilizado'}</div>}
       <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
+      
+      <div><strong>Local:</strong> {item.Local || item.local || 'Não informado'}</div>
+      
       {type === 'missing' && <div>Centro de Custo Esperado: {item.CentroCusto || 'Sem centro de custo'}</div>}
       {(type === 'wrongCc' || type === 'notFound') && <div>Centro de Custo: {item.CentroCusto || 'Sem centro de custo'}</div>}
     </>
