@@ -7,23 +7,28 @@ import StatusModal from './StatusModal';
 const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, onFinishInventory, onRemoveItem }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  
+  const [statusFeedback, setStatusFeedback] = useState({ show: false, type: 'success', message: '' });
 
   const handleAddItem = async (code) => {
     if (!code || isAdding) return;
 
     setIsAdding(true);
 
-    const success = await onAddItem(code);
+    const result = await onAddItem(code);
 
-    if (success) {
+    if (result === 'ok') {
       setStatusFeedback({
+        show: false,
         type: 'success',
         message: `Item ${code} contabilizado com sucesso!`
       });
+    } else if (result === '404') {
     } else {
       setStatusFeedback({
+        show: false,
         type: 'error',
-        message: `O item ${code} não foi encontrado ou houve um problema.`
+        message: `Houve um problema ao verificar o item ${code}.`
       });
     }
 
@@ -41,7 +46,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           <Modal.Title>Inventário de Ativos - Centro de Custo {inventarioCentroCusto}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-
+          
           <ListGroup variant="flush">
             {inventario.length > 0 ? (
               inventario.map((item) => (

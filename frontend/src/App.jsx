@@ -187,7 +187,6 @@ function App() {
     setInventario(prevInventario => [itemParaLista, ...prevInventario]);
     setShowAddItemModal(false);
     
-    showStatus('success', 'Item adicionado à lista com sucesso!');
   };
 
   const handleRemoveItem = (itemId) => {
