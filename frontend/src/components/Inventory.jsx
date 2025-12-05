@@ -7,7 +7,6 @@ import StatusModal from './StatusModal';
 const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, onFinishInventory, onRemoveItem }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [statusFeedback, setStatusFeedback] = useState({ show: false, type: 'success', message: '' });
 
   const handleAddItem = async (code) => {
     if (!code || isAdding) return;
@@ -18,13 +17,11 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
 
     if (success) {
       setStatusFeedback({
-        show: true,
         type: 'success',
         message: `Item ${code} contabilizado com sucesso!`
       });
     } else {
       setStatusFeedback({
-        show: true,
         type: 'error',
         message: `O item ${code} não foi encontrado ou houve um problema.`
       });
