@@ -206,7 +206,7 @@ app.post('/api/login', async (req, res) => {
 
     try {
         const { data, error } = await supabase
-            .from('usuarios_sistema')
+            .from('crachas')
             .select('*')
             .eq('id', cracha)
             .single();
