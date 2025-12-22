@@ -1,4 +1,3 @@
-// frontend/src/App.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button } from 'react-bootstrap';
@@ -11,6 +10,8 @@ import DivergenceReport from './components/DivergenceReport';
 import CcInputModal from './components/CcInputModal';
 import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import FilterControls from './components/FilterControls';
+import StatusModal from './components/StatusModal'; // Restaurado
+import RegisteredItemsList from './components/RegisteredItemsList'; // Sua nova funcionalidade
 import { API_URL } from './apiConfig';
 import './App.css';
 
@@ -20,20 +21,28 @@ function App() {
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
+  const [inventarioUsuario, setInventarioUsuario] = useState(''); // Restaurado
+  const [inventarioLocal, setInventarioLocal] = useState(''); // Restaurado
   const [expectedItems, setExpectedItems] = useState([]);
+  
+  const [showReportModal, setShowReportModal] = useState(false);
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
+  
+  const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' }); // Restaurado
+
+  const [showRegisteredList, setShowRegisteredList] = useState(false); // Nova funcionalidade
 
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
-
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
 
+  // Carregar estado ao iniciar
   useEffect(() => {
     try {
       const savedData = sessionStorage.getItem('appState');
@@ -41,28 +50,32 @@ function App() {
         const parsedData = JSON.parse(savedData);
         setInventario(parsedData.inventario || []);
         setInventarioCentroCusto(parsedData.inventarioCentroCusto || '');
+        setInventarioUsuario(parsedData.inventarioUsuario || '');
+        setInventarioLocal(parsedData.inventarioLocal || '');
       }
     } catch (e) {
       console.error("Erro ao carregar estado:", e);
     }
   }, []);
 
+  // Salvar estado quando muda
   useEffect(() => {
     try {
       const appState = {
         inventario,
         inventarioCentroCusto,
+        inventarioUsuario,
+        inventarioLocal,
       };
       sessionStorage.setItem('appState', JSON.stringify(appState));
     } catch (e) {
       console.error("Erro ao salvar estado:", e);
     }
-  }, [inventario, inventarioCentroCusto]);
+  }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal]);
   
+  // Filtros da tabela de busca
   useEffect(() => {
-    if (!resultado) {
-      return;
-    }
+    if (!resultado) return;
 
     const lowercasedFilters = {
       serie: filters.serie.toLowerCase(),
@@ -74,14 +87,12 @@ function App() {
       const serieMatch = !lowercasedFilters.serie || String(item.Série || '').toLowerCase().includes(lowercasedFilters.serie);
       const subnMatch = !lowercasedFilters.subn || String(item['Subnº'] || '').toLowerCase().includes(lowercasedFilters.subn);
       const centroCustoMatch = !lowercasedFilters.centroCusto || String(item.CentroCusto || '').toLowerCase().includes(lowercasedFilters.centroCusto);
-      
       return serieMatch && subnMatch && centroCustoMatch;
     });
 
     items.sort((a, b) => {
       const valA = a[sortConfig.field] || '';
       const valB = b[sortConfig.field] || '';
-
       if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
       if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
       return 0;
@@ -90,10 +101,12 @@ function App() {
     setFilteredItems(items);
   }, [filters, resultado, sortConfig]);
 
+  const showStatus = (type, message) => {
+    setStatusModal({ show: true, type, message });
+  };
 
-  const formatarCodigo = (valor) => {
-    if (!valor) return "";
-    return String(valor).trim().replace(/\.0$/, '').replace(/^0+/, '');
+  const handleCloseStatus = () => {
+    setStatusModal({ ...statusModal, show: false });
   };
 
   const fetchExpectedItems = async (cc) => {
@@ -107,19 +120,112 @@ function App() {
     }
   };
 
-  const handleStartInventory = async (cc) => {
+  const handleStartInventory = async (cc, userCracha, localFisico) => {
     try {
       await axios.get(`${API_URL}/centro-custo/validate/${cc}`);
+      
       setInventarioCentroCusto(cc);
+      setInventarioUsuario(userCracha);
+      setInventarioLocal(localFisico);
       setInventarioAtivo(true);
+      
       fetchExpectedItems(cc);
-      setInventario([]);
+      setInventario([]); 
       sessionStorage.removeItem('appState');
       return true;
     } catch (error) {
       console.error("Validação do Centro de Custo falhou:", error);
       return false;
     }
+  };
+
+  const handleAddItemToInventory = async (codeToAdd) => {
+    try {
+      const response = await axios.get(`${API_URL}/inventory-item?codigo=${codeToAdd}`);
+      const dados = response.data;
+      
+      if (dados && dados.itens && dados.itens.length > 0) {
+        const itemParaAdicionar = dados.itens[0];
+        if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
+          setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
+        }
+        return true; 
+      }
+      return false;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        setItemCodeToAdd(codeToAdd);
+        setShowAddItemModal(true);
+      } else {
+        console.error("Erro ao adicionar item:", error);
+        showStatus('error', 'Erro de comunicação com o servidor.');
+      }
+      return false;
+    }
+  };
+
+  const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLocal) => {
+    const tempId = `temp_${Date.now()}`;
+
+    const itemParaLista = {
+      id: tempId,
+      "Subnº": 0,
+      "Data": new Date().toISOString().split('T')[0],
+      "Descrição": description,
+      "Inventário": inventoryCode,
+      "Série": serialNumber,
+      "CentroCusto": inventarioCentroCusto,
+      "CentroCustoNome": "Novo (Aguardando Gravação)",
+      "codigo_imobilizado": "PENDENTE",
+      "Local": itemLocal || inventarioLocal,
+      notFound: true,
+      pendingSave: true, // Importante para salvar depois
+      rawNewData: {
+        descricao: description,
+        codigo_inventario: inventoryCode,
+        numero_serie: serialNumber,
+        centro_custo: inventarioCentroCusto,
+        user: inventarioUsuario,
+        local: itemLocal || inventarioLocal
+      }
+    };
+
+    setInventario(prevInventario => [itemParaLista, ...prevInventario]);
+    setShowAddItemModal(false);
+  };
+
+  const handleRemoveItem = (itemId) => {
+    if (window.confirm('Tem certeza que deseja remover este item da contagem?')) {
+      setInventario(prev => prev.filter(item => item.id !== itemId));
+    }
+  };
+
+  const handleFinalizeInventory = async () => {
+    setIsLoading(true);
+    
+    // Filtra apenas itens novos marcados como pendingSave
+    const itemsToSave = inventario.filter(item => item.pendingSave && item.rawNewData);
+
+    if (itemsToSave.length > 0) {
+      try {
+        await Promise.all(itemsToSave.map(item => {
+          return axios.post(`${API_URL}/imobilizado`, item.rawNewData);
+        }));
+        
+        showStatus('success', `${itemsToSave.length} novos itens cadastrados com sucesso!`);
+        
+      } catch (error) {
+        console.error("Erro ao salvar itens novos:", error);
+        showStatus('error', "Houve um erro ao salvar alguns itens novos.");
+      }
+    } else {
+        showStatus('success', "Inventário finalizado com sucesso!");
+    }
+
+    setIsLoading(false);
+    setTimeout(() => {
+        setShowDivergenceReport(true);
+    }, 2000);
   };
 
   const handleCodeSearch = async () => {
@@ -147,62 +253,23 @@ function App() {
     }
   };
 
-  const handleAddItemToInventory = async (codeToAdd) => {
-    try {
-      const response = await axios.get(`${API_URL}/inventory-item?codigo=${codeToAdd}`);
-      const dados = response.data;
-      
-      if (dados && dados.itens && dados.itens.length > 0) {
-        const itemParaAdicionar = dados.itens[0];
-        if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
-          setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
-        }
-        return true;
-      }
-      return false;
-    } catch (error) {
-      if (error.response?.status === 404) {
-        setItemCodeToAdd(codeToAdd);
-        setShowAddItemModal(true);
-      } else {
-        console.error("Erro ao adicionar item ao inventário:", error);
-        setError('Erro de comunicação com o servidor.');
-      }
-      return false;
-    }
-  };
-
-  const handleConfirmAddItem = (description) => {
-    const newItem = {
-      id: `not-found-${itemCodeToAdd}-${Date.now()}`,
-      Inventário: itemCodeToAdd,
-      Subnº: '-',
-      Descrição: description,
-      CentroCusto: inventarioCentroCusto,
-      notFound: true,
-    };
-
-    if (!inventario.some(item => item.Inventário === itemCodeToAdd && item.notFound)) {
-      setInventario(prevInventario => [newItem, ...prevInventario]);
-    }
-    setShowAddItemModal(false);
-  };
+  const handleFilterChange = (newFilters) => setFilters(newFilters);
   
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-  };
-
   const handleResetFilters = () => {
     setFilters({ serie: '', subn: '', centroCusto: '' });
     setSortConfig({ field: 'Descrição', order: 'asc' });
   };
   
-  const handleSortChange = (newSortConfig) => {
-    setSortConfig(newSortConfig);
-  };
+  const handleSortChange = (newSortConfig) => setSortConfig(newSortConfig);
 
   const refreshData = () => {
     if (codigo) handleCodeSearch(codigo);
+  };
+
+  const handleClearSearch = () => {
+    setCodigo('');
+    setResultado(null);
+    setError('');
   };
 
   const handleFinishAndReset = () => {
@@ -211,6 +278,8 @@ function App() {
     setInventario([]);
     setExpectedItems([]);
     setInventarioCentroCusto('');
+    setInventarioUsuario('');
+    setInventarioLocal('');
     setResultado(null);
     sessionStorage.removeItem('appState');
   };
@@ -223,6 +292,7 @@ function App() {
           codigo={codigo}
           setCodigo={setCodigo}
           onConsultar={handleCodeSearch}
+          onLimpar={handleClearSearch}
           isLoading={isLoading}
         />
 
@@ -243,12 +313,23 @@ function App() {
           resultado={resultado ? { ...resultado, itens: filteredItems } : null}
           onRefresh={refreshData}
         />
+        
         <div className="main-actions-container">
           <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
             Iniciar Inventário
           </Button>
           <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
             Gerar Relatórios
+          </Button>
+          
+          {/* BOTÃO PARA ABRIR A LISTA DE CADASTRADOS */}
+          <Button 
+            variant="secondary" 
+            size="lg" 
+            className="mt-2 mt-md-0 ms-md-2" 
+            onClick={() => setShowRegisteredList(true)}
+          >
+            Ver Cadastrados
           </Button>
         </div>
 
@@ -260,7 +341,8 @@ function App() {
             onAddItem={handleAddItemToInventory}
             inventarioCentroCusto={inventarioCentroCusto}
             expectedItems={expectedItems}
-            onFinishInventory={() => setShowDivergenceReport(true)}
+            onFinishInventory={handleFinalizeInventory}
+            onRemoveItem={handleRemoveItem}
           />
         )}
       </Container>
@@ -289,6 +371,20 @@ function App() {
         onClose={() => setShowAddItemModal(false)}
         onConfirm={handleConfirmAddItem}
         itemCode={itemCodeToAdd}
+        defaultLocal={inventarioLocal}
+      />
+
+      {/* COMPONENTE DO MODAL DE CADASTRADOS */}
+      <RegisteredItemsList 
+        show={showRegisteredList} 
+        onClose={() => setShowRegisteredList(false)} 
+      />
+
+      <StatusModal 
+        show={statusModal.show} 
+        type={statusModal.type} 
+        message={statusModal.message} 
+        onClose={handleCloseStatus} 
       />
 
       <footer className="app-footer">

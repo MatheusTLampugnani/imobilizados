@@ -22,10 +22,19 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 console.log('Conexão com o Supabase configurada.');
 
 function formatarValor(valor) {
-    if (valor === null || valor === undefined) return "";
-    return String(valor).trim();
+    if (valor === null || valor === undefined || valor === '') return "";
+    const str = String(valor).trim();
+    
+    // Se for puramente numérico, remove zeros à esquerda se desejar, ou mantém como string limpa
+    if (/^\d+$/.test(str)) {
+        return String(parseInt(str, 10));
+    }
+    return str;
 }
 
+// ---------------- ROTAS DE API ----------------
+
+// Validação de Centro de Custo
 app.get('/api/centro-custo/validate/:cc', async (req, res) => {
   const { cc } = req.params;
 
@@ -37,7 +46,7 @@ app.get('/api/centro-custo/validate/:cc', async (req, res) => {
     const { data, error, count } = await supabase
       .from('imobilizados')
       .select('centro_custo', { count: 'exact', head: true })
-      .eq('centro_custo', cc);
+      .ilike('centro_custo', cc); 
 
     if (error) {
       throw error;
@@ -54,21 +63,30 @@ app.get('/api/centro-custo/validate/:cc', async (req, res) => {
   }
 });
 
+// Teste de Servidor
 app.get('/api', (req, res) => {
     res.status(200).send('Servidor do Imobilizados-API está no ar!');
 });
 
+// Consulta Principal de Imobilizados
 app.get('/api/imobilizado', async (req, res) => {
     console.log(`[LOG DE TESTE] Rota /api/imobilizado foi chamada com o código: ${req.query.codigo}`);
     const { codigo } = req.query;
-    const codigoFormatado = String(codigo || '').trim();
+    
+    const codigoFormatado = formatarValor(codigo);
 
     if (!codigoFormatado) {
         return res.status(400).json({ message: "Nenhum código foi fornecido." });
     }
 
     try {
-        const searchByField = async (field, value) => {
+        const searchByText = async (field, value) => {
+            const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, value);
+            if (error) throw error;
+            return data || [];
+        };
+
+        const searchByNumber = async (field, value) => {
             const { data, error } = await supabase.from('imobilizados').select('*').eq(field, value);
             if (error) throw error;
             return data || [];
@@ -81,20 +99,22 @@ app.get('/api/imobilizado', async (req, res) => {
         };
         
         const searchPromises = [];
-        const isNumeric = /^\d+$/.test(codigoFormatado);
+        
+        searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
+        searchPromises.push(searchByText('numero_serie', codigoFormatado));
+        searchPromises.push(searchByText('centro_custo', codigoFormatado));
 
+        const isNumeric = /^\d+$/.test(codigoFormatado);
         if (isNumeric) {
             const numericValue = parseInt(codigoFormatado, 10);
-            searchPromises.push(searchByField('codigo_inventario', numericValue));
-            searchPromises.push(searchByField('codigo_imobilizado', numericValue));
+            searchPromises.push(searchByNumber('codigo_imobilizado', numericValue));
         }
 
-        searchPromises.push(searchByField('centro_custo', codigoFormatado));
-        searchPromises.push(searchByField('numero_serie', codigoFormatado));
         searchPromises.push(searchByDescription(codigoFormatado));
         
         const results = await Promise.all(searchPromises);
         const allResults = results.flat();
+        
         const uniqueIds = new Set();
         const itensEncontrados = allResults.filter(item => {
             if (uniqueIds.has(item.id)) return false;
@@ -103,6 +123,7 @@ app.get('/api/imobilizado', async (req, res) => {
         });
 
         if (itensEncontrados.length > 0) {
+            // Busca nomes dos Centros de Custo
             const centroCustoCodes = [...new Set(itensEncontrados.map(item => item.centro_custo).filter(Boolean))];
             let centroCustoMap = {};
 
@@ -147,36 +168,51 @@ app.get('/api/imobilizado', async (req, res) => {
     }
 });
 
-
+// Consulta Item Individual para Inventário
 app.get('/api/inventory-item', async (req, res) => {
     const { codigo } = req.query;
-    const codigoFormatado = String(codigo || '').trim();
+    const codigoFormatado = formatarValor(codigo);
 
     if (!codigoFormatado) {
         return res.status(400).json({ message: "Nenhum código foi fornecido." });
     }
 
     try {
-        const searchByField = async (field, value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*, centro_de_custo(setores)').eq(field, value);
+        const searchByText = async (field, value) => {
+            const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, value);
+            if (error) throw error;
+            return data || [];
+        };
+        const searchByNumber = async (field, value) => {
+            const { data, error } = await supabase.from('imobilizados').select('*').eq(field, value);
             if (error) throw error;
             return data || [];
         };
 
         const searchPromises = [];
-        const isNumeric = /^\d+$/.test(codigoFormatado);
+        searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
+        searchPromises.push(searchByText('numero_serie', codigoFormatado));
 
+        const isNumeric = /^\d+$/.test(codigoFormatado);
         if (isNumeric) {
             const numericValue = parseInt(codigoFormatado, 10);
-            searchPromises.push(searchByField('codigo_inventario', numericValue));
-            searchPromises.push(searchByField('codigo_imobilizado', numericValue));
+            searchPromises.push(searchByNumber('codigo_imobilizado', numericValue));
         }
-        searchPromises.push(searchByField('numero_serie', codigoFormatado));
 
         const results = await Promise.all(searchPromises);
-        const itemEncontrado = results.flat()[0];
+        const itemEncontrado = results.flat()[0]; 
 
         if (itemEncontrado) {
+            let nomeSetor = '';
+            if (itemEncontrado.centro_custo) {
+                 const { data: ccData } = await supabase
+                    .from('centro_de_custo')
+                    .select('setores')
+                    .eq('centro_custo', itemEncontrado.centro_custo)
+                    .single();
+                 if (ccData) nomeSetor = ccData.setores;
+            }
+
             const responseData = {
                 id: itemEncontrado.id,
                 "Subnº": itemEncontrado.sub_numero,
@@ -186,8 +222,9 @@ app.get('/api/inventory-item', async (req, res) => {
                 "Inventário_Antigo": itemEncontrado.codigo_inventario_antigo,
                 "Série": itemEncontrado.numero_serie,
                 "CentroCusto": itemEncontrado.centro_custo,
-                "CentroCustoNome": itemEncontrado.centro_de_custo ? itemEncontrado.centro_de_custo.setores : '',
-                "codigo_imobilizado": itemEncontrado.codigo_imobilizado
+                "CentroCustoNome": nomeSetor,
+                "codigo_imobilizado": itemEncontrado.codigo_imobilizado,
+                "Local": itemEncontrado.local,
             };
             return res.status(200).json({ itens: [responseData] });
         } else {
@@ -199,12 +236,53 @@ app.get('/api/inventory-item', async (req, res) => {
     }
 });
 
+// [IMPORTANTE] Rota para Salvar Itens Novos (Restaurada)
+app.post('/api/imobilizado', async (req, res) => {
+    const { descricao, codigo_inventario, centro_custo, user, numero_serie, local } = req.body;
+
+    // Validação básica
+    if (!descricao || !codigo_inventario || !centro_custo || !user) {
+        return res.status(400).json({ message: 'Campos obrigatórios faltando (Descrição, Inventário, Centro de Custo, Usuário).' });
+    }
+
+    try {
+        const invCodeClean = formatarValor(codigo_inventario);
+
+        const { data, error } = await supabase
+            .from('imobilizados_cadastrados')
+            .insert([
+                {
+                    descricao: descricao,
+                    codigo_inventario: invCodeClean,
+                    numero_serie: numero_serie || null,
+                    centro_custo: centro_custo,
+                    local: local || null,
+                    cracha: user 
+                }
+            ])
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Erro detalhado do Supabase:", error); 
+            throw error;
+        }
+
+        return res.status(201).json(data);
+
+    } catch (error) {
+        console.error("ERRO AO CADASTRAR ITEM NOVO: ", error);
+        return res.status(500).json({ message: `Erro no servidor: ${error.message}` });
+    }
+});
+
+// [IMPORTANTE] Rota para Atualizar Inventário (Restaurada com log de usuário)
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
-        const { itemId, newInventoryCode } = req.body;
-        const newCodeNumeric = parseInt(newInventoryCode, 10);
+        const { itemId, newInventoryCode, user } = req.body;
+        const newCode = formatarValor(newInventoryCode);
 
-        if (!itemId || isNaN(newCodeNumeric)) {
+        if (!itemId || !newCode) {
             return res.status(400).json({ message: 'Dados inválidos fornecidos.' });
         }
 
@@ -212,8 +290,9 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
         if (fetchError) throw fetchError;
 
         const { error: updateError } = await supabase.from('imobilizados').update({
-            codigo_inventario: newCodeNumeric,
-            codigo_inventario_antigo: currentItem.codigo_inventario
+            codigo_inventario: newCode,
+            codigo_inventario_antigo: currentItem.codigo_inventario,
+            usuario_atualizacao: user || 'Sistema'
         }).eq('id', itemId);
         if (updateError) throw updateError;
 
@@ -224,8 +303,27 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
     }
 });
 
+// Rota para buscar todos os itens cadastrados via inventário (NOVA)
+app.get('/api/imobilizados-cadastrados', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('imobilizados_cadastrados')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error("ERRO AO BUSCAR CADASTRADOS: ", error);
+        return res.status(500).json({ message: `Erro ao buscar dados: ${error.message}` });
+    }
+});
+
+// Rotas de Relatório
 app.get('/api/report/pdf', handlePdfReportRequest);
 app.get('/api/report/csv', handleCsvReportRequest);
+
+// ---------------- SERVIDOR ESTÁTICO (FRONTEND) ----------------
 
 const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
 
