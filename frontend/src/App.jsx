@@ -308,7 +308,7 @@ function App() {
   return (
     <div className="app-wrapper">
       <div className="position-absolute top-0 end-0 p-3" style={{ zIndex: 1000 }}>
-        <span className="me-2 text-muted d-none d-md-inline">Olá, <strong>{currentUser.nome}</strong></span>
+        <span className="me-2 text-muted d-none d-md-inline">Olá, <strong>{currentUser.nome_completo}</strong></span>
         <Button variant="outline-secondary" size="sm" onClick={handleLogout}>Sair</Button>
       </div>
 
