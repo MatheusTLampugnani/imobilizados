@@ -217,7 +217,7 @@ app.post('/api/login', async (req, res) => {
 
         return res.status(200).json({ 
             message: 'Login OK', 
-            user: { cracha: data.id, nome: data.nome } 
+            user: { cracha: data.id, nome: data.nome_completo } 
         });
 
     } catch (err) {

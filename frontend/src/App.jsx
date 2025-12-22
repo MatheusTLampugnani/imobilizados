@@ -45,7 +45,6 @@ function App() {
   const [filteredItems, setFilteredItems] = useState([]);
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
 
-  // Carregar estado ao iniciar
   useEffect(() => {
     try {
       const savedData = sessionStorage.getItem('appState');
@@ -62,7 +61,6 @@ function App() {
     }
   }, []);
 
-  // Salvar estado quando muda
   useEffect(() => {
     try {
       const appState = {
@@ -78,7 +76,6 @@ function App() {
     }
   }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal, currentUser]);
   
-  // Filtros da tabela de busca
   useEffect(() => {
     if (!resultado) return;
 
@@ -224,7 +221,6 @@ function App() {
   const handleFinalizeInventory = async () => {
     setIsLoading(true);
     
-    // Filtra apenas itens novos marcados como pendingSave
     const itemsToSave = inventario.filter(item => item.pendingSave && item.rawNewData);
 
     if (itemsToSave.length > 0) {
@@ -308,7 +304,7 @@ function App() {
   return (
     <div className="app-wrapper">
       <div className="position-absolute top-0 end-0 p-3" style={{ zIndex: 1000 }}>
-        <span className="me-2 text-muted d-none d-md-inline">Olá, <strong>{currentUser.nome_completo}</strong></span>
+        <span className="me-2 text-muted d-none d-md-inline">Olá, <strong>{currentUser.nome}</strong></span>
         <Button variant="outline-secondary" size="sm" onClick={handleLogout}>Sair</Button>
       </div>
 
