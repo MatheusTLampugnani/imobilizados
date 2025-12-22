@@ -11,10 +11,13 @@ import CcInputModal from './components/CcInputModal';
 import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import FilterControls from './components/FilterControls';
 import StatusModal from './components/StatusModal';
+import LoginScreen from './components/Login';
 import { API_URL } from './apiConfig';
 import './App.css';
 
 function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+
   const [showCcInputModal, setShowCcInputModal] = useState(false);
   const [codigo, setCodigo] = useState('');
   const [resultado, setResultado] = useState(null);
@@ -44,6 +47,7 @@ function App() {
       const savedData = sessionStorage.getItem('appState');
       if (savedData) {
         const parsedData = JSON.parse(savedData);
+        if (parsedData.currentUser) setCurrentUser(parsedData.currentUser);
         setInventario(parsedData.inventario || []);
         setInventarioCentroCusto(parsedData.inventarioCentroCusto || '');
         setInventarioUsuario(parsedData.inventarioUsuario || '');
@@ -57,6 +61,7 @@ function App() {
   useEffect(() => {
     try {
       const appState = {
+        currentUser,
         inventario,
         inventarioCentroCusto,
         inventarioUsuario,
@@ -66,7 +71,7 @@ function App() {
     } catch (e) {
       console.error("Erro ao salvar estado:", e);
     }
-  }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal]);
+  }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal, currentUser]);
   
   useEffect(() => {
     if (!resultado) return;
@@ -95,6 +100,22 @@ function App() {
     setFilteredItems(items);
   }, [filters, resultado, sortConfig]);
 
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    if (window.confirm("Deseja realmente sair do sistema?")) {
+      setCurrentUser(null);
+      sessionStorage.clear();
+      window.location.reload(); 
+    }
+  };
+
+  if (!currentUser) {
+    return <LoginScreen onLoginSuccess={handleLogin} />;
+  }
+
   const showStatus = (type, message) => {
     setStatusModal({ show: true, type, message });
   };
@@ -114,18 +135,17 @@ function App() {
     }
   };
 
-  const handleStartInventory = async (cc, userCracha, localFisico) => {
+  const handleStartInventory = async (cc, _ignoredUser, localFisico) => {
     try {
       await axios.get(`${API_URL}/centro-custo/validate/${cc}`);
       
       setInventarioCentroCusto(cc);
-      setInventarioUsuario(userCracha);
+      setInventarioUsuario(currentUser.cracha);
       setInventarioLocal(localFisico);
       setInventarioAtivo(true);
       
       fetchExpectedItems(cc);
       setInventario([]); 
-      sessionStorage.removeItem('appState');
       return true;
     } catch (error) {
       console.error("Validação do Centro de Custo falhou:", error);
@@ -143,18 +163,19 @@ function App() {
         if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
           setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
         }
-        return true; 
+        return 'ok';
       }
-      return false;
+      return 'error';
     } catch (error) {
       if (error.response?.status === 404) {
         setItemCodeToAdd(codeToAdd);
         setShowAddItemModal(true);
+        return '404';
       } else {
         console.error("Erro ao adicionar item:", error);
         showStatus('error', 'Erro de comunicação com o servidor.');
+        return 'error';
       }
-      return false;
     }
   };
 
@@ -179,14 +200,13 @@ function App() {
         codigo_inventario: inventoryCode,
         numero_serie: serialNumber,
         centro_custo: inventarioCentroCusto,
-        user: inventarioUsuario,
+        user: currentUser.cracha,
         local: itemLocal || inventarioLocal
       }
     };
 
     setInventario(prevInventario => [itemParaLista, ...prevInventario]);
     setShowAddItemModal(false);
-    
   };
 
   const handleRemoveItem = (itemId) => {
@@ -272,14 +292,19 @@ function App() {
     setInventario([]);
     setExpectedItems([]);
     setInventarioCentroCusto('');
-    setInventarioUsuario('');
     setInventarioLocal('');
     setResultado(null);
-    sessionStorage.removeItem('appState');
+    const appState = { currentUser, inventario: [], inventarioCentroCusto: '', inventarioLocal: '' };
+    sessionStorage.setItem('appState', JSON.stringify(appState));
   };
 
   return (
     <div className="app-wrapper">
+      <div className="position-absolute top-0 end-0 p-3" style={{ zIndex: 1000 }}>
+        <span className="me-2 text-muted d-none d-md-inline">Olá, <strong>{currentUser.nome}</strong></span>
+        <Button variant="outline-secondary" size="sm" onClick={handleLogout}>Sair</Button>
+      </div>
+
       <Container>
         <Header />
         <InputArea
@@ -306,6 +331,7 @@ function App() {
           error={error}
           resultado={resultado ? { ...resultado, itens: filteredItems } : null}
           onRefresh={refreshData}
+          currentUser={currentUser}
         />
         <div className="main-actions-container">
           <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>

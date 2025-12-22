@@ -228,6 +228,34 @@ app.get('/api/inventory-item', async (req, res) => {
     }
 });
 
+app.post('/api/login', async (req, res) => {
+    const { cracha } = req.body;
+
+    if (!cracha) {
+        return res.status(400).json({ message: 'Por favor, informe o crachá.' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('usuarios_sistema')
+            .select('*')
+            .eq('id', cracha)
+            .single();
+
+        if (error || !data) {
+            return res.status(401).json({ message: 'Crachá não encontrado ou não autorizado.' });
+        }
+
+        return res.status(200).json({ 
+            message: 'Login OK', 
+            user: { cracha: data.id, nome: data.nome } 
+        });
+
+    } catch (err) {
+        return res.status(500).json({ message: 'Erro interno no servidor.' });
+    }
+});
+
 app.post('/api/imobilizado', async (req, res) => {
     const { descricao, codigo_inventario, centro_custo, user, numero_serie, local } = req.body;
 

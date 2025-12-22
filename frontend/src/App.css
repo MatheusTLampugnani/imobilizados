@@ -101,3 +101,72 @@
   max-width: 700px; /* Defina a largura máxima que desejar */
   margin: 0 auto 1.5rem auto; /* Centraliza o contêiner e adiciona uma margem inferior */
 }
+
+/* --- ESTILOS DA TELA DE LOGIN --- */
+
+.login-page {
+  min-height: 100vh;
+  background-color: #f4f6f9;
+  /* Padrão de fundo sutil para dar textura */
+  background-image: radial-gradient(#e2e2e2 1px, transparent 1px);
+  background-size: 20px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  background: white;
+}
+
+.login-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12) !important;
+}
+
+.login-header {
+  background: linear-gradient(to right, #ffffff, #f8f9fa);
+  padding-bottom: 10px;
+}
+
+.custom-input:focus {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.btn-login {
+  background: linear-gradient(45deg, #d32f2f, #ef5350);
+  border: none;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+  background: linear-gradient(45deg, #b71c1c, #d32f2f);
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
+}
+
+.btn-login:disabled {
+  background: #e0e0e0;
+  transform: none;
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
