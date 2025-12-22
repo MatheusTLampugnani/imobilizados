@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const ExcelJS = require('exceljs'); // <--- NOVA IMPORTAÇÃO
 const { handlePdfReportRequest } = require('./utils/geradorPDF.js');
 const { handleCsvReportRequest } = require('./utils/geradorCSV.js');
 
@@ -24,35 +25,28 @@ console.log('Conexão com o Supabase configurada.');
 function formatarValor(valor) {
     if (valor === null || valor === undefined || valor === '') return "";
     const str = String(valor).trim();
-    
     if (/^\d+$/.test(str)) {
         return String(parseInt(str, 10));
     }
     return str;
 }
 
+// ---------------- ROTAS DE API ----------------
+
 app.get('/api/centro-custo/validate/:cc', async (req, res) => {
   const { cc } = req.params;
-
-  if (!cc) {
-    return res.status(400).json({ isValid: false, message: 'Centro de Custo não fornecido.' });
-  }
+  if (!cc) return res.status(400).json({ isValid: false, message: 'Centro de Custo não fornecido.' });
 
   try {
-    const { data, error, count } = await supabase
+    const { count, error } = await supabase
       .from('imobilizados')
       .select('centro_custo', { count: 'exact', head: true })
       .ilike('centro_custo', cc); 
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
-    if (count > 0) {
-      res.status(200).json({ isValid: true });
-    } else {
-      res.status(404).json({ isValid: false, message: 'Centro de Custo não encontrado.' });
-    }
+    if (count > 0) res.status(200).json({ isValid: true });
+    else res.status(404).json({ isValid: false, message: 'Centro de Custo não encontrado.' });
   } catch (dbError) {
     console.error('Erro ao validar Centro de Custo:', dbError);
     res.status(500).json({ isValid: false, message: 'Erro interno do servidor.' });
@@ -63,15 +57,12 @@ app.get('/api', (req, res) => {
     res.status(200).send('Servidor do Imobilizados-API está no ar!');
 });
 
+// --- ROTA DE BUSCA GERAL (MANTIDA) ---
 app.get('/api/imobilizado', async (req, res) => {
-    console.log(`[LOG DE TESTE] Rota /api/imobilizado foi chamada com o código: ${req.query.codigo}`);
     const { codigo } = req.query;
-    
     const codigoFormatado = formatarValor(codigo);
 
-    if (!codigoFormatado) {
-        return res.status(400).json({ message: "Nenhum código foi fornecido." });
-    }
+    if (!codigoFormatado) return res.status(400).json({ message: "Nenhum código foi fornecido." });
 
     try {
         const searchByText = async (field, value) => {
@@ -93,7 +84,6 @@ app.get('/api/imobilizado', async (req, res) => {
         };
         
         const searchPromises = [];
-        
         searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
         searchPromises.push(searchByText('numero_serie', codigoFormatado));
         searchPromises.push(searchByText('centro_custo', codigoFormatado));
@@ -103,7 +93,6 @@ app.get('/api/imobilizado', async (req, res) => {
             const numericValue = parseInt(codigoFormatado, 10);
             searchPromises.push(searchByNumber('codigo_imobilizado', numericValue));
         }
-
         searchPromises.push(searchByDescription(codigoFormatado));
         
         const results = await Promise.all(searchPromises);
@@ -126,12 +115,8 @@ app.get('/api/imobilizado', async (req, res) => {
                     .select('centro_custo, setores')
                     .in('centro_custo', centroCustoCodes);
 
-                if (ccError) {
-                    console.error('Erro ao buscar nomes dos centros de custo:', ccError);
-                } else {
-                    centrosCustoData.forEach(cc => {
-                        centroCustoMap[cc.centro_custo] = cc.setores;
-                    });
+                if (!ccError) {
+                    centrosCustoData.forEach(cc => { centroCustoMap[cc.centro_custo] = cc.setores; });
                 }
             }
             
@@ -161,62 +146,46 @@ app.get('/api/imobilizado', async (req, res) => {
     }
 });
 
+// --- ROTA DE BUSCA ITEM ÚNICO (MANTIDA) ---
 app.get('/api/inventory-item', async (req, res) => {
     const { codigo } = req.query;
     const codigoFormatado = formatarValor(codigo);
 
-    if (!codigoFormatado) {
-        return res.status(400).json({ message: "Nenhum código foi fornecido." });
-    }
+    if (!codigoFormatado) return res.status(400).json({ message: "Nenhum código foi fornecido." });
 
     try {
-        const searchByText = async (field, value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, value);
-            if (error) throw error;
-            return data || [];
-        };
-        const searchByNumber = async (field, value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*').eq(field, value);
-            if (error) throw error;
-            return data || [];
-        };
+        const { data, error } = await supabase
+            .from('imobilizados')
+            .select('*')
+            .or(`codigo_inventario.eq.${codigoFormatado},numero_serie.eq.${codigoFormatado}`)
+            .limit(1)
+            .single();
 
-        const searchPromises = [];
-        searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
-        searchPromises.push(searchByText('numero_serie', codigoFormatado));
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 é erro de "não encontrado no single()"
 
-        const isNumeric = /^\d+$/.test(codigoFormatado);
-        if (isNumeric) {
-            const numericValue = parseInt(codigoFormatado, 10);
-            searchPromises.push(searchByNumber('codigo_imobilizado', numericValue));
-        }
-
-        const results = await Promise.all(searchPromises);
-        const itemEncontrado = results.flat()[0]; 
-
-        if (itemEncontrado) {
+        if (data) {
             let nomeSetor = '';
-            if (itemEncontrado.centro_custo) {
+            if (data.centro_custo) {
                  const { data: ccData } = await supabase
                     .from('centro_de_custo')
                     .select('setores')
-                    .eq('centro_custo', itemEncontrado.centro_custo)
+                    .eq('centro_custo', data.centro_custo)
                     .single();
                  if (ccData) nomeSetor = ccData.setores;
             }
 
             const responseData = {
-                id: itemEncontrado.id,
-                "Subnº": itemEncontrado.sub_numero,
-                "Data": itemEncontrado.data_incorporacao,
-                "Descrição": itemEncontrado.descricao,
-                "Inventário": itemEncontrado.codigo_inventario,
-                "Inventário_Antigo": itemEncontrado.codigo_inventario_antigo,
-                "Série": itemEncontrado.numero_serie,
-                "CentroCusto": itemEncontrado.centro_custo,
+                id: data.id,
+                "Subnº": data.sub_numero,
+                "Data": data.data_incorporacao,
+                "Descrição": data.descricao,
+                "Inventário": data.codigo_inventario,
+                "Inventário_Antigo": data.codigo_inventario_antigo,
+                "Série": data.numero_serie,
+                "CentroCusto": data.centro_custo,
                 "CentroCustoNome": nomeSetor,
-                "codigo_imobilizado": itemEncontrado.codigo_imobilizado,
-                "Local": itemEncontrado.local,
+                "codigo_imobilizado": data.codigo_imobilizado,
+                "Local": data.local,
             };
             return res.status(200).json({ itens: [responseData] });
         } else {
@@ -228,6 +197,7 @@ app.get('/api/inventory-item', async (req, res) => {
     }
 });
 
+<<<<<<< HEAD
 app.post('/api/login', async (req, res) => {
     const { cracha } = req.body;
 
@@ -256,6 +226,9 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+=======
+// --- CRIAR NOVO ITEM (MANTIDA) ---
+>>>>>>> 519b14994291f1d03082eb2b7af18e7cbc3c0295
 app.post('/api/imobilizado', async (req, res) => {
     const { descricao, codigo_inventario, centro_custo, user, numero_serie, local } = req.body;
 
@@ -268,32 +241,26 @@ app.post('/api/imobilizado', async (req, res) => {
 
         const { data, error } = await supabase
             .from('imobilizados_cadastrados')
-            .insert([
-                {
+            .insert([{
                     descricao: descricao,
                     codigo_inventario: invCodeClean,
                     numero_serie: numero_serie || null,
                     centro_custo: centro_custo,
                     local: local || null,
                     cracha: user 
-                }
-            ])
+            }])
             .select()
             .single();
 
-        if (error) {
-            console.error("Erro detalhado do Supabase:", error); 
-            throw error;
-        }
-
+        if (error) throw error;
         return res.status(201).json(data);
-
     } catch (error) {
         console.error("ERRO AO CADASTRAR ITEM NOVO: ", error);
         return res.status(500).json({ message: `Erro no servidor: ${error.message}` });
     }
 });
 
+// --- ATUALIZAR INVENTÁRIO (MANTIDA) ---
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
         const { itemId, newInventoryCode, user } = req.body;
@@ -320,6 +287,130 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
     }
 });
 
+// ==============================================================================
+// === NOVAS FUNCIONALIDADES (FILTROS, EDIÇÃO, EXCLUSÃO, EXPORTAÇÃO EXCEL) ===
+// ==============================================================================
+
+// 1. LISTAGEM COM FILTROS (Para a tabela "Ver Cadastrados")
+app.get('/api/imobilizados-cadastrados', async (req, res) => {
+    try {
+        const { start_date, end_date, centro_custo, nome } = req.query;
+
+        let query = supabase
+            .from('imobilizados_cadastrados')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        // Aplica filtros se existirem
+        if (start_date) query = query.gte('created_at', `${start_date}T00:00:00`);
+        if (end_date) query = query.lte('created_at', `${end_date}T23:59:59`);
+        if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
+        if (nome) query = query.ilike('descricao', `%${nome}%`);
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error("ERRO AO BUSCAR CADASTRADOS: ", error);
+        return res.status(500).json({ message: `Erro ao buscar dados: ${error.message}` });
+    }
+});
+
+// 2. EXCLUSÃO (Para o botão Lixeira)
+app.delete('/api/imobilizados-cadastrados/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { error } = await supabase
+            .from('imobilizados_cadastrados')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        return res.status(200).json({ message: 'Item excluído com sucesso.' });
+    } catch (error) {
+        return res.status(500).json({ message: `Erro ao excluir: ${error.message}` });
+    }
+});
+
+// 3. EDIÇÃO (Para o botão Lápis - Editar item errado)
+app.put('/api/imobilizados-cadastrados/:id', async (req, res) => {
+    const { id } = req.params;
+    const { descricao, numero_serie, centro_custo, local } = req.body;
+
+    try {
+        const { data, error } = await supabase
+            .from('imobilizados_cadastrados')
+            .update({ descricao, numero_serie, centro_custo, local })
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+        return res.status(200).json(data);
+    } catch (error) {
+        return res.status(500).json({ message: `Erro ao editar: ${error.message}` });
+    }
+});
+
+// 4. EXPORTAÇÃO EXCEL (Usando ExcelJS)
+app.get('/api/report/excel', async (req, res) => {
+    try {
+        // Aceita os mesmos filtros da tela para baixar só o que o usuário vê
+        const { start_date, end_date, centro_custo } = req.query;
+
+        let query = supabase
+            .from('imobilizados_cadastrados')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (start_date) query = query.gte('created_at', `${start_date}T00:00:00`);
+        if (end_date) query = query.lte('created_at', `${end_date}T23:59:59`);
+        if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        // Cria o Arquivo Excel
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Itens Cadastrados');
+
+        // Define Colunas
+        worksheet.columns = [
+            { header: 'ID', key: 'id', width: 10 },
+            { header: 'Data Criação', key: 'created_at', width: 20 },
+            { header: 'Descrição', key: 'descricao', width: 30 },
+            { header: 'Cód. Inventário', key: 'codigo_inventario', width: 15 },
+            { header: 'Nº Série', key: 'numero_serie', width: 15 },
+            { header: 'Centro de Custo', key: 'centro_custo', width: 15 },
+            { header: 'Local', key: 'local', width: 15 },
+            { header: 'Usuário', key: 'cracha', width: 15 },
+        ];
+
+        // Estiliza o cabeçalho
+        worksheet.getRow(1).font = { bold: true };
+        
+        // Adiciona dados
+        data.forEach(item => {
+            worksheet.addRow({
+                ...item,
+                created_at: new Date(item.created_at).toLocaleDateString('pt-BR')
+            });
+        });
+
+        // Configura resposta para Download
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=Relatorio_Inventario.xlsx');
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        console.error("Erro ao gerar Excel:", error);
+        res.status(500).send("Erro ao gerar relatório Excel");
+    }
+});
+
+// Mantém rotas antigas de relatório
 app.get('/api/report/pdf', handlePdfReportRequest);
 app.get('/api/report/csv', handleCsvReportRequest);
 
@@ -327,11 +418,9 @@ const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
 
 app.use(express.static(frontendDistPath));
 
-app.get(/(.*)/, (req, res) => {
+app.get('*', (req, res) => {
     res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
-        if (err) {
-            res.status(500).send(err);
-        }
+        if (err) res.status(500).send(err);
     });
 });
 
