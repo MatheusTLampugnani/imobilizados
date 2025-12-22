@@ -11,6 +11,7 @@ import CcInputModal from './components/CcInputModal';
 import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import FilterControls from './components/FilterControls';
 import StatusModal from './components/StatusModal';
+import RegisteredItemsList from './components/RegisteredItemsList';
 import { API_URL } from './apiConfig';
 import './App.css';
 
@@ -35,10 +36,13 @@ function App() {
   
   const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
 
+  const [showRegisteredList, setShowRegisteredList] = useState(false);
+
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
 
+  // Carregar estado ao iniciar
   useEffect(() => {
     try {
       const savedData = sessionStorage.getItem('appState');
@@ -54,6 +58,7 @@ function App() {
     }
   }, []);
 
+  // Salvar estado quando muda
   useEffect(() => {
     try {
       const appState = {
@@ -68,6 +73,7 @@ function App() {
     }
   }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal]);
   
+  // Filtros da tabela de busca
   useEffect(() => {
     if (!resultado) return;
 
@@ -173,7 +179,7 @@ function App() {
       "codigo_imobilizado": "PENDENTE",
       "Local": itemLocal || inventarioLocal,
       notFound: true,
-      pendingSave: true,
+      pendingSave: true, 
       rawNewData: {
         descricao: description,
         codigo_inventario: inventoryCode,
@@ -186,7 +192,6 @@ function App() {
 
     setInventario(prevInventario => [itemParaLista, ...prevInventario]);
     setShowAddItemModal(false);
-    
   };
 
   const handleRemoveItem = (itemId) => {
@@ -198,6 +203,7 @@ function App() {
   const handleFinalizeInventory = async () => {
     setIsLoading(true);
     
+    // Filtra apenas itens novos marcados como pendingSave
     const itemsToSave = inventario.filter(item => item.pendingSave && item.rawNewData);
 
     if (itemsToSave.length > 0) {
@@ -307,12 +313,22 @@ function App() {
           resultado={resultado ? { ...resultado, itens: filteredItems } : null}
           onRefresh={refreshData}
         />
+        
         <div className="main-actions-container">
           <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
             Iniciar Inventário
           </Button>
           <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
             Gerar Relatórios
+          </Button>
+          
+          <Button 
+            variant="secondary" 
+            size="lg" 
+            className="mt-2 mt-md-0 ms-md-2" 
+            onClick={() => setShowRegisteredList(true)}
+          >
+            Ver Cadastrados
           </Button>
         </div>
 
@@ -355,6 +371,11 @@ function App() {
         onConfirm={handleConfirmAddItem}
         itemCode={itemCodeToAdd}
         defaultLocal={inventarioLocal}
+      />
+
+      <RegisteredItemsList 
+        show={showRegisteredList} 
+        onClose={() => setShowRegisteredList(false)} 
       />
 
       <StatusModal 
