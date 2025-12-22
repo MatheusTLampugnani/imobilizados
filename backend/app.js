@@ -197,7 +197,6 @@ app.get('/api/inventory-item', async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
 app.post('/api/login', async (req, res) => {
     const { cracha } = req.body;
 
@@ -226,9 +225,6 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-=======
-// --- CRIAR NOVO ITEM (MANTIDA) ---
->>>>>>> 519b14994291f1d03082eb2b7af18e7cbc3c0295
 app.post('/api/imobilizado', async (req, res) => {
     const { descricao, codigo_inventario, centro_custo, user, numero_serie, local } = req.body;
 
