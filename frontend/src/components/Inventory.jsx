@@ -1,29 +1,42 @@
 import React, { useState } from 'react';
-import { Modal, Button, ListGroup, Badge, Alert } from 'react-bootstrap';
-import { BoxArrowUpRight, QrCodeScan, Trash } from 'react-bootstrap-icons';
+import { Modal, Button, ListGroup, Badge } from 'react-bootstrap';
+import { QrCodeScan, Trash, TrashFill } from 'react-bootstrap-icons';
 import BatchScannerModal from './BatchScannerModal';
+import StatusModal from './StatusModal';
 
-const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, onFinishInventory }) => {
+const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCentroCusto, onFinishInventory, onRemoveItem }) => {
   const [isScanning, setIsScanning] = useState(false);
-  const [feedback, setFeedback] = useState({ message: '', type: 'info' });
   const [isAdding, setIsAdding] = useState(false);
+  
+  const [statusFeedback, setStatusFeedback] = useState({ show: false, type: 'success', message: '' });
 
   const handleAddItem = async (code) => {
     if (!code || isAdding) return;
 
     setIsAdding(true);
-    setFeedback({ message: '', type: 'info' });
 
-    const success = await onAddItem(code);
+    const result = await onAddItem(code);
 
-    if (success) {
-      setFeedback({ message: `Item ${code} adicionado com sucesso!`, type: 'success' });
+    if (result === 'ok') {
+      setStatusFeedback({
+        show: false,
+        type: 'success',
+        message: `Item ${code} contabilizado com sucesso!`
+      });
+    } else if (result === '404') {
     } else {
-      setFeedback({ message: `Verificando item ${code}...`, type: 'info' });
+      setStatusFeedback({
+        show: false,
+        type: 'error',
+        message: `Houve um problema ao verificar o item ${code}.`
+      });
     }
 
     setIsAdding(false);
-    setTimeout(() => setFeedback({ message: '', type: 'info' }), 2000);
+  };
+
+  const handleCloseStatus = () => {
+    setStatusFeedback({ ...statusFeedback, show: false });
   };
 
   return (
@@ -33,13 +46,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           <Modal.Title>Inventário de Ativos - Centro de Custo {inventarioCentroCusto}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="text-center mb-3">
-            {feedback.message && (
-              <Alert variant={feedback.type} className="py-2">
-                {feedback.message}
-              </Alert>
-            )}
-          </div>
+          
           <ListGroup variant="flush">
             {inventario.length > 0 ? (
               inventario.map((item) => (
@@ -56,9 +63,20 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
                     </div>
                     {item.Descrição || 'Item sem descrição'}
                   </div>
-                  <Badge bg={item.notFound ? "secondary" : "danger"} pill>
-                    {item.notFound ? 'NÃO CADASTRADO' : `ID: ${item.id}`}
+                  
+                  <Badge bg={item.notFound ? "secondary" : "danger"} pill className="me-3">
+                    {item.notFound ? (item.pendingSave ? 'NOVO (PENDENTE)' : 'NÃO CADASTRADO') : `ID: ${item.id}`}
                   </Badge>
+
+                  <Button 
+                    variant="outline-danger" 
+                    size="sm" 
+                    onClick={() => onRemoveItem(item.id)}
+                    title="Remover este item"
+                  >
+                    <TrashFill />
+                  </Button>
+
                 </ListGroup.Item>
               ))
             ) : (
@@ -68,7 +86,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
         </Modal.Body>
         <Modal.Footer>
           <Button variant="outline-secondary" onClick={() => setInventario([])} disabled={inventario.length === 0}>
-            <Trash /> Limpar Lista
+            <Trash /> Limpar Tudo
           </Button>
           <Button variant="danger" onClick={() => setIsScanning(true)}>
             <QrCodeScan /> Escanear Itens em Lote
@@ -79,6 +97,13 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           <Button variant="secondary" onClick={onClose}>Fechar</Button>
         </Modal.Footer>
       </Modal>
+
+      <StatusModal 
+        show={statusFeedback.show}
+        type={statusFeedback.type}
+        message={statusFeedback.message}
+        onClose={handleCloseStatus}
+      />
 
       {isScanning && (
         <BatchScannerModal

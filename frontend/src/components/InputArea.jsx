@@ -1,10 +1,16 @@
 import React from 'react';
 import { Form, Button, InputGroup } from 'react-bootstrap';
+import {X} from 'react-bootstrap-icons'
 
-const InputArea = ({ codigo, setCodigo, onConsultar, isLoading }) => {
+const InputArea = ({ codigo, setCodigo, onConsultar, onLimpar, isLoading }) => {
   const handleFormSubmit = (e) => {
     e.preventDefault();
     onConsultar();
+  };
+
+  const handleClear = () => {
+    setCodigo('');
+    onLimpar();
   };
 
   return (
@@ -19,6 +25,11 @@ const InputArea = ({ codigo, setCodigo, onConsultar, isLoading }) => {
             aria-label="Código do imobilizado"
             autoFocus
           />
+          {codigo && (
+            <Button variant="outline-secundary" onClick={handleClear} title="Limpar busca">
+              <X size={24}/>
+            </Button>
+          )}
           <Button type="submit" variant="danger" disabled={isLoading}>
             {isLoading ? 'Buscando...' : 'Consultar'}
           </Button>

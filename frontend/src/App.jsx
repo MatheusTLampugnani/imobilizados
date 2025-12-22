@@ -10,8 +10,8 @@ import DivergenceReport from './components/DivergenceReport';
 import CcInputModal from './components/CcInputModal';
 import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import FilterControls from './components/FilterControls';
-import StatusModal from './components/StatusModal'; // Restaurado
-import RegisteredItemsList from './components/RegisteredItemsList'; // Sua nova funcionalidade
+import StatusModal from './components/StatusModal';
+import RegisteredItemsList from './components/RegisteredItemsList';
 import { API_URL } from './apiConfig';
 import './App.css';
 
@@ -25,8 +25,8 @@ function App() {
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
-  const [inventarioUsuario, setInventarioUsuario] = useState(''); // Restaurado
-  const [inventarioLocal, setInventarioLocal] = useState(''); // Restaurado
+  const [inventarioUsuario, setInventarioUsuario] = useState('');
+  const [inventarioLocal, setInventarioLocal] = useState('');
   const [expectedItems, setExpectedItems] = useState([]);
   
   const [showReportModal, setShowReportModal] = useState(false);
@@ -34,9 +34,9 @@ function App() {
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
   
-  const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' }); // Restaurado
+  const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
 
-  const [showRegisteredList, setShowRegisteredList] = useState(false); // Nova funcionalidade
+  const [showRegisteredList, setShowRegisteredList] = useState(false);
 
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
@@ -179,7 +179,7 @@ function App() {
       "codigo_imobilizado": "PENDENTE",
       "Local": itemLocal || inventarioLocal,
       notFound: true,
-      pendingSave: true, // Importante para salvar depois
+      pendingSave: true, 
       rawNewData: {
         descricao: description,
         codigo_inventario: inventoryCode,
@@ -322,7 +322,6 @@ function App() {
             Gerar Relatórios
           </Button>
           
-          {/* BOTÃO PARA ABRIR A LISTA DE CADASTRADOS */}
           <Button 
             variant="secondary" 
             size="lg" 
@@ -374,7 +373,6 @@ function App() {
         defaultLocal={inventarioLocal}
       />
 
-      {/* COMPONENTE DO MODAL DE CADASTRADOS */}
       <RegisteredItemsList 
         show={showRegisteredList} 
         onClose={() => setShowRegisteredList(false)} 

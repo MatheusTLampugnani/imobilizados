@@ -24,8 +24,6 @@ console.log('Conexão com o Supabase configurada.');
 function formatarValor(valor) {
     if (valor === null || valor === undefined || valor === '') return "";
     const str = String(valor).trim();
-    
-    // Se for puramente numérico, remove zeros à esquerda se desejar, ou mantém como string limpa
     if (/^\d+$/.test(str)) {
         return String(parseInt(str, 10));
     }
@@ -34,13 +32,9 @@ function formatarValor(valor) {
 
 // ---------------- ROTAS DE API ----------------
 
-// Validação de Centro de Custo
 app.get('/api/centro-custo/validate/:cc', async (req, res) => {
   const { cc } = req.params;
-
-  if (!cc) {
-    return res.status(400).json({ isValid: false, message: 'Centro de Custo não fornecido.' });
-  }
+  if (!cc) return res.status(400).json({ isValid: false, message: 'Centro de Custo não fornecido.' });
 
   try {
     const { data, error, count } = await supabase
@@ -48,36 +42,25 @@ app.get('/api/centro-custo/validate/:cc', async (req, res) => {
       .select('centro_custo', { count: 'exact', head: true })
       .ilike('centro_custo', cc); 
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
-    if (count > 0) {
-      res.status(200).json({ isValid: true });
-    } else {
-      res.status(404).json({ isValid: false, message: 'Centro de Custo não encontrado.' });
-    }
+    if (count > 0) res.status(200).json({ isValid: true });
+    else res.status(404).json({ isValid: false, message: 'Centro de Custo não encontrado.' });
   } catch (dbError) {
     console.error('Erro ao validar Centro de Custo:', dbError);
     res.status(500).json({ isValid: false, message: 'Erro interno do servidor.' });
   }
 });
 
-// Teste de Servidor
 app.get('/api', (req, res) => {
     res.status(200).send('Servidor do Imobilizados-API está no ar!');
 });
 
-// Consulta Principal de Imobilizados
 app.get('/api/imobilizado', async (req, res) => {
-    console.log(`[LOG DE TESTE] Rota /api/imobilizado foi chamada com o código: ${req.query.codigo}`);
     const { codigo } = req.query;
-    
     const codigoFormatado = formatarValor(codigo);
 
-    if (!codigoFormatado) {
-        return res.status(400).json({ message: "Nenhum código foi fornecido." });
-    }
+    if (!codigoFormatado) return res.status(400).json({ message: "Nenhum código foi fornecido." });
 
     try {
         const searchByText = async (field, value) => {
@@ -99,7 +82,6 @@ app.get('/api/imobilizado', async (req, res) => {
         };
         
         const searchPromises = [];
-        
         searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
         searchPromises.push(searchByText('numero_serie', codigoFormatado));
         searchPromises.push(searchByText('centro_custo', codigoFormatado));
@@ -109,7 +91,6 @@ app.get('/api/imobilizado', async (req, res) => {
             const numericValue = parseInt(codigoFormatado, 10);
             searchPromises.push(searchByNumber('codigo_imobilizado', numericValue));
         }
-
         searchPromises.push(searchByDescription(codigoFormatado));
         
         const results = await Promise.all(searchPromises);
@@ -123,7 +104,6 @@ app.get('/api/imobilizado', async (req, res) => {
         });
 
         if (itensEncontrados.length > 0) {
-            // Busca nomes dos Centros de Custo
             const centroCustoCodes = [...new Set(itensEncontrados.map(item => item.centro_custo).filter(Boolean))];
             let centroCustoMap = {};
 
@@ -133,12 +113,8 @@ app.get('/api/imobilizado', async (req, res) => {
                     .select('centro_custo, setores')
                     .in('centro_custo', centroCustoCodes);
 
-                if (ccError) {
-                    console.error('Erro ao buscar nomes dos centros de custo:', ccError);
-                } else {
-                    centrosCustoData.forEach(cc => {
-                        centroCustoMap[cc.centro_custo] = cc.setores;
-                    });
+                if (!ccError) {
+                    centrosCustoData.forEach(cc => { centroCustoMap[cc.centro_custo] = cc.setores; });
                 }
             }
             
@@ -168,14 +144,11 @@ app.get('/api/imobilizado', async (req, res) => {
     }
 });
 
-// Consulta Item Individual para Inventário
 app.get('/api/inventory-item', async (req, res) => {
     const { codigo } = req.query;
     const codigoFormatado = formatarValor(codigo);
 
-    if (!codigoFormatado) {
-        return res.status(400).json({ message: "Nenhum código foi fornecido." });
-    }
+    if (!codigoFormatado) return res.status(400).json({ message: "Nenhum código foi fornecido." });
 
     try {
         const searchByText = async (field, value) => {
@@ -236,13 +209,11 @@ app.get('/api/inventory-item', async (req, res) => {
     }
 });
 
-// [IMPORTANTE] Rota para Salvar Itens Novos (Restaurada)
 app.post('/api/imobilizado', async (req, res) => {
     const { descricao, codigo_inventario, centro_custo, user, numero_serie, local } = req.body;
 
-    // Validação básica
     if (!descricao || !codigo_inventario || !centro_custo || !user) {
-        return res.status(400).json({ message: 'Campos obrigatórios faltando (Descrição, Inventário, Centro de Custo, Usuário).' });
+        return res.status(400).json({ message: 'Campos obrigatórios faltando.' });
     }
 
     try {
@@ -250,16 +221,14 @@ app.post('/api/imobilizado', async (req, res) => {
 
         const { data, error } = await supabase
             .from('imobilizados_cadastrados')
-            .insert([
-                {
+            .insert([{
                     descricao: descricao,
                     codigo_inventario: invCodeClean,
                     numero_serie: numero_serie || null,
                     centro_custo: centro_custo,
                     local: local || null,
                     cracha: user 
-                }
-            ])
+            }])
             .select()
             .single();
 
@@ -267,16 +236,13 @@ app.post('/api/imobilizado', async (req, res) => {
             console.error("Erro detalhado do Supabase:", error); 
             throw error;
         }
-
         return res.status(201).json(data);
-
     } catch (error) {
         console.error("ERRO AO CADASTRAR ITEM NOVO: ", error);
         return res.status(500).json({ message: `Erro no servidor: ${error.message}` });
     }
 });
 
-// [IMPORTANTE] Rota para Atualizar Inventário (Restaurada com log de usuário)
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
         const { itemId, newInventoryCode, user } = req.body;
@@ -303,7 +269,6 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
     }
 });
 
-// Rota para buscar todos os itens cadastrados via inventário (NOVA)
 app.get('/api/imobilizados-cadastrados', async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -319,11 +284,8 @@ app.get('/api/imobilizados-cadastrados', async (req, res) => {
     }
 });
 
-// Rotas de Relatório
 app.get('/api/report/pdf', handlePdfReportRequest);
 app.get('/api/report/csv', handleCsvReportRequest);
-
-// ---------------- SERVIDOR ESTÁTICO (FRONTEND) ----------------
 
 const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
 
@@ -331,9 +293,7 @@ app.use(express.static(frontendDistPath));
 
 app.get('*', (req, res) => {
     res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
-        if (err) {
-            res.status(500).send(err);
-        }
+        if (err) res.status(500).send(err);
     });
 });
 
