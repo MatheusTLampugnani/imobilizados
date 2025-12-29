@@ -37,9 +37,9 @@ function App() {
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
   
-  const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
-
   const [showRegisteredList, setShowRegisteredList] = useState(false);
+  
+  const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
 
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
@@ -108,11 +108,9 @@ function App() {
   };
 
   const handleLogout = () => {
-    if (window.confirm("Deseja realmente sair do sistema?")) {
-      setCurrentUser(null);
-      sessionStorage.clear();
-      window.location.reload(); 
-    }
+    setCurrentUser(null);
+    sessionStorage.clear();
+    window.location.reload(); 
   };
 
   if (!currentUser) {
@@ -166,14 +164,14 @@ function App() {
         if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
           setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
         }
-        return 'ok';
+        return 'ok'; 
       }
       return 'error';
     } catch (error) {
       if (error.response?.status === 404) {
         setItemCodeToAdd(codeToAdd);
         setShowAddItemModal(true);
-        return '404';
+        return '404'; 
       } else {
         console.error("Erro ao adicionar item:", error);
         showStatus('error', 'Erro de comunicação com o servidor.');
@@ -197,7 +195,7 @@ function App() {
       "codigo_imobilizado": "PENDENTE",
       "Local": itemLocal || inventarioLocal,
       notFound: true,
-      pendingSave: true, 
+      pendingSave: true,
       rawNewData: {
         descricao: description,
         codigo_inventario: inventoryCode,
