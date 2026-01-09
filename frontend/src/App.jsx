@@ -11,9 +11,9 @@ import CcInputModal from './components/CcInputModal';
 import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import FilterControls from './components/FilterControls';
 import StatusModal from './components/StatusModal';
-import LoginScreen from './pages/LoginPage';
+import LoginScreen from './pages/LoginScreen';
 import RegisteredItemsList from './components/RegisteredItemsList';
-import { API_URL } from './apiConfig';
+import { supabase } from './apiConfig';
 import './App.css';
 
 function App() {
