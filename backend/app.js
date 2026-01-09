@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
-const ExcelJS = require('exceljs');
+const ExcelJS = require('exceljs'); 
 const { handlePdfReportRequest } = require('./utils/geradorPDF.js');
 const { handleCsvReportRequest } = require('./utils/geradorCSV.js');
 
@@ -157,7 +157,7 @@ app.get('/api/inventory-item', async (req, res) => {
             .limit(1)
             .single();
 
-        if (error && error.code !== 'PGRST116') throw error;
+        if (error && error.code !== 'PGRST116') throw error; 
 
         if (data) {
             let nomeSetor = '';
@@ -274,6 +274,50 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
         return res.status(200).json({ message: 'Inventário atualizado com sucesso!' });
     } catch(error) {
         console.error("ERRO AO ATUALIZAR INVENTÁRIO: ", error);
+        return res.status(500).json({ message: `Erro no servidor: ${error.message}`});
+    }
+});
+
+app.put('/api/imobilizado/update-cost-center', async (req, res) => {
+    try {
+        const { itemId, newCostCenter, user } = req.body;
+
+        if (!itemId || !newCostCenter) {
+            return res.status(400).json({ message: 'Dados inválidos fornecidos.' });
+        }
+
+        const { error: updateError } = await supabase.from('imobilizados').update({
+            centro_custo: newCostCenter,
+            usuario_atualizacao: user || 'Sistema'
+        }).eq('id', itemId);
+        
+        if (updateError) throw updateError;
+
+        return res.status(200).json({ message: 'Centro de Custo atualizado com sucesso!' });
+    } catch(error) {
+        console.error("ERRO AO ATUALIZAR CENTRO DE CUSTO: ", error);
+        return res.status(500).json({ message: `Erro no servidor: ${error.message}`});
+    }
+});
+
+app.put('/api/imobilizado/update-serial', async (req, res) => {
+    try {
+        const { itemId, newSerial, user } = req.body;
+
+        if (!itemId) {
+            return res.status(400).json({ message: 'ID do item não fornecido.' });
+        }
+
+        const { error: updateError } = await supabase.from('imobilizados').update({
+            numero_serie: newSerial,
+            usuario_atualizacao: user || 'Sistema'
+        }).eq('id', itemId);
+        
+        if (updateError) throw updateError;
+
+        return res.status(200).json({ message: 'Número de Série atualizado com sucesso!' });
+    } catch(error) {
+        console.error("ERRO AO ATUALIZAR SÉRIE: ", error);
         return res.status(500).json({ message: `Erro no servidor: ${error.message}`});
     }
 });
