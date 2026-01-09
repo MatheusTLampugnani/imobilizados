@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { supabase } from '../apiConfig';
-import { generatePDF } from '../utils/geradorPDF';
-import { generateCSV } from '../utils/geradorCSV';
+import { geradorPDF } from '../utils/geradorPDF';
+import { geradorCSV } from '../utils/geradorCSV';
 
 const ReportModal = ({ show, onClose }) => {
   const [centrosCusto, setCentrosCusto] = useState([]);
@@ -55,10 +55,10 @@ const ReportModal = ({ show, onClose }) => {
       const nomeSetor = ccInfo ? ccInfo.setores : '';
 
       if (type === 'pdf') {
-        await generatePDF(data, selectedCC, nomeSetor);
+        await geradorPDF(data, selectedCC, nomeSetor);
       } else {
         const mapCC = { [selectedCC]: nomeSetor };
-        generateCSV(data, mapCC);
+        geradorCSV(data, mapCC);
       }
 
       onClose();
