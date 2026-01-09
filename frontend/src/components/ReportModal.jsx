@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert } from 'react-bootstrap';
-import { supabase } from '../apiConfig';
-import { geradorPDF } from '../utils/geradorPDF';
+import { supabase } from '../apiConfig'; 
+import { geradorPDF } from '../utils/geradorPDF'; 
 import { geradorCSV } from '../utils/geradorCSV';
 
 const ReportModal = ({ show, onClose }) => {
@@ -11,9 +11,7 @@ const ReportModal = ({ show, onClose }) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (show) {
-      fetchCCs();
-    }
+    if (show) fetchCCs();
   }, [show]);
 
   const fetchCCs = async () => {
@@ -27,7 +25,7 @@ const ReportModal = ({ show, onClose }) => {
       setCentrosCusto(data || []);
     } catch (err) {
       console.error(err);
-      setError('Erro ao carregar lista de setores.');
+      setError('Erro ao carregar setores.');
     }
   };
 
@@ -64,7 +62,7 @@ const ReportModal = ({ show, onClose }) => {
       onClose();
     } catch (err) {
       console.error(err);
-      setError("Erro ao gerar relatório: " + err.message);
+      setError("Erro ao gerar: " + err.message);
     } finally {
       setLoading(false);
     }
