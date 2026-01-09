@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Button, ListGroup, Alert, Spinner, Form } from 'react-bootstrap';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import logoVideplast from '../assets/videplast-brand.png';
 
 const statusColors = {
