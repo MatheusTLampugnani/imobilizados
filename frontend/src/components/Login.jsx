@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Form, Button, Spinner, Alert, Container } from 'react-bootstrap';
 import axios from 'axios';
-import { supabase } from '../apiConfig';
+import { API_URL } from '../apiConfig';
 import logoVideplast from '../assets/videplast-brand.png'; 
 
 const LoginScreen = ({ onLoginSuccess }) => {
