@@ -1,20 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Form, Button, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import { API_URL } from '../apiConfig';
 import imgSuccess from '../assets/verificado.png';
 import imgError from '../assets/cruz.png';
 
-const EditInventoryModal = ({ show, onClose, item, onUpdateSuccess }) => {
-  const [newInventoryCode, setNewInventoryCode] = useState('');
+const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) => {
+  const [newValue, setNewValue] = useState('');
   const [cracha, setCracha] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
   const [viewState, setViewState] = useState('form'); 
 
+  const getEditConfig = () => {
+    switch (editType) {
+      case 'inventory':
+        return {
+          title: 'Editar Inventário',
+          label: 'Novo Código de Inventário',
+          currentLabel: 'Inventário Atual',
+          currentValue: item?.Inventário,
+          endpoint: '/imobilizado/update-inventory',
+          payloadKey: 'newInventoryCode'
+        };
+      case 'cost_center':
+        return {
+          title: 'Editar Centro de Custo',
+          label: 'Novo Centro de Custo',
+          currentLabel: 'Centro de Custo Atual',
+          currentValue: item?.CentroCusto,
+          endpoint: '/imobilizado/update-cost-center',
+          payloadKey: 'newCostCenter'
+        };
+      case 'serial':
+        return {
+          title: 'Editar Número de Série',
+          label: 'Nova Série',
+          currentLabel: 'Série Atual',
+          currentValue: item?.['Subnº'] || item?.Serie || item?.numero_serie, 
+          endpoint: '/imobilizado/update-serial',
+          payloadKey: 'newSerial'
+        };
+      default:
+        return { title: 'Editar', label: 'Novo Valor', endpoint: '' };
+    }
+  };
+
+  const config = getEditConfig();
+
+  useEffect(() => {
+    if (show) {
+        setNewValue('');
+        setCracha('');
+        setViewState('form');
+        setError('');
+    }
+  }, [show, editType]);
+
   const handleUpdate = async () => {
-    if (!newInventoryCode) {
-      setError('Por favor, digite o novo código de inventário.');
+    if (!newValue && editType !== 'serial') { // Série pode ser vazia as vezes, mas CC e Inventário não
+      setError(`Por favor, digite o ${config.label.toLowerCase()}.`);
       setViewState('error'); 
       return;
     }
@@ -28,20 +73,23 @@ const EditInventoryModal = ({ show, onClose, item, onUpdateSuccess }) => {
     setError('');
 
     try {
-      await axios.put(`${API_URL}/imobilizado/update-inventory`, {
+      const payload = {
         itemId: item.id,
-        newInventoryCode: newInventoryCode,
-        user: cracha
-      });
+        user: cracha,
+        [config.payloadKey]: newValue
+      };
+
+      await axios.put(`${API_URL}${config.endpoint}`, payload);
       
       setViewState('success');
       
       setTimeout(() => {
-        onUpdateSuccess();
+        onUpdateSuccess(item.id, editType, newValue);
         resetModal();
       }, 1500);
       
     } catch (err) {
+      console.error(err);
       setError(err.response?.data?.message || 'Erro ao atualizar. Tente novamente.');
       setViewState('error');
     } finally {
@@ -51,7 +99,7 @@ const EditInventoryModal = ({ show, onClose, item, onUpdateSuccess }) => {
 
   const resetModal = () => {
     setViewState('form');
-    setNewInventoryCode('');
+    setNewValue('');
     setCracha('');
     setError('');
   };
@@ -61,10 +109,12 @@ const EditInventoryModal = ({ show, onClose, item, onUpdateSuccess }) => {
       onClose();
   };
 
+  if (!item) return null;
+
   return (
     <Modal show={show} onHide={handleCloseInternal} centered>
       <Modal.Header closeButton={viewState === 'form'}>
-        <Modal.Title>Editar Inventário</Modal.Title>
+        <Modal.Title>{config.title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         
@@ -89,16 +139,16 @@ const EditInventoryModal = ({ show, onClose, item, onUpdateSuccess }) => {
         {viewState === 'form' && (
             <>
                 <p><strong>Item:</strong> {item.Descrição}</p>
-                <p><strong>Inventário Atual:</strong> {item.Inventário || 'Não definido'}</p>
+                <p><strong>{config.currentLabel}:</strong> {config.currentValue || 'Não definido'}</p>
                 <hr />
                 
                 <Form.Group className="mb-3">
-                  <Form.Label className="fw-bold">Novo Código de Inventário</Form.Label>
+                  <Form.Label className="fw-bold">{config.label}</Form.Label>
                   <Form.Control
                     type="text"
-                    value={newInventoryCode}
-                    onChange={(e) => setNewInventoryCode(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="Digite o novo código"
+                    value={newValue}
+                    onChange={(e) => setNewValue(e.target.value)}
+                    placeholder={`Digite ${config.label.toLowerCase()}`}
                     autoFocus
                   />
                 </Form.Group>
