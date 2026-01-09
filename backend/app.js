@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
-const ExcelJS = require('exceljs'); // <--- NOVA IMPORTAÇÃO
+const ExcelJS = require('exceljs');
 const { handlePdfReportRequest } = require('./utils/geradorPDF.js');
 const { handleCsvReportRequest } = require('./utils/geradorCSV.js');
 
@@ -31,8 +31,6 @@ function formatarValor(valor) {
     return str;
 }
 
-// ---------------- ROTAS DE API ----------------
-
 app.get('/api/centro-custo/validate/:cc', async (req, res) => {
   const { cc } = req.params;
   if (!cc) return res.status(400).json({ isValid: false, message: 'Centro de Custo não fornecido.' });
@@ -57,7 +55,6 @@ app.get('/api', (req, res) => {
     res.status(200).send('Servidor do Imobilizados-API está no ar!');
 });
 
-// --- ROTA DE BUSCA GERAL (MANTIDA) ---
 app.get('/api/imobilizado', async (req, res) => {
     const { codigo } = req.query;
     const codigoFormatado = formatarValor(codigo);
@@ -146,7 +143,6 @@ app.get('/api/imobilizado', async (req, res) => {
     }
 });
 
-// --- ROTA DE BUSCA ITEM ÚNICO (MANTIDA) ---
 app.get('/api/inventory-item', async (req, res) => {
     const { codigo } = req.query;
     const codigoFormatado = formatarValor(codigo);
@@ -161,7 +157,7 @@ app.get('/api/inventory-item', async (req, res) => {
             .limit(1)
             .single();
 
-        if (error && error.code !== 'PGRST116') throw error; // PGRST116 é erro de "não encontrado no single()"
+        if (error && error.code !== 'PGRST116') throw error;
 
         if (data) {
             let nomeSetor = '';
@@ -256,7 +252,6 @@ app.post('/api/imobilizado', async (req, res) => {
     }
 });
 
-// --- ATUALIZAR INVENTÁRIO (MANTIDA) ---
 app.put('/api/imobilizado/update-inventory', async (req, res) => {
     try {
         const { itemId, newInventoryCode, user } = req.body;
@@ -283,11 +278,6 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
     }
 });
 
-// ==============================================================================
-// === NOVAS FUNCIONALIDADES (FILTROS, EDIÇÃO, EXCLUSÃO, EXPORTAÇÃO EXCEL) ===
-// ==============================================================================
-
-// 1. LISTAGEM COM FILTROS (Para a tabela "Ver Cadastrados")
 app.get('/api/imobilizados-cadastrados', async (req, res) => {
     try {
         const { start_date, end_date, centro_custo, nome } = req.query;
@@ -297,7 +287,6 @@ app.get('/api/imobilizados-cadastrados', async (req, res) => {
             .select('*')
             .order('created_at', { ascending: false });
 
-        // Aplica filtros se existirem
         if (start_date) query = query.gte('created_at', `${start_date}T00:00:00`);
         if (end_date) query = query.lte('created_at', `${end_date}T23:59:59`);
         if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
@@ -313,7 +302,6 @@ app.get('/api/imobilizados-cadastrados', async (req, res) => {
     }
 });
 
-// 2. EXCLUSÃO (Para o botão Lixeira)
 app.delete('/api/imobilizados-cadastrados/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -329,7 +317,6 @@ app.delete('/api/imobilizados-cadastrados/:id', async (req, res) => {
     }
 });
 
-// 3. EDIÇÃO (Para o botão Lápis - Editar item errado)
 app.put('/api/imobilizados-cadastrados/:id', async (req, res) => {
     const { id } = req.params;
     const { descricao, numero_serie, centro_custo, local } = req.body;
@@ -348,10 +335,8 @@ app.put('/api/imobilizados-cadastrados/:id', async (req, res) => {
     }
 });
 
-// 4. EXPORTAÇÃO EXCEL (Usando ExcelJS)
 app.get('/api/report/excel', async (req, res) => {
     try {
-        // Aceita os mesmos filtros da tela para baixar só o que o usuário vê
         const { start_date, end_date, centro_custo } = req.query;
 
         let query = supabase
@@ -366,11 +351,9 @@ app.get('/api/report/excel', async (req, res) => {
         const { data, error } = await query;
         if (error) throw error;
 
-        // Cria o Arquivo Excel
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Itens Cadastrados');
 
-        // Define Colunas
         worksheet.columns = [
             { header: 'ID', key: 'id', width: 10 },
             { header: 'Data Criação', key: 'created_at', width: 20 },
@@ -382,10 +365,8 @@ app.get('/api/report/excel', async (req, res) => {
             { header: 'Usuário', key: 'cracha', width: 15 },
         ];
 
-        // Estiliza o cabeçalho
         worksheet.getRow(1).font = { bold: true };
         
-        // Adiciona dados
         data.forEach(item => {
             worksheet.addRow({
                 ...item,
@@ -393,7 +374,6 @@ app.get('/api/report/excel', async (req, res) => {
             });
         });
 
-        // Configura resposta para Download
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=Relatorio_Inventario.xlsx');
 
@@ -406,7 +386,6 @@ app.get('/api/report/excel', async (req, res) => {
     }
 });
 
-// Mantém rotas antigas de relatório
 app.get('/api/report/pdf', handlePdfReportRequest);
 app.get('/api/report/csv', handleCsvReportRequest);
 

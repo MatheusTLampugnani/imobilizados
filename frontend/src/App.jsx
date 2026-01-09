@@ -11,7 +11,7 @@ import CcInputModal from './components/CcInputModal';
 import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import FilterControls from './components/FilterControls';
 import StatusModal from './components/StatusModal';
-import LoginScreen from './components/Login';
+import LoginScreen from './pages/LoginPage';
 import RegisteredItemsList from './components/RegisteredItemsList';
 import { API_URL } from './apiConfig';
 import './App.css';

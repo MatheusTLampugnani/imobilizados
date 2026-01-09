@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Card, Spinner, Alert, Accordion, Table, Button } from 'react-bootstrap';
 import EditInventoryModal from './EditInventoryModal';
+import EditItemDetailsModal from './EditItemDetailsModal';
 
 const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [itemToEditDetails, setItemToEditDetails] = useState(null);
 
   const handleEditClick = (item) => {
     setEditingItem(item);
@@ -19,6 +22,11 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
   const handleUpdateSuccess = () => {
     handleCloseModal();
     onRefresh();
+  };
+
+  const handleOpenDetailsEdit = (item) => {
+    setItemToEditDetails(item);
+    setShowDetailsModal(true);
   };
 
   if (isLoading) {
@@ -70,6 +78,14 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
                       Editar Inventário
                     </Button>
                   </div>
+                  <div className="mt-2">
+                    <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleEdit(item)}>
+                      Editar Plaqueta
+                    </Button>
+                    <Button variant="outline-secondary" size="sm" onClick={() => handleOpenDetailsEdit(item)}>
+                      Editar Detalhes (Série/CC)
+                    </Button>
+                  </div>
                 </Accordion.Body>
               </Accordion.Item>
             ))}
@@ -78,11 +94,11 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
       </Card>
 
       {editingItem && (
-        <EditInventoryModal
-          show={showEditModal}
-          onClose={handleCloseModal}
-          item={editingItem}
-          onUpdateSuccess={handleUpdateSuccess}
+        <EditItemDetailsModal
+          show={showDetailsModal}
+          onClose={() => setShowDetailsModal(false)}
+          item={itemToEditDetails}
+          onUpdateSuccess={onRefresh}
         />
       )}
     </>
