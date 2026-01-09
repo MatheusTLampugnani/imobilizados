@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { supabase } from '../apiConfig';
-import { generatePDF } from '../utils/generatePDF';
-import { generateCSV } from '../utils/generateCSV';
+import { generatePDF } from '../utils/geradorPDF';
+import { generateCSV } from '../utils/geradorCSV';
 
 const ReportModal = ({ show, onClose }) => {
   const [centrosCusto, setCentrosCusto] = useState([]);
