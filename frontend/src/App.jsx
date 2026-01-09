@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Container, Button } from 'react-bootstrap';
+import { supabase } from './apiConfig'; 
 import Header from './components/Header';
 import InputArea from './components/InputArea';
 import Inventory from './components/Inventory';
@@ -11,9 +11,8 @@ import CcInputModal from './components/CcInputModal';
 import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import FilterControls from './components/FilterControls';
 import StatusModal from './components/StatusModal';
-import LoginScreen from './pages/LoginScreen';
+import LoginScreen from './components/LoginScreen';
 import RegisteredItemsList from './components/RegisteredItemsList';
-import { supabase } from './apiConfig';
 import './App.css';
 
 function App() {
@@ -128,8 +127,13 @@ function App() {
   const fetchExpectedItems = async (cc) => {
     if (!cc) return;
     try {
-      const response = await axios.get(`${API_URL}/imobilizado?codigo=${cc}`);
-      setExpectedItems(response.data.itens || []);
+      const { data, error } = await supabase
+        .from('imobilizados')
+        .select('*')
+        .eq('centro_custo', cc);
+
+      if (error) throw error;
+      setExpectedItems(data || []);
     } catch (error) {
       console.error("Erro ao buscar itens esperados:", error);
       setExpectedItems([]);
@@ -138,7 +142,16 @@ function App() {
 
   const handleStartInventory = async (cc, _ignoredUser, localFisico) => {
     try {
-      await axios.get(`${API_URL}/centro-custo/validate/${cc}`);
+      const { data: ccData, error } = await supabase
+        .from('centro_de_custo')
+        .select('*')
+        .eq('centro_custo', cc)
+        .single();
+
+      if (error || !ccData) {
+        showStatus('error', 'Centro de Custo não encontrado.');
+        return false;
+      }
       
       setInventarioCentroCusto(cc);
       setInventarioUsuario(currentUser.cracha);
@@ -149,40 +162,38 @@ function App() {
       setInventario([]); 
       return true;
     } catch (error) {
-      console.error("Validação do Centro de Custo falhou:", error);
+      console.error("Erro ao iniciar:", error);
       return false;
     }
   };
 
   const handleAddItemToInventory = async (codeToAdd) => {
     try {
-      const response = await axios.get(`${API_URL}/inventory-item?codigo=${codeToAdd}`);
-      const dados = response.data;
-      
-      if (dados && dados.itens && dados.itens.length > 0) {
-        const itemParaAdicionar = dados.itens[0];
+      const { data, error } = await supabase
+        .from('imobilizados')
+        .select('*')
+        .or(`codigo_inventario.eq.${codeToAdd},numero_serie.eq.${codeToAdd}`);
+
+      if (data && data.length > 0) {
+        const itemParaAdicionar = data[0];
         if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
-          setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
+          setInventario(prev => [itemParaAdicionar, ...prev]);
         }
         return 'ok'; 
       }
-      return 'error';
+      
+      setItemCodeToAdd(codeToAdd);
+      setShowAddItemModal(true);
+      return '404'; 
+
     } catch (error) {
-      if (error.response?.status === 404) {
-        setItemCodeToAdd(codeToAdd);
-        setShowAddItemModal(true);
-        return '404'; 
-      } else {
-        console.error("Erro ao adicionar item:", error);
-        showStatus('error', 'Erro de comunicação com o servidor.');
-        return 'error';
-      }
+      console.error("Erro ao adicionar:", error);
+      return 'error';
     }
   };
 
   const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLocal) => {
     const tempId = `temp_${Date.now()}`;
-
     const itemParaLista = {
       id: tempId,
       "Subnº": 0,
@@ -205,8 +216,7 @@ function App() {
         local: itemLocal || inventarioLocal
       }
     };
-
-    setInventario(prevInventario => [itemParaLista, ...prevInventario]);
+    setInventario(prev => [itemParaLista, ...prev]);
     setShowAddItemModal(false);
   };
 
@@ -218,20 +228,25 @@ function App() {
 
   const handleFinalizeInventory = async () => {
     setIsLoading(true);
-    
     const itemsToSave = inventario.filter(item => item.pendingSave && item.rawNewData);
 
     if (itemsToSave.length > 0) {
       try {
-        await Promise.all(itemsToSave.map(item => {
-          return axios.post(`${API_URL}/imobilizado`, item.rawNewData);
+        const payload = itemsToSave.map(i => ({
+            descricao: i.rawNewData.descricao,
+            codigo_inventario: i.rawNewData.codigo_inventario,
+            numero_serie: i.rawNewData.numero_serie,
+            centro_custo: i.rawNewData.centro_custo,
+            local: i.rawNewData.local
         }));
+
+        const { error } = await supabase.from('imobilizados').insert(payload);
+        if (error) throw error;
         
-        showStatus('success', `${itemsToSave.length} novos itens cadastrados com sucesso!`);
-        
+        showStatus('success', `${itemsToSave.length} novos itens cadastrados!`);
       } catch (error) {
-        console.error("Erro ao salvar itens novos:", error);
-        showStatus('error', "Houve um erro ao salvar alguns itens novos.");
+        console.error("Erro ao salvar:", error);
+        showStatus('error', "Erro ao salvar itens no banco.");
       }
     } else {
         showStatus('success', "Inventário finalizado com sucesso!");
@@ -244,49 +259,45 @@ function App() {
   };
 
   const handleCodeSearch = async () => {
-    if (isLoading) return;
-    if (!codigo || codigo.trim() === '') {
-      setError('Por favor, digite um código.');
-      setResultado(null);
-      return;
-    }
+    if (isLoading || !codigo) return;
     setIsLoading(true);
     setError('');
     handleResetFilters(); 
 
     try {
-      const response = await axios.get(`${API_URL}/imobilizado?codigo=${codigo}`);
-      setResultado(response.data);
+      const { data, error } = await supabase
+        .from('imobilizados')
+        .select('*')
+        .or(`codigo_inventario.ilike.%${codigo}%,numero_serie.ilike.%${codigo}%`);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setResultado({ itens: data });
+      } else {
+        setResultado(null);
+        setError(`Nenhum item encontrado: ${codigo}`);
+      }
     } catch (err) {
       setResultado(null);
-      const errorMessage = err.response?.status === 404 
-        ? `Nenhum item encontrado para o termo: ${codigo}`
-        : (err.response?.data?.message || 'Erro ao conectar ao servidor.');
-      setError(errorMessage);
+      setError('Erro na consulta.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleFilterChange = (newFilters) => setFilters(newFilters);
-  
   const handleResetFilters = () => {
     setFilters({ serie: '', subn: '', centroCusto: '' });
     setSortConfig({ field: 'Descrição', order: 'asc' });
   };
-  
   const handleSortChange = (newSortConfig) => setSortConfig(newSortConfig);
-
-  const refreshData = () => {
-    if (codigo) handleCodeSearch(codigo);
-  };
-
+  const refreshData = () => { if (codigo) handleCodeSearch(); };
   const handleClearSearch = () => {
     setCodigo('');
     setResultado(null);
     setError('');
   };
-
   const handleFinishAndReset = () => {
     setShowDivergenceReport(false);
     setInventarioAtivo(false);
