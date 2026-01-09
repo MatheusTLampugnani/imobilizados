@@ -1,100 +1,97 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Alert } from 'react-bootstrap';
-import { supabase } from '../apiConfig'; 
-import { geradorPDF } from '../utils/geradorPDF'; 
-import { geradorCSV } from '../utils/geradorCSV';
+import React, { useState } from 'react';
+import { Modal, Form, Button, Spinner, Alert } from 'react-bootstrap';
+import axios from 'axios';
+import { API_URL } from '../apiConfig';
 
-const ReportModal = ({ show, onClose }) => {
-  const [centrosCusto, setCentrosCusto] = useState([]);
-  const [selectedCC, setSelectedCC] = useState('');
-  const [loading, setLoading] = useState(false);
+const ReportModal = ({ show, onClose } ) => {
+  const [centroCusto, setCentroCusto] = useState('');
+  const [isGenerating, setIsGenerating] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (show) fetchCCs();
-  }, [show]);
+  const handleGenerate = async (format) => {
+    if (!centroCusto) {
+      setError('Por favor, insira um centro de custo.');
+      return;
+    }
+    setIsGenerating(format);
+    setError('');
 
-  const fetchCCs = async () => {
     try {
-      const { data, error } = await supabase
-        .from('centro_de_custo')
-        .select('centro_custo, setores')
-        .order('centro_custo');
+      const endpoint = `${API_URL}/report/${format}?centro_custo=${centroCusto}`;
+      const fileName = `Relatorio_CC_${centroCusto}.${format}`;
+
+      const response = await axios.get(endpoint, {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
       
-      if (error) throw error;
-      setCentrosCusto(data || []);
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      onClose();
+
     } catch (err) {
-      console.error(err);
-      setError('Erro ao carregar setores.');
+      if (err.response?.status === 404) {
+        setError(`Nenhum item encontrado para o centro de custo ${centroCusto}.`);
+      } else {
+        setError('Erro ao gerar o relatório. Tente novamente.');
+      }
+    } finally {
+      setIsGenerating(null);
     }
   };
 
-  const handleGenerate = async (type) => {
-    if (!selectedCC) return;
-    setLoading(true);
+  const handleClose = () => {
+    setCentroCusto('');
     setError('');
-    
-    try {
-      const { data, error } = await supabase
-        .from('imobilizados')
-        .select('*')
-        .eq('centro_custo', selectedCC)
-        .order('descricao');
-
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        setError('Nenhum item encontrado neste setor.');
-        setLoading(false);
-        return;
-      }
-
-      const ccInfo = centrosCusto.find(c => c.centro_custo === selectedCC);
-      const nomeSetor = ccInfo ? ccInfo.setores : '';
-
-      if (type === 'pdf') {
-        await geradorPDF(data, selectedCC, nomeSetor);
-      } else {
-        const mapCC = { [selectedCC]: nomeSetor };
-        geradorCSV(data, mapCC);
-      }
-
-      onClose();
-    } catch (err) {
-      console.error(err);
-      setError("Erro ao gerar: " + err.message);
-    } finally {
-      setLoading(false);
-    }
+    setIsGenerating(null);
+    onClose();
   };
 
   return (
-    <Modal show={show} onHide={onClose} centered>
+    <Modal show={show} onHide={handleClose} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Gerar Relatórios</Modal.Title>
+        <Modal.Title>Gerar Relatório de Imobilizados</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {error && <Alert variant="warning">{error}</Alert>}
-
-        <Form.Group>
-          <Form.Label>Selecione o Centro de Custo</Form.Label>
-          <Form.Select 
-            value={selectedCC} 
-            onChange={e => setSelectedCC(e.target.value)}
-          >
-            <option value="">Selecione...</option>
-            {centrosCusto.map(cc => (
-              <option key={cc.centro_custo} value={cc.centro_custo}>
-                {cc.centro_custo} - {cc.setores}
-              </option>
-            ))}
-          </Form.Select>
-        </Form.Group>
+        <p>Digite o Centro de Custo para gerar o relatório.</p>
+        <Form.Control
+          type="text"
+          value={centroCusto}
+          onChange={(e) => setCentroCusto(e.target.value)}
+          placeholder="Ex: 100005002"
+          autoFocus
+        />
+        {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose} disabled={loading}>Fechar</Button>
-        <Button variant="success" onClick={() => handleGenerate('csv')} disabled={loading || !selectedCC}>Baixar CSV</Button>
-        <Button variant="danger" onClick={() => handleGenerate('pdf')} disabled={loading || !selectedCC}>Baixar PDF</Button>
+        <Button variant="secondary" onClick={handleClose}>
+          Cancelar
+        </Button>
+        <Button 
+          variant="success" 
+          onClick={() => handleGenerate('csv')} 
+          disabled={isGenerating !== null}
+        >
+          {isGenerating === 'csv' 
+            ? <Spinner as="span" animation="border" size="sm" /> 
+            : 'Gerar CSV'}
+        </Button>
+        <Button 
+          variant="danger" 
+          onClick={() => handleGenerate('pdf')} 
+          disabled={isGenerating !== null}
+        >
+          {isGenerating === 'pdf' 
+            ? <Spinner as="span" animation="border" size="sm" /> 
+            : 'Gerar PDF'}
+        </Button>
       </Modal.Footer>
     </Modal>
   );
