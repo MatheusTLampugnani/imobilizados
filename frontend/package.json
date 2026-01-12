@@ -10,13 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "axios": "^1.9.0",
+    "@supabase/supabase-js": "^2.90.1",
+    "axios": "^1.13.2",
     "bootstrap": "^5.3.6",
     "bootstrap-icons": "^1.13.1",
     "html5-qrcode": "^2.3.8",
-    "jspdf": "^2.5.1",
-    "jspdf-autotable": "^5.0.2",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
     "jsqr": "^1.4.0",
+    "pdfmake": "^0.3.1",
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",
     "react-bootstrap-icons": "^1.11.6",

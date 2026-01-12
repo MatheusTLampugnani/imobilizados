@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DataTable from 'react-data-table-component';
 import { Modal, Button, Spinner, Alert, Form, Row, Col } from 'react-bootstrap';
-import { FaTrash, FaEdit, FaFileExcel, FaSearch } from 'react-icons/fa'; // Ícones
+import { FaTrash, FaEdit, FaFileExcel, FaSearch } from 'react-icons/fa';
 import { API_URL } from '../apiConfig';
 
 const RegisteredItemsList = ({ show, onClose }) => {
@@ -10,7 +10,6 @@ const RegisteredItemsList = ({ show, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Estados para Filtros
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -18,17 +17,14 @@ const RegisteredItemsList = ({ show, onClose }) => {
     nome: ''
   });
 
-  // Estados para Edição
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editForm, setEditForm] = useState({});
 
-  // --- 1. BUSCAR DADOS (Com Filtros) ---
   const fetchData = async () => {
     setLoading(true);
     setError('');
     try {
-      // Cria a query string com os filtros
       const params = new URLSearchParams();
       if (filters.startDate) params.append('start_date', filters.startDate);
       if (filters.endDate) params.append('end_date', filters.endDate);
@@ -47,10 +43,8 @@ const RegisteredItemsList = ({ show, onClose }) => {
 
   useEffect(() => {
     if (show) fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]); 
 
-  // --- 2. EXPORTAR EXCEL ---
   const handleExport = async () => {
     try {
       const params = new URLSearchParams();
@@ -70,26 +64,23 @@ const RegisteredItemsList = ({ show, onClose }) => {
       link.click();
       link.remove();
     } catch (err) {
-      console.error(err); // <--- AJUSTE AQUI
+      console.error(err);
       alert("Erro ao baixar o relatório em Excel.");
     }
   };
 
-  // --- 3. EXCLUIR ITEM ---
   const handleDelete = async (id) => {
     if (window.confirm("Tem certeza que deseja excluir este item permanentemente?")) {
       try {
         await axios.delete(`${API_URL}/imobilizados-cadastrados/${id}`);
-        // Remove da lista localmente para não precisar recarregar tudo
         setItems(prev => prev.filter(item => item.id !== id));
       } catch (err) {
-        console.error(err); // <--- AJUSTE AQUI
+        console.error(err);
         alert("Erro ao excluir o item.");
       }
     }
   };
 
-  // --- 4. PREPARAR EDIÇÃO ---
   const handleEditClick = (row) => {
     setEditingItem(row);
     setEditForm({
@@ -101,12 +92,10 @@ const RegisteredItemsList = ({ show, onClose }) => {
     setShowEditModal(true);
   };
 
-  // --- 5. SALVAR EDIÇÃO ---
   const handleSaveEdit = async () => {
     try {
       const response = await axios.put(`${API_URL}/imobilizados-cadastrados/${editingItem.id}`, editForm);
       
-      // Atualiza o item na lista local
       const updatedList = items.map(item => 
         item.id === editingItem.id ? { ...item, ...response.data[0] } : item 
       );
@@ -114,7 +103,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
       setShowEditModal(false);
       fetchData(); 
     } catch (err) {
-      console.error(err); // <--- AJUSTE AQUI
+      console.error(err);
       alert("Erro ao salvar alterações.");
     }
   };
@@ -123,7 +112,6 @@ const RegisteredItemsList = ({ show, onClose }) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
   };
 
-  // Definição das Colunas
   const columns = [
     { name: 'Data', selector: row => new Date(row.created_at).toLocaleDateString('pt-BR'), sortable: true, width: '100px' },
     { name: 'Descrição', selector: row => row.descricao, sortable: true, wrap: true },
@@ -157,7 +145,6 @@ const RegisteredItemsList = ({ show, onClose }) => {
         </Modal.Header>
         <Modal.Body>
           
-          {/* BARRA DE FILTROS */}
           <Form className="mb-3 p-3 bg-light border rounded">
             <Row className="g-2 align-items-end">
               <Col md={2}>
@@ -210,7 +197,6 @@ const RegisteredItemsList = ({ show, onClose }) => {
         </Modal.Footer>
       </Modal>
 
-      {/* MODAL DE EDIÇÃO */}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Editar Item</Modal.Title>
