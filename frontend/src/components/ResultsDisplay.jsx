@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Spinner, Alert, Accordion, Table, Button } from 'react-bootstrap';
 import { PencilSquare } from 'react-bootstrap-icons';
 import EditInventoryModal from './EditInventoryModal';
@@ -7,6 +7,10 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editType, setEditType] = useState('inventory');
+
+  useEffect(() => {
+    console.log('ResultsDisplay recebido:', { isLoading, error, resultado });
+  }, [isLoading, error, resultado]);
 
   const handleEditClick = (item, type) => {
     setEditingItem(item);
@@ -37,17 +41,17 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
     return <Alert variant="warning" className="mt-3">{error}</Alert>;
   }
 
-  if (!resultado) {
-    return null;
+  if (!resultado || !resultado.itens || resultado.itens.length === 0) {
+    return <Alert variant="info" className="mt-3">Nenhum item encontrado para exibir.</Alert>;
   }
 
   const EditButton = ({ onClick, title }) => (
     <Button 
       variant="link" 
       className="p-0 ms-2 text-decoration-none text-danger" 
-      onClick={onClick}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
       title={title || "Editar"}
-      style={{ verticalAlign: 'middle' }}
+      style={{ verticalAlign: 'middle', display: 'inline-flex', alignItems: 'center' }}
     >
       <PencilSquare size={16} />
     </Button>
@@ -60,9 +64,9 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
           IMOBILIZADOS
         </Card.Header>
         <Card.Body>
-          <Accordion defaultActiveKey={resultado.itens[0]?.id.toString()} alwaysOpen className="mt-2">
+          <Accordion defaultActiveKey={resultado.itens[0]?.id?.toString()} alwaysOpen className="mt-2">
             {resultado.itens.map((item) => (
-              <Accordion.Item eventKey={item.id.toString()} key={item.id}>
+              <Accordion.Item eventKey={item.id?.toString()} key={item.id}>
                 <Accordion.Header>
                   Item (Subnº {item['Subnº']}): {item.Descrição || 'Sem descrição'}
                 </Accordion.Header>
@@ -79,26 +83,29 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
                       </tr>
                       <tr>
                         <td><strong>DATA INCORPORAÇÃO</strong></td>
-                        <td>{item.Data || 'Sem data de incorporação'}</td>
+                        <td>{item.Data || 'Sem data'}</td>
                       </tr>
+                      
                       <tr>
                         <td><strong>INVENTÁRIO</strong></td>
                         <td className="d-flex justify-content-between align-items-center border-0">
-                            <span>{item.Inventário || 'Sem número de inventário'}</span>
+                            <span>{item.Inventário || 'Sem número'}</span>
                             <EditButton 
                                 onClick={() => handleEditClick(item, 'inventory')} 
                                 title="Editar Código de Inventário" 
                             />
                         </td>
                       </tr>
+                      
                       <tr>
                         <td><strong>INVENTÁRIO ANTIGO</strong></td>
-                        <td>{item.Inventário_Antigo || 'Sem inventário anterior'}</td>
+                        <td>{item.Inventário_Antigo || '---'}</td>
                       </tr>
+
                       <tr>
                         <td><strong>NÚMERO DE SÉRIE</strong></td>
                         <td className="d-flex justify-content-between align-items-center border-0">
-                            <span>{item.Série || item.numero_serie || 'Sem número de série'}</span>
+                            <span>{item.Série || item.numero_serie || 'Sem número'}</span>
                             <EditButton 
                                 onClick={() => handleEditClick(item, 'serial')} 
                                 title="Editar Número de Série" 
@@ -108,13 +115,14 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
                       <tr>
                         <td><strong>CENTRO DE CUSTO</strong></td>
                         <td className="d-flex justify-content-between align-items-center border-0">
-                            <span>{item.CentroCusto || 'N/A'} - {item.CentroCustoNome || ''}</span>
+                            <span>{item.CentroCusto || 'N/A'} {item.CentroCustoNome ? `- ${item.CentroCustoNome}` : ''}</span>
                             <EditButton 
                                 onClick={() => handleEditClick(item, 'cost_center')} 
                                 title="Editar Centro de Custo" 
                             />
                         </td>
                       </tr>
+                      
                       <tr>
                         <td><strong>LOCAL</strong></td>
                         <td>{item.Local || 'Não informado'}</td>
@@ -131,16 +139,13 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
           </Accordion>
         </Card.Body>
       </Card>
-
-      {editingItem && (
-        <EditInventoryModal
-          show={showEditModal}
-          onClose={handleCloseModal}
-          item={editingItem}
-          editType={editType} 
-          onUpdateSuccess={handleUpdateSuccess}
-        />
-      )}
+      <EditInventoryModal
+        show={showEditModal}
+        onClose={handleCloseModal}
+        item={editingItem}
+        editType={editType} 
+        onUpdateSuccess={handleUpdateSuccess}
+      />
     </>
   );
 };
