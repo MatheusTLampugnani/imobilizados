@@ -286,8 +286,12 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
             return res.status(400).json({ message: 'Dados inválidos fornecidos.' });
         }
 
+        const { data: currentItem, error: fetchError } = await supabase.from('imobilizados').select('codigo_inventario').eq('id', itemId).single();
+        if (fetchError) throw fetchError;
+
         const { error: updateError } = await supabase.from('imobilizados').update({
             centro_custo: newCostCenter,
+            centro_custo_antigo: currentItem.centro_custo,
             usuario_atualizacao: user || 'Sistema'
         }).eq('id', itemId);
         
@@ -308,8 +312,12 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
             return res.status(400).json({ message: 'ID do item não fornecido.' });
         }
 
+        const { data: currentItem, error: fetchError } = await supabase.from('imobilizados').select('codigo_inventario').eq('id', itemId).single();
+        if (fetchError) throw fetchError;
+
         const { error: updateError } = await supabase.from('imobilizados').update({
             numero_serie: newSerial,
+            numero_serie_antigo: currentItem.numero_serie,
             usuario_atualizacao: user || 'Sistema'
         }).eq('id', itemId);
         
