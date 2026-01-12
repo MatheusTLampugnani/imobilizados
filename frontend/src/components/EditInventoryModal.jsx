@@ -37,7 +37,7 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
           title: 'Editar Número de Série',
           label: 'Nova Série',
           currentLabel: 'Série Atual',
-          currentValue: item?.['Subnº'] || item?.Serie || item?.numero_serie, 
+          currentValue: item?.['Série'] || item?.numero_serie, 
           endpoint: '/imobilizado/update-serial',
           payloadKey: 'newSerial'
         };
@@ -58,7 +58,7 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
   }, [show, editType]);
 
   const handleUpdate = async () => {
-    if (!newValue && editType !== 'serial') { // Série pode ser vazia as vezes, mas CC e Inventário não
+    if (!newValue && editType !== 'serial') { 
       setError(`Por favor, digite o ${config.label.toLowerCase()}.`);
       setViewState('error'); 
       return;
