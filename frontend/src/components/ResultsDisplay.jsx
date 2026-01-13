@@ -8,10 +8,6 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
   const [editingItem, setEditingItem] = useState(null);
   const [editType, setEditType] = useState('inventory');
 
-  useEffect(() => {
-    console.log('ResultsDisplay recebido:', { isLoading, error, resultado });
-  }, [isLoading, error, resultado]);
-
   const handleEditClick = (item, type) => {
     setEditingItem(item);
     setEditType(type);
