@@ -261,7 +261,12 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
             return res.status(400).json({ message: 'Dados inválidos fornecidos.' });
         }
 
-        const { data: currentItem, error: fetchError } = await supabase.from('imobilizados').select('codigo_inventario').eq('id', itemId).single();
+        const { data: currentItem, error: fetchError } = await supabase
+            .from('imobilizados')
+            .select('codigo_inventario')
+            .eq('id', itemId)
+            .single();
+        
         if (fetchError) throw fetchError;
 
         const { error: updateError } = await supabase.from('imobilizados').update({
@@ -269,6 +274,7 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
             codigo_inventario_antigo: currentItem.codigo_inventario,
             usuario_atualizacao: user || 'Sistema'
         }).eq('id', itemId);
+        
         if (updateError) throw updateError;
 
         return res.status(200).json({ message: 'Inventário atualizado com sucesso!' });
@@ -286,7 +292,12 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
             return res.status(400).json({ message: 'Dados inválidos fornecidos.' });
         }
 
-        const { data: currentItem, error: fetchError } = await supabase.from('imobilizados').select('codigo_inventario').eq('id', itemId).single();
+        const { data: currentItem, error: fetchError } = await supabase
+            .from('imobilizados')
+            .select('centro_custo') 
+            .eq('id', itemId)
+            .single();
+            
         if (fetchError) throw fetchError;
 
         const { error: updateError } = await supabase.from('imobilizados').update({
@@ -312,7 +323,12 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
             return res.status(400).json({ message: 'ID do item não fornecido.' });
         }
 
-        const { data: currentItem, error: fetchError } = await supabase.from('imobilizados').select('codigo_inventario').eq('id', itemId).single();
+        const { data: currentItem, error: fetchError } = await supabase
+            .from('imobilizados')
+            .select('numero_serie') 
+            .eq('id', itemId)
+            .single();
+            
         if (fetchError) throw fetchError;
 
         const { error: updateError } = await supabase.from('imobilizados').update({
@@ -329,6 +345,7 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
         return res.status(500).json({ message: `Erro no servidor: ${error.message}`});
     }
 });
+
 
 app.get('/api/imobilizados-cadastrados', async (req, res) => {
     try {
