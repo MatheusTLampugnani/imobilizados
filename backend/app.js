@@ -231,6 +231,34 @@ app.post('/api/imobilizado', async (req, res) => {
     try {
         const invCodeClean = formatarValor(codigo_inventario);
 
+        const { data: existeOficial, error: erroOficial } = await supabase
+            .from('imobilizados')
+            .select('id, descricao')
+            .eq('codigo_inventario', invCodeClean)
+            .maybeSingle();
+
+        if (erroOficial && erroOficial.code !== 'PGRST116') throw erroOficial;
+
+        if (existeOficial) {
+            return res.status(400).json({ 
+                message: `Erro: O código ${invCodeClean} JÁ EXISTE na base oficial (Item: ${existeOficial.descricao}).` 
+            });
+        }
+
+        const { data: existeCadastrado, error: erroCadastrado } = await supabase
+            .from('imobilizados_cadastrados')
+            .select('id, descricao')
+            .eq('codigo_inventario', invCodeClean)
+            .maybeSingle();
+
+        if (erroCadastrado && erroCadastrado.code !== 'PGRST116') throw erroCadastrado;
+
+        if (existeCadastrado) {
+            return res.status(400).json({ 
+                message: `Erro: O código ${invCodeClean} JÁ FOI CADASTRADO recentemente (Item: ${existeCadastrado.descricao}).` 
+            });
+        }
+
         const { data, error } = await supabase
             .from('imobilizados_cadastrados')
             .insert([{
@@ -246,6 +274,7 @@ app.post('/api/imobilizado', async (req, res) => {
 
         if (error) throw error;
         return res.status(201).json(data);
+
     } catch (error) {
         console.error("ERRO AO CADASTRAR ITEM NOVO: ", error);
         return res.status(500).json({ message: `Erro no servidor: ${error.message}` });
@@ -349,7 +378,7 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
 
 app.get('/api/imobilizados-cadastrados', async (req, res) => {
     try {
-        const { start_date, end_date, centro_custo, nome } = req.query;
+        const { start_date, end_date, centro_custo, termo } = req.query;
 
         let query = supabase
             .from('imobilizados_cadastrados')
@@ -359,7 +388,10 @@ app.get('/api/imobilizados-cadastrados', async (req, res) => {
         if (start_date) query = query.gte('created_at', `${start_date}T00:00:00`);
         if (end_date) query = query.lte('created_at', `${end_date}T23:59:59`);
         if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
-        if (nome) query = query.ilike('descricao', `%${nome}%`);
+
+        if (termo) {
+            query = query.or(`descricao.ilike.%${termo}%,codigo_inventario.ilike.%${termo}%,numero_serie.ilike.%${termo}%,local.ilike.%${termo}%,cracha.ilike.%${termo}%`);
+        }
 
         const { data, error } = await query;
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DataTable from 'react-data-table-component';
 import { Modal, Button, Spinner, Alert, Form, Row, Col } from 'react-bootstrap';
-import { FaTrash, FaEdit, FaFileExcel, FaSearch } from 'react-icons/fa';
+import { FaTrash, FaEdit, FaFileExcel, FaSearch } from 'react-icons/fa'; 
 import { API_URL } from '../apiConfig';
 
 const RegisteredItemsList = ({ show, onClose }) => {
@@ -14,7 +14,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
     startDate: '',
     endDate: '',
     centroCusto: '',
-    nome: ''
+    termo: ''
   });
 
   const [showEditModal, setShowEditModal] = useState(false);
@@ -29,7 +29,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
       if (filters.startDate) params.append('start_date', filters.startDate);
       if (filters.endDate) params.append('end_date', filters.endDate);
       if (filters.centroCusto) params.append('centro_custo', filters.centroCusto);
-      if (filters.nome) params.append('nome', filters.nome);
+      if (filters.termo) params.append('termo', filters.termo);
 
       const response = await axios.get(`${API_URL}/imobilizados-cadastrados?${params.toString()}`);
       setItems(response.data);
@@ -51,6 +51,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
       if (filters.startDate) params.append('start_date', filters.startDate);
       if (filters.endDate) params.append('end_date', filters.endDate);
       if (filters.centroCusto) params.append('centro_custo', filters.centroCusto);
+      if (filters.termo) params.append('termo', filters.termo);
 
       const response = await axios.get(`${API_URL}/report/excel?${params.toString()}`, {
         responseType: 'blob',
@@ -64,7 +65,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
       link.click();
       link.remove();
     } catch (err) {
-      console.error(err);
+      console.error(err); 
       alert("Erro ao baixar o relatório em Excel.");
     }
   };
@@ -75,7 +76,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
         await axios.delete(`${API_URL}/imobilizados-cadastrados/${id}`);
         setItems(prev => prev.filter(item => item.id !== id));
       } catch (err) {
-        console.error(err);
+        console.error(err); 
         alert("Erro ao excluir o item.");
       }
     }
@@ -95,7 +96,6 @@ const RegisteredItemsList = ({ show, onClose }) => {
   const handleSaveEdit = async () => {
     try {
       const response = await axios.put(`${API_URL}/imobilizados-cadastrados/${editingItem.id}`, editForm);
-      
       const updatedList = items.map(item => 
         item.id === editingItem.id ? { ...item, ...response.data[0] } : item 
       );
@@ -103,7 +103,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
       setShowEditModal(false);
       fetchData(); 
     } catch (err) {
-      console.error(err);
+      console.error(err); 
       alert("Erro ao salvar alterações.");
     }
   };
@@ -144,7 +144,6 @@ const RegisteredItemsList = ({ show, onClose }) => {
           <Modal.Title>Itens Cadastrados no Inventário</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          
           <Form className="mb-3 p-3 bg-light border rounded">
             <Row className="g-2 align-items-end">
               <Col md={2}>
@@ -160,8 +159,15 @@ const RegisteredItemsList = ({ show, onClose }) => {
                 <Form.Control size="sm" type="text" placeholder="Ex: TI01" name="centroCusto" value={filters.centroCusto} onChange={handleFilterChange} />
               </Col>
               <Col md={3}>
-                <Form.Label className="small mb-1">Descrição</Form.Label>
-                <Form.Control size="sm" type="text" placeholder="Nome do item..." name="nome" value={filters.nome} onChange={handleFilterChange} />
+                <Form.Label className="small mb-1">Busca Geral</Form.Label>
+                <Form.Control 
+                    size="sm" 
+                    type="text" 
+                    placeholder="Desc, Inv, Série, Local, Crachá..." 
+                    name="termo" 
+                    value={filters.termo} 
+                    onChange={handleFilterChange} 
+                />
               </Col>
               <Col md={3} className="d-flex gap-2">
                 <Button variant="primary" size="sm" className="w-100" onClick={fetchData}>
@@ -205,39 +211,23 @@ const RegisteredItemsList = ({ show, onClose }) => {
            <Form>
              <Form.Group className="mb-3">
                <Form.Label>Descrição</Form.Label>
-               <Form.Control 
-                 type="text" 
-                 value={editForm.descricao || ''} 
-                 onChange={(e) => setEditForm({...editForm, descricao: e.target.value})} 
-               />
+               <Form.Control type="text" value={editForm.descricao || ''} onChange={(e) => setEditForm({...editForm, descricao: e.target.value})} />
              </Form.Group>
              <Form.Group className="mb-3">
                <Form.Label>Número de Série</Form.Label>
-               <Form.Control 
-                 type="text" 
-                 value={editForm.numero_serie || ''} 
-                 onChange={(e) => setEditForm({...editForm, numero_serie: e.target.value})} 
-               />
+               <Form.Control type="text" value={editForm.numero_serie || ''} onChange={(e) => setEditForm({...editForm, numero_serie: e.target.value})} />
              </Form.Group>
              <Row>
                <Col>
                  <Form.Group className="mb-3">
                    <Form.Label>Centro de Custo</Form.Label>
-                   <Form.Control 
-                     type="text" 
-                     value={editForm.centro_custo || ''} 
-                     onChange={(e) => setEditForm({...editForm, centro_custo: e.target.value})} 
-                   />
+                   <Form.Control type="text" value={editForm.centro_custo || ''} onChange={(e) => setEditForm({...editForm, centro_custo: e.target.value})} />
                  </Form.Group>
                </Col>
                <Col>
                  <Form.Group className="mb-3">
                    <Form.Label>Local</Form.Label>
-                   <Form.Control 
-                     type="text" 
-                     value={editForm.local || ''} 
-                     onChange={(e) => setEditForm({...editForm, local: e.target.value})} 
-                   />
+                   <Form.Control type="text" value={editForm.local || ''} onChange={(e) => setEditForm({...editForm, local: e.target.value})} />
                  </Form.Group>
                </Col>
              </Row>
