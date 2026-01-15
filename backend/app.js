@@ -375,7 +375,6 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
     }
 });
 
-
 app.get('/api/imobilizados-cadastrados', async (req, res) => {
     try {
         const { start_date, end_date, centro_custo, termo } = req.query;
@@ -390,7 +389,20 @@ app.get('/api/imobilizados-cadastrados', async (req, res) => {
         if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
 
         if (termo) {
-            query = query.or(`descricao.ilike.%${termo}%,codigo_inventario.ilike.%${termo}%,numero_serie.ilike.%${termo}%,local.ilike.%${termo}%,cracha.ilike.%${termo}%`);
+            const isNumeric = /^\d+$/.test(termo);
+            let orConditions = [];
+
+            orConditions.push(`descricao.ilike.%${termo}%`);
+            orConditions.push(`local.ilike.%${termo}%`);
+            orConditions.push(`numero_serie.ilike.%${termo}%`);
+
+            if (isNumeric) {
+                orConditions.push(`codigo_inventario.eq.${termo}`);
+                orConditions.push(`cracha.eq.${termo}`);
+            } else {
+            }
+
+            query = query.or(orConditions.join(','));
         }
 
         const { data, error } = await query;
