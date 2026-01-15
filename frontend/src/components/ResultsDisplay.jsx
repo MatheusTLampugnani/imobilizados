@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, Spinner, Alert, Accordion, Table, Button } from 'react-bootstrap';
 import { PencilSquare } from 'react-bootstrap-icons';
 import EditInventoryModal from './EditInventoryModal';
@@ -38,7 +38,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
   }
 
   if (!resultado || !resultado.itens || resultado.itens.length === 0) {
-    return <Alert variant="info" className="mt-3">Nenhum item encontrado para exibir.</Alert>;
+    return null; 
   }
 
   const EditButton = ({ onClick, title }) => (
