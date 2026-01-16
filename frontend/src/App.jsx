@@ -383,6 +383,8 @@ function App() {
           collectedItems={inventario}
           expectedItems={expectedItems}
           inventoryCc={inventarioCentroCusto}
+          centroCusto={inventoryCentroCusto}
+          user={currentUser?.cracha}
         />
       )}
 
