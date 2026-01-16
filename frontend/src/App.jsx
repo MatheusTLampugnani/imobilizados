@@ -180,7 +180,7 @@ function App() {
     }
   };
 
-const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLocal, savedData) => {
+  const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLocal, savedData) => {
     if (savedData) {
         const newItem = {
             id: savedData.id,
@@ -211,7 +211,7 @@ const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLoca
           "codigo_imobilizado": "PENDENTE",
           "Local": itemLocal || inventarioLocal,
           notFound: true,
-          pendingSave: true, 
+          pendingSave: true,
           rawNewData: {
             descricao: description,
             codigo_inventario: inventoryCode,
@@ -411,7 +411,7 @@ const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLoca
         onConfirm={handleConfirmAddItem}
         itemCode={itemCodeToAdd}
         defaultLocal={inventarioLocal}
-        centroCusto={inventarioCentroCusto}
+        centroCusto={inventarioCentroCusto} 
         user={currentUser?.cracha}
       />
 
