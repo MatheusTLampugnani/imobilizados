@@ -180,33 +180,50 @@ function App() {
     }
   };
 
-  const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLocal) => {
-    const tempId = `temp_${Date.now()}`;
-
-    const itemParaLista = {
-      id: tempId,
-      "Subnº": 0,
-      "Data": new Date().toISOString().split('T')[0],
-      "Descrição": description,
-      "Inventário": inventoryCode,
-      "Série": serialNumber,
-      "CentroCusto": inventarioCentroCusto,
-      "CentroCustoNome": "Novo (Aguardando Gravação)",
-      "codigo_imobilizado": "PENDENTE",
-      "Local": itemLocal || inventarioLocal,
-      notFound: true,
-      pendingSave: true,
-      rawNewData: {
-        descricao: description,
-        codigo_inventario: inventoryCode,
-        numero_serie: serialNumber,
-        centro_custo: inventarioCentroCusto,
-        user: currentUser.cracha,
-        local: itemLocal || inventarioLocal
-      }
-    };
-
-    setInventario(prevInventario => [itemParaLista, ...prevInventario]);
+const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLocal, savedData) => {
+    if (savedData) {
+        const newItem = {
+            id: savedData.id,
+            "Subnº": 0,
+            "Data": new Date().toISOString().split('T')[0],
+            "Descrição": description,
+            "Inventário": inventoryCode,
+            "Série": serialNumber,
+            "CentroCusto": inventarioCentroCusto,
+            "CentroCustoNome": "Novo (Salvo)",
+            "codigo_imobilizado": savedData.codigo_imobilizado || "NOVO",
+            "Local": itemLocal || inventarioLocal,
+            notFound: true,
+            pendingSave: false,
+        };
+        setInventario(prev => [newItem, ...prev]);
+    } else {
+        const tempId = `temp_${Date.now()}`;
+        const itemParaLista = {
+          id: tempId,
+          "Subnº": 0,
+          "Data": new Date().toISOString().split('T')[0],
+          "Descrição": description,
+          "Inventário": inventoryCode,
+          "Série": serialNumber,
+          "CentroCusto": inventarioCentroCusto,
+          "CentroCustoNome": "Novo (Aguardando)",
+          "codigo_imobilizado": "PENDENTE",
+          "Local": itemLocal || inventarioLocal,
+          notFound: true,
+          pendingSave: true, 
+          rawNewData: {
+            descricao: description,
+            codigo_inventario: inventoryCode,
+            numero_serie: serialNumber,
+            centro_custo: inventarioCentroCusto,
+            user: currentUser.cracha,
+            local: itemLocal || inventarioLocal
+          }
+        };
+        setInventario(prev => [itemParaLista, ...prev]);
+    }
+    
     setShowAddItemModal(false);
   };
 
@@ -394,6 +411,8 @@ function App() {
         onConfirm={handleConfirmAddItem}
         itemCode={itemCodeToAdd}
         defaultLocal={inventarioLocal}
+        centroCusto={inventarioCentroCusto}
+        user={currentUser?.cracha}
       />
 
       <RegisteredItemsList 
