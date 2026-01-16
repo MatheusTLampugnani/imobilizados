@@ -27,15 +27,38 @@
    max-width: 960px;
    margin: 0 auto;
    padding: 1rem;
-   border-radius: 0.75rem; /* Opcional: Bordas arredondadas no container */
-   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Opcional: Sombra no container */
+   border-radius: 0.75rem; 
+   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
  }
- @media (min-width: 768px) {
-   .app-container {
-     padding-top: 2rem;
-     padding-bottom: 2rem;
-   }
- }
+
+ @media (max-width: 768px) {
+  .table, .accordion-button {
+    font-size: 0.8rem !important; /* ~12.8px */
+  }
+
+  .table td, .table th {
+    padding: 0.25rem 0.3rem !important;
+    vertical-align: middle;
+  }
+
+  .btn-link {
+    padding: 0;
+    font-size: 0.9rem;
+  }
+  
+  .accordion-header button {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .hide-on-mobile {
+    display: none;
+  }
+  
+  .container {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
 
  h1, .h1 {
    font-size: 1.75rem;
@@ -170,3 +193,4 @@
     transform: translateY(0);
   }
 }
+
