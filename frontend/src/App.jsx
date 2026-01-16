@@ -400,7 +400,7 @@ function App() {
           collectedItems={inventario}
           expectedItems={expectedItems}
           inventoryCc={inventarioCentroCusto}
-          centroCusto={inventoryCentroCusto}
+          centroCusto={inventarioCentroCusto} 
           user={currentUser?.cracha}
         />
       )}
