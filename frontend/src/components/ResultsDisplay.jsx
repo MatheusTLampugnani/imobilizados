@@ -3,7 +3,7 @@ import { Card, Spinner, Alert, Accordion, Table, Button } from 'react-bootstrap'
 import { PencilSquare } from 'react-bootstrap-icons';
 import EditInventoryModal from './EditInventoryModal';
 
-const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
+const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editType, setEditType] = useState('inventory');
@@ -135,12 +135,14 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh }) => {
           </Accordion>
         </Card.Body>
       </Card>
+      
       <EditInventoryModal
         show={showEditModal}
         onClose={handleCloseModal}
         item={editingItem}
         editType={editType} 
         onUpdateSuccess={handleUpdateSuccess}
+        currentUser={currentUser} 
       />
     </>
   );
