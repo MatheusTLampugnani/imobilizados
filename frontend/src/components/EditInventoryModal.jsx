@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Button, Spinner } from 'react-bootstrap';
+import { FileEarmarkPdf } from 'react-bootstrap-icons';
 import axios from 'axios';
 import { API_URL } from '../apiConfig';
 import imgSuccess from '../assets/verificado.png';
 import imgError from '../assets/cruz.png';
+import { geradorPDFbaixa } from '../utils/geradorPDFbaixa';
 
-const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) => {
+const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, currentUser }) => {
   const [newValue, setNewValue] = useState('');
   const [cracha, setCracha] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -37,7 +39,7 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
           title: 'Editar Número de Série',
           label: 'Nova Série',
           currentLabel: 'Série Atual',
-          currentValue: item?.['Série'] || item?.numero_serie, 
+          currentValue: item?.['Série'] || item?.Serie || item?.numero_serie || item?.['Subnº'], 
           endpoint: '/imobilizado/update-serial',
           payloadKey: 'newSerial'
         };
@@ -50,12 +52,12 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
 
   useEffect(() => {
     if (show) {
-        setNewValue('');
+        setNewValue(config.currentValue || '');
         setCracha('');
         setViewState('form');
         setError('');
     }
-  }, [show, editType]);
+  }, [show, editType, item]); 
 
   const handleUpdate = async () => {
     if (!newValue && editType !== 'serial') { 
@@ -95,6 +97,11 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleBaixa = () => {
+    const userForReport = currentUser || { cracha: cracha, nome: 'Usuário' };
+    geradorPDFbaixa(item, userForReport);
   };
 
   const resetModal = () => {
@@ -167,13 +174,19 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
       </Modal.Body>
       
       {viewState === 'form' && (
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleCloseInternal}>
-              Cancelar
+          <Modal.Footer className="justify-content-between">
+            <Button variant="outline-dark" onClick={handleBaixa} title="Gera termo de baixa em PDF">
+               <FileEarmarkPdf className="me-2"/> Dar Baixa
             </Button>
-            <Button variant="danger" onClick={handleUpdate} disabled={isUpdating}>
-              {isUpdating ? <Spinner as="span" animation="border" size="sm" /> : 'Confirmar e Salvar'}
-            </Button>
+
+            <div className="d-flex gap-2">
+                <Button variant="secondary" onClick={handleCloseInternal}>
+                Cancelar
+                </Button>
+                <Button variant="danger" onClick={handleUpdate} disabled={isUpdating}>
+                {isUpdating ? <Spinner as="span" animation="border" size="sm" /> : 'Confirmar e Salvar'}
+                </Button>
+            </div>
           </Modal.Footer>
       )}
     </Modal>
