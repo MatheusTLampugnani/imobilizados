@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DataTable from 'react-data-table-component';
-import { Modal, Button, Spinner, Alert, Form, Row, Col } from 'react-bootstrap';
-import { FaTrash, FaEdit, FaFileExcel, FaSearch } from 'react-icons/fa'; 
+import { Modal, Button, Spinner, Alert, Form, Row, Col, InputGroup, Card } from 'react-bootstrap';
+import { Calendar, Building, Search, FileEarmarkSpreadsheet, PencilSquare, Trash, ListCheck, CardText, GeoAlt, Hash } from 'react-bootstrap-icons';
 import { API_URL } from '../apiConfig';
 
 const RegisteredItemsList = ({ show, onClose }) => {
@@ -21,6 +21,25 @@ const RegisteredItemsList = ({ show, onClose }) => {
   const [editingItem, setEditingItem] = useState(null);
   const [editForm, setEditForm] = useState({});
 
+  const customStyles = {
+    headCells: {
+      style: {
+        backgroundColor: '#f8f9fa',
+        color: '#495057',
+        fontWeight: 'bold',
+        fontSize: '0.85rem',
+        textTransform: 'uppercase',
+        borderBottom: '2px solid #dee2e6',
+      },
+    },
+    rows: {
+      style: {
+        fontSize: '0.85rem',
+        minHeight: '50px', 
+      },
+    },
+  };
+
   const fetchData = async () => {
     setLoading(true);
     setError('');
@@ -35,7 +54,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
       setItems(response.data);
     } catch (err) {
       console.error(err);
-      setError('Erro ao carregar a lista. Verifique se o backend está rodando.');
+      setError('Erro ao carregar a lista. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -114,23 +133,23 @@ const RegisteredItemsList = ({ show, onClose }) => {
 
   const columns = [
     { name: 'Data', selector: row => new Date(row.created_at).toLocaleDateString('pt-BR'), sortable: true, width: '100px' },
-    { name: 'Descrição', selector: row => row.descricao, sortable: true, wrap: true },
-    { name: 'Inventário', selector: row => row.codigo_inventario, sortable: true, width: '120px' },
-    { name: 'Série', selector: row => row.numero_serie, sortable: true, width: '120px' },
-    { name: 'C. Custo', selector: row => row.centro_custo, sortable: true, width: '100px' },
-    { name: 'Local', selector: row => row.local, sortable: true, width: '100px' },
-    { name: 'Resp.', selector: row => row.cracha, sortable: true, width: '100px' },
+    { name: 'Descrição', selector: row => row.descricao, sortable: true, wrap: true, grow: 2 },
+    { name: 'Inventário', selector: row => row.codigo_inventario, sortable: true, width: '110px' },
+    { name: 'Série', selector: row => row.numero_serie, sortable: true, width: '110px' },
+    { name: 'C. Custo', selector: row => row.centro_custo, sortable: true, width: '90px', center: true },
+    { name: 'Local', selector: row => row.local, sortable: true, width: '120px' },
+    { name: 'Resp.', selector: row => row.cracha, sortable: true, width: '90px', center: true },
     {
       name: 'Ações',
       button: true, 
-      width: '120px',
+      width: '100px',
       cell: (row) => (
         <div className="d-flex gap-2">
-          <Button variant="outline-primary" size="sm" onClick={() => handleEditClick(row)} title="Editar">
-            <FaEdit />
+          <Button variant="outline-primary" size="sm" className="px-2" onClick={() => handleEditClick(row)} title="Editar">
+            <PencilSquare />
           </Button>
-          <Button variant="outline-danger" size="sm" onClick={() => handleDelete(row.id)} title="Excluir">
-            <FaTrash />
+          <Button variant="outline-danger" size="sm" className="px-2" onClick={() => handleDelete(row.id)} title="Excluir">
+            <Trash />
           </Button>
         </div>
       )
@@ -139,103 +158,158 @@ const RegisteredItemsList = ({ show, onClose }) => {
 
   return (
     <>
-      <Modal show={show} onHide={onClose} size="xl" centered>
-        <Modal.Header closeButton className="bg-dark text-white">
-          <Modal.Title>Itens Cadastrados no Inventário</Modal.Title>
+      <Modal show={show} onHide={onClose} size="xl" centered backdrop="static">
+        <Modal.Header closeButton className="bg-danger text-white border-0 shadow-sm">
+          <Modal.Title className="d-flex align-items-center gap-2">
+            <ListCheck size={24} /> Itens Cadastrados (Novos)
+          </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          <Form className="mb-3 p-3 bg-light border rounded">
-            <Row className="g-2 align-items-end">
-              <Col md={2}>
-                <Form.Label className="small mb-1">Início</Form.Label>
-                <Form.Control size="sm" type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} />
-              </Col>
-              <Col md={2}>
-                <Form.Label className="small mb-1">Fim</Form.Label>
-                <Form.Control size="sm" type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} />
-              </Col>
-              <Col md={2}>
-                <Form.Label className="small mb-1">C. Custo</Form.Label>
-                <Form.Control size="sm" type="text" placeholder="Ex: TI01" name="centroCusto" value={filters.centroCusto} onChange={handleFilterChange} />
-              </Col>
-              <Col md={3}>
-                <Form.Label className="small mb-1">Busca Geral</Form.Label>
-                <Form.Control 
-                    size="sm" 
-                    type="text" 
-                    placeholder="Desc, Inv, Série, Local, Crachá..." 
-                    name="termo" 
-                    value={filters.termo} 
-                    onChange={handleFilterChange} 
-                />
-              </Col>
-              <Col md={3} className="d-flex gap-2">
-                <Button variant="primary" size="sm" className="w-100" onClick={fetchData}>
-                  <FaSearch /> Filtrar
-                </Button>
-                <Button variant="success" size="sm" onClick={handleExport} title="Baixar Excel">
-                  <FaFileExcel /> Excel
-                </Button>
-              </Col>
-            </Row>
-          </Form>
-
-          {error && <Alert variant="danger">{error}</Alert>}
-          
-          {loading ? (
-            <div className="text-center p-5"><Spinner animation="border" variant="danger" /></div>
-          ) : (
-            <DataTable
-              columns={columns}
-              data={items}
-              pagination
-              paginationComponentOptions={{ rowsPerPageText: 'Linhas:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
-              highlightOnHover
-              striped
-              responsive
-              dense 
-              noDataComponent="Nenhum registro encontrado com os filtros atuais."
-            />
-          )}
+        
+        <Modal.Body className="bg-light">
+          <Card className="mb-3 border-0 shadow-sm">
+            <Card.Body className="p-3">
+              <h6 className="text-secondary small fw-bold text-uppercase mb-3">
+                <Search className="me-1" /> Filtros de Pesquisa
+              </h6>
+              <Row className="g-3">
+                <Col md={3} sm={6}>
+                  <Form.Label className="small fw-bold text-muted mb-1">DATA INICIAL</Form.Label>
+                  <InputGroup size="sm">
+                    <InputGroup.Text className="bg-white"><Calendar /></InputGroup.Text>
+                    <Form.Control type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} />
+                  </InputGroup>
+                </Col>
+                <Col md={3} sm={6}>
+                  <Form.Label className="small fw-bold text-muted mb-1">DATA FINAL</Form.Label>
+                  <InputGroup size="sm">
+                    <InputGroup.Text className="bg-white"><Calendar /></InputGroup.Text>
+                    <Form.Control type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} />
+                  </InputGroup>
+                </Col>
+                <Col md={2} sm={6}>
+                  <Form.Label className="small fw-bold text-muted mb-1">CENTRO DE CUSTO</Form.Label>
+                  <InputGroup size="sm">
+                    <InputGroup.Text className="bg-white"><Building /></InputGroup.Text>
+                    <Form.Control 
+                        type="text" 
+                        placeholder="Ex: TI01" 
+                        name="centroCusto" 
+                        value={filters.centroCusto} 
+                        onChange={handleFilterChange} 
+                    />
+                  </InputGroup>
+                </Col>
+                <Col md={4} sm={6}>
+                  <Form.Label className="small fw-bold text-muted mb-1">BUSCA RÁPIDA</Form.Label>
+                  <InputGroup size="sm">
+                    <InputGroup.Text className="bg-white"><Search /></InputGroup.Text>
+                    <Form.Control 
+                        type="text" 
+                        placeholder="Nome, Série, Crachá, Local..." 
+                        name="termo" 
+                        value={filters.termo} 
+                        onChange={handleFilterChange} 
+                    />
+                  </InputGroup>
+                </Col>
+                <Col md={12} className="d-flex justify-content-end gap-2 mt-3 pt-2 border-top">
+                    <Button variant="light" size="sm" onClick={() => setFilters({ startDate: '', endDate: '', centroCusto: '', termo: '' })}>
+                        Limpar Filtros
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={fetchData} className="px-4">
+                        <Search className="me-1" /> Pesquisar
+                    </Button>
+                    <Button variant="success" size="sm" onClick={handleExport} className="px-4">
+                        <FileEarmarkSpreadsheet className="me-1" /> Exportar Excel
+                    </Button>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+          <Card className="border-0 shadow-sm">
+             <Card.Body className="p-0 overflow-hidden rounded">
+                {error && <Alert variant="danger" className="m-3">{error}</Alert>}
+                
+                {loading ? (
+                    <div className="text-center p-5">
+                        <Spinner animation="border" variant="danger" />
+                        <p className="mt-2 text-muted small">Carregando...</p>
+                    </div>
+                ) : (
+                    <DataTable
+                      columns={columns}
+                      data={items}
+                      pagination
+                      paginationComponentOptions={{ rowsPerPageText: 'Registros:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
+                      highlightOnHover
+                      striped
+                      responsive
+                      dense
+                      customStyles={customStyles}
+                      noDataComponent={<div className="p-5 text-center text-muted">Nenhum registro encontrado.</div>}
+                    />
+                )}
+             </Card.Body>
+          </Card>
         </Modal.Body>
-        <Modal.Footer>
+        <Modal.Footer className="bg-white">
           <Button variant="secondary" onClick={onClose}>Fechar</Button>
         </Modal.Footer>
       </Modal>
-
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Editar Item</Modal.Title>
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered backdrop="static">
+        <Modal.Header closeButton className="bg-primary text-white border-0 shadow-sm">
+          <Modal.Title className="h6 mb-0 d-flex align-items-center">
+            <PencilSquare className="me-2"/> Editar Item
+          </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="p-4">
            <Form>
              <Form.Group className="mb-3">
-               <Form.Label>Descrição</Form.Label>
-               <Form.Control type="text" value={editForm.descricao || ''} onChange={(e) => setEditForm({...editForm, descricao: e.target.value})} />
+               <Form.Label className="small fw-bold text-secondary">DESCRIÇÃO DO ITEM</Form.Label>
+               <InputGroup>
+                  <InputGroup.Text className="bg-light"><CardText /></InputGroup.Text>
+                  <Form.Control 
+                    as="textarea" 
+                    rows={2}
+                    value={editForm.descricao || ''} 
+                    onChange={(e) => setEditForm({...editForm, descricao: e.target.value})} 
+                  />
+               </InputGroup>
              </Form.Group>
-             <Form.Group className="mb-3">
-               <Form.Label>Número de Série</Form.Label>
-               <Form.Control type="text" value={editForm.numero_serie || ''} onChange={(e) => setEditForm({...editForm, numero_serie: e.target.value})} />
-             </Form.Group>
+
              <Row>
-               <Col>
-                 <Form.Group className="mb-3">
-                   <Form.Label>Centro de Custo</Form.Label>
-                   <Form.Control type="text" value={editForm.centro_custo || ''} onChange={(e) => setEditForm({...editForm, centro_custo: e.target.value})} />
-                 </Form.Group>
-               </Col>
-               <Col>
-                 <Form.Group className="mb-3">
-                   <Form.Label>Local</Form.Label>
-                   <Form.Control type="text" value={editForm.local || ''} onChange={(e) => setEditForm({...editForm, local: e.target.value})} />
-                 </Form.Group>
-               </Col>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label className="small fw-bold text-secondary">Nº DE SÉRIE</Form.Label>
+                        <InputGroup>
+                            <InputGroup.Text className="bg-light"><Hash /></InputGroup.Text>
+                            <Form.Control type="text" value={editForm.numero_serie || ''} onChange={(e) => setEditForm({...editForm, numero_serie: e.target.value})} />
+                        </InputGroup>
+                    </Form.Group>
+                </Col>
+                <Col md={6}>
+                    <Form.Group className="mb-3">
+                        <Form.Label className="small fw-bold text-secondary">CENTRO DE CUSTO</Form.Label>
+                        <InputGroup>
+                            <InputGroup.Text className="bg-light"><Building /></InputGroup.Text>
+                            <Form.Control type="text" value={editForm.centro_custo || ''} onChange={(e) => setEditForm({...editForm, centro_custo: e.target.value})} />
+                        </InputGroup>
+                    </Form.Group>
+                </Col>
              </Row>
+
+             <Form.Group className="mb-2">
+               <Form.Label className="small fw-bold text-secondary">LOCALIZAÇÃO</Form.Label>
+               <InputGroup>
+                  <InputGroup.Text className="bg-light"><GeoAlt /></InputGroup.Text>
+                  <Form.Control type="text" value={editForm.local || ''} onChange={(e) => setEditForm({...editForm, local: e.target.value})} />
+               </InputGroup>
+             </Form.Group>
            </Form>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowEditModal(false)}>Cancelar</Button>
-          <Button variant="primary" onClick={handleSaveEdit}>Salvar</Button>
+        <Modal.Footer className="bg-light border-top-0">
+          <Button variant="outline-secondary" onClick={() => setShowEditModal(false)}>Cancelar</Button>
+          <Button variant="primary" onClick={handleSaveEdit} className="px-4 shadow-sm">Salvar</Button>
         </Modal.Footer>
       </Modal>
     </>

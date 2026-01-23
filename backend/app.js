@@ -31,6 +31,25 @@ function formatarValor(valor) {
     return str;
 }
 
+async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo) {
+    try {
+        const detalhes = `Valor Antigo: ${valorAntigo || 'Vazio'}; Novo Valor: ${valorNovo}`;
+        
+        const { error } = await supabase
+            .from('logs_alteracoes')
+            .insert([{
+                item_id: itemId,
+                usuario: usuario,
+                tipo_alteracao: tipo,
+                detalhes: detalhes
+            }]);
+
+        if (error) console.error('Erro ao salvar log:', error);
+    } catch (err) {
+        console.error('Erro interno ao salvar log:', err);
+    }
+}
+
 app.get('/api/centro-custo/validate/:cc', async (req, res) => {
   const { cc } = req.params;
   if (!cc) return res.status(400).json({ isValid: false, message: 'Centro de Custo não fornecido.' });
@@ -297,14 +316,17 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
             .single();
         
         if (fetchError) throw fetchError;
+        const valorAntigo = currentItem.codigo_inventario;
 
         const { error: updateError } = await supabase.from('imobilizados').update({
             codigo_inventario: newCode,
-            codigo_inventario_antigo: currentItem.codigo_inventario,
+            codigo_inventario_antigo: valorAntigo,
             usuario_atualizacao: user || 'Sistema'
         }).eq('id', itemId);
         
         if (updateError) throw updateError;
+
+        await registrarLog(itemId, user, 'Alteração de Inventário', valorAntigo, newCode);
 
         return res.status(200).json({ message: 'Inventário atualizado com sucesso!' });
     } catch(error) {
@@ -328,14 +350,17 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
             .single();
             
         if (fetchError) throw fetchError;
+        const valorAntigo = currentItem.centro_custo;
 
         const { error: updateError } = await supabase.from('imobilizados').update({
             centro_custo: newCostCenter,
-            centro_custo_antigo: currentItem.centro_custo,
+            centro_custo_antigo: valorAntigo,
             usuario_atualizacao: user || 'Sistema'
         }).eq('id', itemId);
         
         if (updateError) throw updateError;
+
+        await registrarLog(itemId, user, 'Alteração de Centro de Custo', valorAntigo, newCostCenter);
 
         return res.status(200).json({ message: 'Centro de Custo atualizado com sucesso!' });
     } catch(error) {
@@ -359,14 +384,17 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
             .single();
             
         if (fetchError) throw fetchError;
+        const valorAntigo = currentItem.numero_serie;
 
         const { error: updateError } = await supabase.from('imobilizados').update({
             numero_serie: newSerial,
-            numero_serie_antigo: currentItem.numero_serie,
+            numero_serie_antigo: valorAntigo,
             usuario_atualizacao: user || 'Sistema'
         }).eq('id', itemId);
         
         if (updateError) throw updateError;
+
+        await registrarLog(itemId, user, 'Alteração de N. Série', valorAntigo, newSerial);
 
         return res.status(200).json({ message: 'Número de Série atualizado com sucesso!' });
     } catch(error) {
