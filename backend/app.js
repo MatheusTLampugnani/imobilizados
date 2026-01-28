@@ -31,7 +31,7 @@ function formatarValor(valor) {
     return str;
 }
 
-async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo) {
+async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo, codImob, sub, dataInc) {
     try {
         const detalhes = `Valor Antigo: ${valorAntigo || 'Vazio'}; Novo Valor: ${valorNovo}`;
         
@@ -43,7 +43,7 @@ async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo) {
                 tipo_alteracao: tipo,
                 detalhes: detalhes,
                 codigo_imobilizado: codImob,
-                subnumero: subscribe,
+                subnumero: sub,
                 data_incorporacao: dataInc
             }]);
 
