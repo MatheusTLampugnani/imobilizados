@@ -31,7 +31,7 @@ function formatarValor(valor) {
     return str;
 }
 
-async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo) {
+async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo, codImob, sub, dataInc) {
     try {
         const detalhes = `Valor Antigo: ${valorAntigo || 'Vazio'}; Novo Valor: ${valorNovo}`;
         
@@ -41,7 +41,10 @@ async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo) {
                 item_id: itemId,
                 usuario: usuario,
                 tipo_alteracao: tipo,
-                detalhes: detalhes
+                detalhes: detalhes,
+                codigo_imobilizado: codImob,
+                subnumero: sub,
+                data_incorporacao: dataInc
             }]);
 
         if (error) console.error('Erro ao salvar log:', error);
@@ -305,19 +308,16 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
         const { itemId, newInventoryCode, user } = req.body;
         const newCode = formatarValor(newInventoryCode);
 
-        if (!itemId || !newCode) {
-            return res.status(400).json({ message: 'Dados inválidos fornecidos.' });
-        }
+        if (!itemId || !newCode) return res.status(400).json({ message: 'Dados inválidos.' });
 
         const { data: currentItem, error: fetchError } = await supabase
             .from('imobilizados')
-            .select('codigo_inventario')
+            .select('codigo_inventario, codigo_imobilizado, subnumero, data_incorporacao') 
             .eq('id', itemId)
             .single();
         
         if (fetchError) throw fetchError;
         const valorAntigo = currentItem.codigo_inventario;
-
         const { error: updateError } = await supabase.from('imobilizados').update({
             codigo_inventario: newCode,
             codigo_inventario_antigo: valorAntigo,
@@ -326,12 +326,15 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
         
         if (updateError) throw updateError;
 
-        await registrarLog(itemId, user, 'Alteração de Inventário', valorAntigo, newCode);
+        await registrarLog(
+            itemId, user, 'Alteração de Inventário', valorAntigo, newCode,
+            currentItem.codigo_imobilizado, currentItem.subnumero, currentItem.data_incorporacao
+        );
 
         return res.status(200).json({ message: 'Inventário atualizado com sucesso!' });
     } catch(error) {
-        console.error("ERRO AO ATUALIZAR INVENTÁRIO: ", error);
-        return res.status(500).json({ message: `Erro no servidor: ${error.message}`});
+        console.error("ERRO UPDATE INV:", error);
+        return res.status(500).json({ message: error.message });
     }
 });
 
@@ -339,19 +342,16 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
     try {
         const { itemId, newCostCenter, user } = req.body;
 
-        if (!itemId || !newCostCenter) {
-            return res.status(400).json({ message: 'Dados inválidos fornecidos.' });
-        }
+        if (!itemId || !newCostCenter) return res.status(400).json({ message: 'Dados inválidos.' });
 
         const { data: currentItem, error: fetchError } = await supabase
             .from('imobilizados')
-            .select('centro_custo') 
+            .select('centro_custo, codigo_imobilizado, subnumero, data_incorporacao') 
             .eq('id', itemId)
             .single();
             
         if (fetchError) throw fetchError;
         const valorAntigo = currentItem.centro_custo;
-
         const { error: updateError } = await supabase.from('imobilizados').update({
             centro_custo: newCostCenter,
             centro_custo_antigo: valorAntigo,
@@ -360,12 +360,15 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
         
         if (updateError) throw updateError;
 
-        await registrarLog(itemId, user, 'Alteração de Centro de Custo', valorAntigo, newCostCenter);
+        await registrarLog(
+            itemId, user, 'Alteração de Centro de Custo', valorAntigo, newCostCenter,
+            currentItem.codigo_imobilizado, currentItem.subnumero, currentItem.data_incorporacao
+        );
 
         return res.status(200).json({ message: 'Centro de Custo atualizado com sucesso!' });
     } catch(error) {
-        console.error("ERRO AO ATUALIZAR CENTRO DE CUSTO: ", error);
-        return res.status(500).json({ message: `Erro no servidor: ${error.message}`});
+        console.error("ERRO UPDATE CC:", error);
+        return res.status(500).json({ message: error.message });
     }
 });
 
@@ -373,19 +376,16 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
     try {
         const { itemId, newSerial, user } = req.body;
 
-        if (!itemId) {
-            return res.status(400).json({ message: 'ID do item não fornecido.' });
-        }
+        if (!itemId) return res.status(400).json({ message: 'ID não fornecido.' });
 
         const { data: currentItem, error: fetchError } = await supabase
             .from('imobilizados')
-            .select('numero_serie') 
+            .select('numero_serie, codigo_imobilizado, subnumero, data_incorporacao') 
             .eq('id', itemId)
             .single();
             
         if (fetchError) throw fetchError;
         const valorAntigo = currentItem.numero_serie;
-
         const { error: updateError } = await supabase.from('imobilizados').update({
             numero_serie: newSerial,
             numero_serie_antigo: valorAntigo,
@@ -394,12 +394,15 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
         
         if (updateError) throw updateError;
 
-        await registrarLog(itemId, user, 'Alteração de N. Série', valorAntigo, newSerial);
+        await registrarLog(
+            itemId, user, 'Alteração de N. Série', valorAntigo, newSerial,
+            currentItem.codigo_imobilizado, currentItem.subnumero, currentItem.data_incorporacao
+        );
 
         return res.status(200).json({ message: 'Número de Série atualizado com sucesso!' });
     } catch(error) {
-        console.error("ERRO AO ATUALIZAR SÉRIE: ", error);
-        return res.status(500).json({ message: `Erro no servidor: ${error.message}`});
+        console.error("ERRO UPDATE SERIAL:", error);
+        return res.status(500).json({ message: error.message });
     }
 });
 
