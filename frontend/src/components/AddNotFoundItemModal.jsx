@@ -1,34 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner, Row, Col, InputGroup } from 'react-bootstrap';
-import { BoxSeam, UpcScan, GeoAlt, ListTask, PersonBadge } from 'react-bootstrap-icons';
+import { BoxSeam, UpcScan, GeoAlt, ListTask, PersonBadge } from 'react-bootstrap-icons'; 
 import axios from 'axios';
 import { API_URL } from '../apiConfig';
+import { locationsData } from '../utils/locais';
 
 const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal, centroCusto, user }) => {
   const [description, setDescription] = useState('');
   const [inventoryCode, setInventoryCode] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
-  const [local, setLocal] = useState(''); 
-  
+  const [selectedSector, setSelectedSector] = useState('');
+  const [selectedSubLocal, setSelectedSubLocal] = useState('');
+  const [availableSubLocals, setAvailableSubLocals] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (show) {
       if (itemCode) setInventoryCode(itemCode);
-      if (defaultLocal) setLocal(defaultLocal);
+      setSelectedSector('');
+      setSelectedSubLocal('');
+      setAvailableSubLocals([]);
       setError('');
       setIsLoading(false);
     }
-  }, [show, itemCode, defaultLocal]);
+  }, [show, itemCode]);
+
+  const handleSectorChange = (e) => {
+    const sector = e.target.value;
+    setSelectedSector(sector);
+    if (sector && locationsData[sector]) {
+      setAvailableSubLocals(locationsData[sector]);
+      setSelectedSubLocal('');
+    } else {
+      setAvailableSubLocals([]);
+      setSelectedSubLocal('');
+    }
+  };
 
   const handleConfirm = async () => {
     if (!description.trim()) return setError('A descrição é obrigatória.');
     if (!inventoryCode.trim()) return setError('O código de inventário é obrigatório.');
     if (!centroCusto) return setError('Centro de Custo não informado.');
+    if (!selectedSector || !selectedSubLocal) return setError('Selecione o Local e o Sub-local.');
 
     setIsLoading(true);
     setError('');
+
+    const finalLocalString = `${selectedSector} - ${selectedSubLocal}`;
 
     try {
       const payload = {
@@ -37,12 +56,12 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal
         centro_custo: centroCusto,
         user: user || 'Sistema',
         numero_serie: serialNumber,
-        local: local
+        local: finalLocalString 
       };
 
       const response = await axios.post(`${API_URL}/imobilizado`, payload);
 
-      if (onConfirm) onConfirm(description, inventoryCode, serialNumber, local, response.data);
+      if (onConfirm) onConfirm(description, inventoryCode, serialNumber, finalLocalString, response.data);
       handleClose();
 
     } catch (err) {
@@ -99,7 +118,6 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal
                 </InputGroup>
               </Form.Group>
             </Col>
-
             <Col md={6}>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-bold text-secondary small">Nº DE SÉRIE</Form.Label>
@@ -135,19 +153,30 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal
             </Col>
 
             <Col md={12}>
-              <Form.Group className="mb-2">
-                <Form.Label className="fw-bold text-secondary small">LOCALIZAÇÃO FÍSICA</Form.Label>
-                <InputGroup>
+               <Form.Label className="fw-bold text-secondary small">LOCALIZAÇÃO FÍSICA</Form.Label>
+               <InputGroup className="mb-2">
                   <InputGroup.Text className="bg-light"><GeoAlt /></InputGroup.Text>
-                  <Form.Control
-                    type="text"
-                    value={local}
-                    placeholder='Ex: Sala de Reuniões 02'
-                    onChange={(e) => setLocal(e.target.value)}
+                  <Form.Select 
+                    value={selectedSector} 
+                    onChange={handleSectorChange}
                     disabled={isLoading}
-                  />
-                </InputGroup>
-              </Form.Group>
+                  >
+                    <option value="">Selecione o Setor...</option>
+                    {Object.keys(locationsData).map((sector) => (
+                      <option key={sector} value={sector}>{sector}</option>
+                    ))}
+                  </Form.Select>
+                  <Form.Select 
+                    value={selectedSubLocal} 
+                    onChange={(e) => setSelectedSubLocal(e.target.value)}
+                    disabled={!selectedSector || isLoading}
+                  >
+                    <option value="">Selecione o Ambiente...</option>
+                    {availableSubLocals.map((sub, index) => (
+                      <option key={index} value={sub}>{sub}</option>
+                    ))}
+                  </Form.Select>
+               </InputGroup>
             </Col>
           </Row>
         </div>
