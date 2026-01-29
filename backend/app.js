@@ -43,7 +43,7 @@ async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo, codIm
                 tipo_alteracao: tipo,
                 detalhes: detalhes,
                 codigo_imobilizado: codImob,
-                subnumero: sub,
+                sub_numero: sub,
                 data_incorporacao: dataInc
             }]);
 
@@ -312,7 +312,7 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
 
         const { data: currentItem, error: fetchError } = await supabase
             .from('imobilizados')
-            .select('codigo_inventario, codigo_imobilizado, subnumero, data_incorporacao') 
+            .select('codigo_inventario, codigo_imobilizado, sub_numero, data_incorporacao') 
             .eq('id', itemId)
             .single();
         
@@ -328,7 +328,7 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
 
         await registrarLog(
             itemId, user, 'Alteração de Inventário', valorAntigo, newCode,
-            currentItem.codigo_imobilizado, currentItem.subnumero, currentItem.data_incorporacao
+            currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
         );
 
         return res.status(200).json({ message: 'Inventário atualizado com sucesso!' });
@@ -346,7 +346,7 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
 
         const { data: currentItem, error: fetchError } = await supabase
             .from('imobilizados')
-            .select('centro_custo, codigo_imobilizado, subnumero, data_incorporacao') 
+            .select('centro_custo, codigo_imobilizado, sub_numero, data_incorporacao') 
             .eq('id', itemId)
             .single();
             
@@ -362,7 +362,7 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
 
         await registrarLog(
             itemId, user, 'Alteração de Centro de Custo', valorAntigo, newCostCenter,
-            currentItem.codigo_imobilizado, currentItem.subnumero, currentItem.data_incorporacao
+            currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
         );
 
         return res.status(200).json({ message: 'Centro de Custo atualizado com sucesso!' });
@@ -380,7 +380,7 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
 
         const { data: currentItem, error: fetchError } = await supabase
             .from('imobilizados')
-            .select('numero_serie, codigo_imobilizado, subnumero, data_incorporacao') 
+            .select('numero_serie, codigo_imobilizado, sub_numero, data_incorporacao') 
             .eq('id', itemId)
             .single();
             
@@ -396,7 +396,7 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
 
         await registrarLog(
             itemId, user, 'Alteração de N. Série', valorAntigo, newSerial,
-            currentItem.codigo_imobilizado, currentItem.subnumero, currentItem.data_incorporacao
+            currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
         );
 
         return res.status(200).json({ message: 'Número de Série atualizado com sucesso!' });
