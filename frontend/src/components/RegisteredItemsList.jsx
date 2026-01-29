@@ -4,6 +4,7 @@ import DataTable from 'react-data-table-component';
 import { Modal, Button, Spinner, Alert, Form, Row, Col, InputGroup, Card } from 'react-bootstrap';
 import { Calendar, Building, Search, FileEarmarkSpreadsheet, PencilSquare, Trash, ListCheck, CardText, GeoAlt, Hash } from 'react-bootstrap-icons';
 import { API_URL } from '../apiConfig';
+import { locationsData } from '../utils/locais';
 
 const RegisteredItemsList = ({ show, onClose }) => {
   const [items, setItems] = useState([]);
@@ -20,6 +21,9 @@ const RegisteredItemsList = ({ show, onClose }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [editSector, setEditSector] = useState('');
+  const [editSubLocal, setEditSubLocal] = useState('');
+  const [editSubLocalOptions, setEditSubLocalOptions] = useState([]);
 
   const customStyles = {
     headCells: {
@@ -103,6 +107,22 @@ const RegisteredItemsList = ({ show, onClose }) => {
 
   const handleEditClick = (row) => {
     setEditingItem(row);
+
+    let currentSector = '';
+    let currentSub = '';
+    
+    if (row.local && row.local.includes(' - ')) {
+        const parts = row.local.split(' - ');
+        currentSector = parts[0];
+        currentSub = parts.slice(1).join(' - '); 
+    } else if (row.local) {
+        currentSector = Object.keys(locationsData).find(key => row.local.includes(key)) || '';
+    }
+
+    setEditSector(currentSector);
+    setEditSubLocal(currentSub);
+    setEditSubLocalOptions(currentSector ? locationsData[currentSector] : []);
+
     setEditForm({
       descricao: row.descricao,
       numero_serie: row.numero_serie,
@@ -112,8 +132,34 @@ const RegisteredItemsList = ({ show, onClose }) => {
     setShowEditModal(true);
   };
 
+  const handleEditSectorChange = (e) => {
+    const sector = e.target.value;
+    setEditSector(sector);
+    
+    if (sector && locationsData[sector]) {
+        setEditSubLocalOptions(locationsData[sector]);
+        setEditSubLocal('');
+        setEditForm(prev => ({ ...prev, local: `${sector} - ` }));
+    } else {
+        setEditSubLocalOptions([]);
+        setEditSubLocal('');
+        setEditForm(prev => ({ ...prev, local: '' }));
+    }
+  };
+
+  const handleEditSubLocalChange = (e) => {
+    const sub = e.target.value;
+    setEditSubLocal(sub);
+    setEditForm(prev => ({ ...prev, local: `${editSector} - ${sub}` }));
+  };
+
   const handleSaveEdit = async () => {
     try {
+      if (editSector && !editSubLocal) {
+         alert("Por favor, selecione o ambiente (sub-local).");
+         return;
+      }
+
       const response = await axios.put(`${API_URL}/imobilizados-cadastrados/${editingItem.id}`, editForm);
       const updatedList = items.map(item => 
         item.id === editingItem.id ? { ...item, ...response.data[0] } : item 
@@ -256,6 +302,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
           <Button variant="secondary" onClick={onClose}>Fechar</Button>
         </Modal.Footer>
       </Modal>
+
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered backdrop="static">
         <Modal.Header closeButton className="bg-primary text-white border-0 shadow-sm">
           <Modal.Title className="h6 mb-0 d-flex align-items-center">
@@ -276,7 +323,6 @@ const RegisteredItemsList = ({ show, onClose }) => {
                   />
                </InputGroup>
              </Form.Group>
-
              <Row>
                 <Col md={6}>
                     <Form.Group className="mb-3">
@@ -302,7 +348,26 @@ const RegisteredItemsList = ({ show, onClose }) => {
                <Form.Label className="small fw-bold text-secondary">LOCALIZAÇÃO</Form.Label>
                <InputGroup>
                   <InputGroup.Text className="bg-light"><GeoAlt /></InputGroup.Text>
-                  <Form.Control type="text" value={editForm.local || ''} onChange={(e) => setEditForm({...editForm, local: e.target.value})} />
+                  <Form.Select 
+                    value={editSector} 
+                    onChange={handleEditSectorChange}
+                    className="fw-bold"
+                  >
+                    <option value="">Selecione o Setor...</option>
+                    {Object.keys(locationsData).map((sector) => (
+                      <option key={sector} value={sector}>{sector}</option>
+                    ))}
+                  </Form.Select>
+                  <Form.Select 
+                    value={editSubLocal} 
+                    onChange={handleEditSubLocalChange}
+                    disabled={!editSector}
+                  >
+                     <option value="">Selecione o Ambiente...</option>
+                     {editSubLocalOptions.map((sub, idx) => (
+                       <option key={idx} value={sub}>{sub}</option>
+                     ))}
+                  </Form.Select>
                </InputGroup>
              </Form.Group>
            </Form>
