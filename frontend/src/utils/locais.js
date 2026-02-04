@@ -75,9 +75,7 @@ export const locationsData = {
     "SALA ADM"
   ],
   "ARTES": [
-    "SALA ADM",
-    "SALA CLICHERIA",
-    "AREA PROD COLG"
+    "SALA ADM"
   ],
   "GUARITA": [
     "GERAL"
@@ -87,5 +85,9 @@ export const locationsData = {
   ],
   "ALPHA CLICHERIA": [
     "GERAL"
+  ],
+  "CLICHERIA": [
+    "SALA CLI ADM",
+    "AREA PROD COLG"
   ]
 };
