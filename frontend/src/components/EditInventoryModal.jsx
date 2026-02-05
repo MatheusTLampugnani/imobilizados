@@ -6,7 +6,7 @@ import { API_URL } from '../apiConfig';
 import imgSuccess from '../assets/verificado.png';
 import imgError from '../assets/cruz.png';
 import { generateWriteOffPDF } from '../utils/generateWriteOffPDF';
-import { locationsData } from '../utils/locations';
+import { locationsData } from '../utils/locais';
 
 const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, currentUser }) => {
   const [newValue, setNewValue] = useState('');

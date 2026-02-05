@@ -410,11 +410,11 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
     try {
         const { itemId, newLocal, user } = req.body;
 
-        if (!itemId) return res.status(400).json({ message: 'ID não fornecido.' });
+        if (!itemId || !newLocal) return res.status(400).json({ message: 'Dados inválidos.' });
 
         const { data: currentItem, error: fetchError } = await supabase
             .from('imobilizados')
-            .select('local, codigo_imobilizado, sub_numero, data_incorporacao') 
+            .select('local, codigo_imobilizado, subnumero, data_incorporacao') 
             .eq('id', itemId)
             .single();
             
@@ -428,7 +428,7 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
 
         await registrarLog(
             itemId, user, 'Alteração de Local', newLocal,
-            currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
+            currentItem.codigo_imobilizado, currentItem.subnumero, currentItem.data_incorporacao
         );
 
         return res.status(200).json({ message: 'Local atualizado com sucesso!' });
