@@ -108,6 +108,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                             />
                         </td>
                       </tr>
+
                       <tr>
                         <td><strong>CENTRO DE CUSTO</strong></td>
                         <td className="d-flex justify-content-between align-items-center border-0">
@@ -118,15 +119,17 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                             />
                         </td>
                       </tr>
-                      
+        
                       <tr>
                         <td><strong>LOCAL</strong></td>
-                        <td>{item.Local || 'Não informado'}</td>
-                          <EditButton 
-                            onClick={() => handleEditClick(item, 'local')} 
-                            title="Editar Local" 
-                          />
-                      </tr>
+                        <td className="d-flex justify-content-between align-items-center border-0">
+                            <span>{item.Local || 'Não informado'}</span>
+                            <EditButton 
+                                onClick={() => handleEditClick(item, 'local')} 
+                                title="Editar Localização" 
+                            />
+                        </td>
+                      </tr>                      
                       <tr>
                         <td><strong>SUB NÚMERO</strong></td>
                         <td>{item['Subnº']}</td>

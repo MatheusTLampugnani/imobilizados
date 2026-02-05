@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Button, Spinner } from 'react-bootstrap';
+import { Modal, Form, Button, Spinner, InputGroup } from 'react-bootstrap';
+import { FileEarmarkPdf, GeoAlt } from 'react-bootstrap-icons';
 import axios from 'axios';
 import { API_URL } from '../apiConfig';
 import imgSuccess from '../assets/verificado.png';
 import imgError from '../assets/cruz.png';
+import { generateWriteOffPDF } from '../utils/generateWriteOffPDF';
+import { locationsData } from '../utils/locations';
 
-const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) => {
+const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, currentUser }) => {
   const [newValue, setNewValue] = useState('');
   const [cracha, setCracha] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
   const [viewState, setViewState] = useState('form'); 
+  const [editSector, setEditSector] = useState('');
+  const [editSubLocal, setEditSubLocal] = useState('');
+  const [editSubLocalOptions, setEditSubLocalOptions] = useState([]);
 
   const getEditConfig = () => {
     switch (editType) {
@@ -37,18 +43,18 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
           title: 'Editar Número de Série',
           label: 'Nova Série',
           currentLabel: 'Série Atual',
-          currentValue: item?.['Série'] || item?.numero_serie, 
+          currentValue: item?.['Série'] || item?.Serie || item?.numero_serie, 
           endpoint: '/imobilizado/update-serial',
           payloadKey: 'newSerial'
         };
       case 'local':
         return {
-          title: 'Editar Local',
-          label: 'Novo local',
-          currentLabel: 'Local Atual',
-          currentValue: item?.['Local'] || item?.numero_serie, 
-          endpoint: '/imobilizado/update-local',
-          payloadKey: 'newLocal'
+            title: 'Editar Localização',
+            label: 'Novo Local',
+            currentLabel: 'Local Atual',
+            currentValue: item?.Local,
+            endpoint: '/imobilizado/update-local',
+            payloadKey: 'newLocal'
         };
       default:
         return { title: 'Editar', label: 'Novo Valor', endpoint: '' };
@@ -59,19 +65,64 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
 
   useEffect(() => {
     if (show) {
-        setNewValue('');
+        setNewValue(config.currentValue || '');
         setCracha('');
         setViewState('form');
         setError('');
+
+        if (editType === 'local') {
+            let currentSector = '';
+            let currentSub = '';
+            const localAtual = item?.Local || '';
+
+            if (localAtual.includes(' - ')) {
+                const parts = localAtual.split(' - ');
+                currentSector = parts[0];
+                currentSub = parts.slice(1).join(' - ');
+            } else {
+                currentSector = Object.keys(locationsData).find(key => localAtual.includes(key)) || '';
+            }
+            
+            setEditSector(currentSector);
+            setEditSubLocal(currentSub);
+            setEditSubLocalOptions(currentSector ? locationsData[currentSector] : []);
+        }
     }
-  }, [show, editType]);
+  }, [show, editType, item]); 
+
+  const handleSectorChange = (e) => {
+      const sector = e.target.value;
+      setEditSector(sector);
+      if (sector && locationsData[sector]) {
+          setEditSubLocalOptions(locationsData[sector]);
+          setEditSubLocal('');
+          setNewValue(`${sector} - `);
+      } else {
+          setEditSubLocalOptions([]);
+          setEditSubLocal('');
+          setNewValue('');
+      }
+  };
+
+  const handleSubLocalChange = (e) => {
+      const sub = e.target.value;
+      setEditSubLocal(sub);
+      setNewValue(`${editSector} - ${sub}`);
+  };
 
   const handleUpdate = async () => {
-    if (!newValue && editType !== 'serial') { 
+    if (editType === 'local') {
+        if (!editSector || !editSubLocal) {
+            setError('Selecione o Setor e o Ambiente.');
+            setViewState('error');
+            return;
+        }
+    } else if (!newValue) { 
       setError(`Por favor, digite o ${config.label.toLowerCase()}.`);
       setViewState('error'); 
       return;
     }
+
     if (!cracha.trim()) {
       setError('É obrigatório informar o número do crachá.');
       setViewState('error');
@@ -104,6 +155,11 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleBaixa = () => {
+    const userForReport = currentUser || { cracha: cracha, nome: 'Usuário' };
+    generateWriteOffPDF(item, userForReport);
   };
 
   const resetModal = () => {
@@ -150,17 +206,37 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
                 <p><strong>Item:</strong> {item.Descrição}</p>
                 <p><strong>{config.currentLabel}:</strong> {config.currentValue || 'Não definido'}</p>
                 <hr />
-                
-                <Form.Group className="mb-3">
-                  <Form.Label className="fw-bold">{config.label}</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={newValue}
-                    onChange={(e) => setNewValue(e.target.value)}
-                    placeholder={`Digite ${config.label.toLowerCase()}`}
-                    autoFocus
-                  />
-                </Form.Group>
+                {editType === 'local' ? (
+                    <Form.Group className="mb-3">
+                        <Form.Label className="fw-bold">Novo Local</Form.Label>
+                        <InputGroup>
+                            <InputGroup.Text className="bg-light"><GeoAlt /></InputGroup.Text>
+                            <Form.Select value={editSector} onChange={handleSectorChange}>
+                                <option value="">Selecione o Setor...</option>
+                                {Object.keys(locationsData).map(sector => (
+                                    <option key={sector} value={sector}>{sector}</option>
+                                ))}
+                            </Form.Select>
+                            <Form.Select value={editSubLocal} onChange={handleSubLocalChange} disabled={!editSector}>
+                                <option value="">Ambiente...</option>
+                                {editSubLocalOptions.map((sub, idx) => (
+                                    <option key={idx} value={sub}>{sub}</option>
+                                ))}
+                            </Form.Select>
+                        </InputGroup>
+                    </Form.Group>
+                ) : (
+                    <Form.Group className="mb-3">
+                        <Form.Label className="fw-bold">{config.label}</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={newValue}
+                            onChange={(e) => setNewValue(e.target.value)}
+                            placeholder={`Digite ${config.label.toLowerCase()}`}
+                            autoFocus
+                        />
+                    </Form.Group>
+                )}
 
                 <Form.Group className="mb-3">
                   <Form.Label className="fw-bold">Crachá do Responsável</Form.Label>
@@ -176,13 +252,19 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
       </Modal.Body>
       
       {viewState === 'form' && (
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleCloseInternal}>
-              Cancelar
+          <Modal.Footer className="justify-content-between">
+            <Button variant="outline-dark" onClick={handleBaixa} title="Gera termo de baixa em PDF">
+               <FileEarmarkPdf className="me-2"/> Dar Baixa
             </Button>
-            <Button variant="danger" onClick={handleUpdate} disabled={isUpdating}>
-              {isUpdating ? <Spinner as="span" animation="border" size="sm" /> : 'Confirmar e Salvar'}
-            </Button>
+
+            <div className="d-flex gap-2">
+                <Button variant="secondary" onClick={handleCloseInternal}>
+                Cancelar
+                </Button>
+                <Button variant="danger" onClick={handleUpdate} disabled={isUpdating}>
+                {isUpdating ? <Spinner as="span" animation="border" size="sm" /> : 'Confirmar e Salvar'}
+                </Button>
+            </div>
           </Modal.Footer>
       )}
     </Modal>
