@@ -85,7 +85,7 @@ app.get('/api/imobilizado', async (req, res) => {
 
     try {
         const searchByText = async (field, value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, value);
+        const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, `%${value}%`);
             if (error) throw error;
             return data || [];
         };
