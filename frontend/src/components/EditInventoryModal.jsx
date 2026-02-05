@@ -206,37 +206,37 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
                 <p><strong>Item:</strong> {item.Descrição}</p>
                 <p><strong>{config.currentLabel}:</strong> {config.currentValue || 'Não definido'}</p>
                 <hr />
-                {editType === 'local' ? (
-                    <Form.Group className="mb-3">
-                        <Form.Label className="fw-bold">Novo Local</Form.Label>
-                        <InputGroup>
-                            <InputGroup.Text className="bg-light"><GeoAlt /></InputGroup.Text>
-                            <Form.Select value={editSector} onChange={handleSectorChange}>
-                                <option value="">Selecione o Setor...</option>
-                                {Object.keys(locationsData).map(sector => (
-                                    <option key={sector} value={sector}>{sector}</option>
-                                ))}
-                            </Form.Select>
-                            <Form.Select value={editSubLocal} onChange={handleSubLocalChange} disabled={!editSector}>
-                                <option value="">Ambiente...</option>
-                                {editSubLocalOptions.map((sub, idx) => (
-                                    <option key={idx} value={sub}>{sub}</option>
-                                ))}
-                            </Form.Select>
-                        </InputGroup>
-                    </Form.Group>
-                ) : (
-                    <Form.Group className="mb-3">
-                        <Form.Label className="fw-bold">{config.label}</Form.Label>
-                        <Form.Control
-                            type="text"
-                            value={newValue}
-                            onChange={(e) => setNewValue(e.target.value)}
-                            placeholder={`Digite ${config.label.toLowerCase()}`}
-                            autoFocus
-                        />
-                    </Form.Group>
-                )}
+                  {editType === 'local' ? (
+                      <Form.Group className="mb-3">
+                          <Form.Label className="fw-bold">Novo Local</Form.Label>
+                          <InputGroup>
+                              <InputGroup.Text className="bg-light"><GeoAlt /></InputGroup.Text>
+                              <Form.Select value={editSector} onChange={handleSectorChange}>
+                                  <option value="">Selecione o Setor...</option>
+                                  {Object.keys(locationsData).map(sector => (
+                                      <option key={sector} value={sector}>{sector}</option>
+                                  ))}
+                              </Form.Select>
+                              <Form.Select value={editSubLocal} onChange={handleSubLocalChange} disabled={!editSector}>
+                                  <option value="">Ambiente...</option>
+                                  {editSubLocalOptions.map((sub, idx) => (
+                                      <option key={idx} value={sub}>{sub}</option>
+                                  ))}
+                              </Form.Select>
+                          </InputGroup>
+                      </Form.Group>
+                  ) : (
+                      <Form.Group className="mb-3">
+                          <Form.Label className="fw-bold">{config.label}</Form.Label>
+                          <Form.Control
+                              type="text"
+                              value={newValue}
+                              onChange={(e) => setNewValue(e.target.value)}
+                              placeholder={`Digite ${config.label.toLowerCase()}`}
+                              autoFocus
+                          />
+                      </Form.Group>
+                  )}
 
                 <Form.Group className="mb-3">
                   <Form.Label className="fw-bold">Crachá do Responsável</Form.Label>
