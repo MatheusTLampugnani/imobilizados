@@ -244,23 +244,6 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
             </>
         )}
       </Modal.Body>
-      
-      {viewState === 'form' && (
-          <Modal.Footer className="justify-content-between">
-            <Button variant="outline-dark" onClick={handleBaixa} title="Gera termo de baixa em PDF">
-               <FileEarmarkPdf className="me-2"/> Dar Baixa
-            </Button>
-
-            <div className="d-flex gap-2">
-                <Button variant="secondary" onClick={handleCloseInternal}>
-                Cancelar
-                </Button>
-                <Button variant="danger" onClick={handleUpdate} disabled={isUpdating}>
-                {isUpdating ? <Spinner as="span" animation="border" size="sm" /> : 'Confirmar e Salvar'}
-                </Button>
-            </div>
-          </Modal.Footer>
-      )}
     </Modal>
   );
 };
