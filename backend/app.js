@@ -406,6 +406,40 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
     }
 });
 
+app.put('/api/imobilizado/update-local', async (req, res) => {
+    try {
+        const { itemId, newSerial, user } = req.body;
+
+        if (!itemId) return res.status(400).json({ message: 'ID não fornecido.' });
+
+        const { data: currentItem, error: fetchError } = await supabase
+            .from('imobilizados')
+            .select('local, codigo_imobilizado, sub_numero, data_incorporacao') 
+            .eq('id', itemId)
+            .single();
+            
+        if (fetchError) throw fetchError;
+        const valorAntigo = currentItem.numero_serie;
+        const { error: updateError } = await supabase.from('imobilizados').update({
+            numero_serie: newSerial,
+            numero_serie_antigo: valorAntigo,
+            usuario_atualizacao: user || 'Sistema'
+        }).eq('id', itemId);
+        
+        if (updateError) throw updateError;
+
+        await registrarLog(
+            itemId, user, 'Alteração de Local', valorAntigo, newSerial,
+            currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
+        );
+
+        return res.status(200).json({ message: 'Local atualizado com sucesso!' });
+    } catch(error) {
+        console.error("ERRO UPDATE SERIAL:", error);
+        return res.status(500).json({ message: error.message });
+    }
+});
+
 app.get('/api/imobilizados-cadastrados', async (req, res) => {
     try {
         const { start_date, end_date, centro_custo, termo } = req.query;

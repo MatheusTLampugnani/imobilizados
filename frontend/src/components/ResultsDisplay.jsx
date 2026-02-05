@@ -122,6 +122,10 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                       <tr>
                         <td><strong>LOCAL</strong></td>
                         <td>{item.Local || 'Não informado'}</td>
+                          <EditButton 
+                            onClick={() => handleEditClick(item, 'local')} 
+                            title="Editar Local" 
+                          />
                       </tr>
                       <tr>
                         <td><strong>SUB NÚMERO</strong></td>

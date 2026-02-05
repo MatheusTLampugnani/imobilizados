@@ -41,6 +41,15 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess }) 
           endpoint: '/imobilizado/update-serial',
           payloadKey: 'newSerial'
         };
+      case 'local':
+        return {
+          title: 'Editar Local',
+          label: 'Novo local',
+          currentLabel: 'Local Atual',
+          currentValue: item?.['Local'] || item?.numero_serie, 
+          endpoint: '/imobilizado/update-local',
+          payloadKey: 'newLocal'
+        };
       default:
         return { title: 'Editar', label: 'Novo Valor', endpoint: '' };
     }
