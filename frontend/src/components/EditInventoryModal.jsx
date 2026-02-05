@@ -5,7 +5,6 @@ import axios from 'axios';
 import { API_URL } from '../apiConfig';
 import imgSuccess from '../assets/verificado.png';
 import imgError from '../assets/cruz.png';
-import { generateWriteOffPDF } from '../utils/generateWriteOffPDF';
 import { locationsData } from '../utils/locais';
 
 const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, currentUser }) => {
@@ -155,11 +154,6 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
     } finally {
       setIsUpdating(false);
     }
-  };
-
-  const handleBaixa = () => {
-    const userForReport = currentUser || { cracha: cracha, nome: 'Usuário' };
-    generateWriteOffPDF(item, userForReport);
   };
 
   const resetModal = () => {
