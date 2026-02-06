@@ -85,7 +85,7 @@ app.get('/api/imobilizado', async (req, res) => {
 
     try {
         const searchByText = async (field, value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, value);
+        const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, `%${value}%`);
             if (error) throw error;
             return data || [];
         };
@@ -402,6 +402,38 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
         return res.status(200).json({ message: 'Número de Série atualizado com sucesso!' });
     } catch(error) {
         console.error("ERRO UPDATE SERIAL:", error);
+        return res.status(500).json({ message: error.message });
+    }
+});
+
+app.put('/api/imobilizado/update-local', async (req, res) => {
+    try {
+        const { itemId, newLocal, user } = req.body;
+
+        if (!itemId || !newLocal) return res.status(400).json({ message: 'Dados inválidos.' });
+
+        const { data: currentItem, error: fetchError } = await supabase
+            .from('imobilizados')
+            .select('local, codigo_imobilizado, subnumero, data_incorporacao') 
+            .eq('id', itemId)
+            .single();
+            
+        if (fetchError) throw fetchError;
+        const { error: updateError } = await supabase.from('imobilizados').update({
+            local: newLocal,
+            usuario_atualizacao: user || 'Sistema'
+        }).eq('id', itemId);
+        
+        if (updateError) throw updateError;
+
+        await registrarLog(
+            itemId, user, 'Alteração de Local', newLocal,
+            currentItem.codigo_imobilizado, currentItem.subnumero, currentItem.data_incorporacao
+        );
+
+        return res.status(200).json({ message: 'Local atualizado com sucesso!' });
+    } catch(error) {
+        console.error("ERRO UPDATE LOCAL:", error);
         return res.status(500).json({ message: error.message });
     }
 });
