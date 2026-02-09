@@ -332,7 +332,7 @@ function App() {
                 title="Acessar Auditoria e Logs"
             >
                 <ShieldLock size={14} /> 
-                <span className="d-none d-md-inline">Auditoria</span>
+                <span className="d-none d-md-inline">Alterações</span>
             </Button>
         )}
         <Button 
