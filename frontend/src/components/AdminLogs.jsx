@@ -133,7 +133,7 @@ const AdminLogs = ({ onBack }) => {
               columns={columns}
               data={filteredLogs}
               pagination
-              paginationComponentOptions={{ rowsPerPageText: 'Linhas:', rangeSeparatorText: 'de' }}
+              paginationComponentOptions={{ rowsPerPageText: 'Linhas:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
               highlightOnHover
               striped
               dense
