@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button } from 'react-bootstrap';
-import { ShieldLock } from 'react-bootstrap-icons';
+import { ShieldLock, BoxArrowRight, PersonCircle } from 'react-bootstrap-icons';
 import Header from './components/Header';
 import InputArea from './components/InputArea';
 import Inventory from './components/Inventory';
@@ -315,23 +315,39 @@ function App() {
 
   return (
     <div className="app-wrapper">
-      <div className="position-absolute top-0 end-0 p-3" style={{ zIndex: 1000 }}>
-        <span className="me-2 text-muted d-none d-md-inline">Olá, <strong>{currentUser.nome}</strong></span>
-        <Button variant="outline-secondary" size="sm" onClick={handleLogout}>Sair</Button>
+      <div 
+        className="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-3" 
+        style={{ zIndex: 1000 }}
+      >
+        <div className="d-flex align-items-center text-secondary bg-white px-3 py-1 rounded shadow-sm border d-none d-md-flex">
+            <PersonCircle className="me-2" />
+            <span className="small">Olá, <strong>{currentUser.nome}</strong></span>
+        </div>
+        {view === 'home' && currentUser?.isAdmin && (
+            <Button 
+                variant="dark" 
+                size="sm"
+                onClick={() => setView('admin_logs')}
+                className="d-flex align-items-center gap-2 shadow-sm"
+                title="Acessar Auditoria e Logs"
+            >
+                <ShieldLock size={14} /> 
+                <span className="d-none d-md-inline">Auditoria</span>
+            </Button>
+        )}
+        <Button 
+            variant="outline-danger" 
+            size="sm" 
+            onClick={handleLogout}
+            className="d-flex align-items-center gap-2"
+            title="Sair do Sistema"
+        >
+            <BoxArrowRight size={16} />
+            <span className="d-none d-md-inline">Sair</span>
+        </Button>
       </div>
       <Container>
         <Header />
-        {view === 'home' && currentUser?.isAdmin && (
-            <div className="d-flex justify-content-end mb-3">
-                <Button 
-                    variant="dark" 
-                    onClick={() => setView('admin_logs')}
-                    className="d-flex align-items-center gap-2 shadow-sm"
-                >
-                    <ShieldLock /> Auditoria (Admin)
-                </Button>
-            </div>
-        )}
         {view === 'home' && (
             <>
                 <InputArea
@@ -341,6 +357,7 @@ function App() {
                   onLimpar={handleClearSearch}
                   isLoading={isLoading}
                 />
+
                 {resultado && resultado.itens.length > 0 && (
                   <FilterControls
                     filters={filters}
@@ -351,6 +368,7 @@ function App() {
                     itemsCount={filteredItems.length}
                   />
                 )}
+
                 <ResultsDisplay
                   isLoading={isLoading}
                   error={error}
@@ -358,6 +376,7 @@ function App() {
                   onRefresh={refreshData}
                   currentUser={currentUser}
                 />
+                
                 <div className="main-actions-container">
                   <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
                     Iniciar Inventário
@@ -374,6 +393,7 @@ function App() {
                     Ver Cadastrados
                   </Button>
                 </div>
+
                 {inventarioAtivo && (
                   <Inventory
                     inventario={inventario}

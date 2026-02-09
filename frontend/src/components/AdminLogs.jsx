@@ -29,18 +29,25 @@ const AdminLogs = ({ onBack }) => {
     }
   };
 
-  useEffect(() => {
-    const result = logs.filter(log => {
-        const termo = search.toLowerCase();
-        return (
-            log.usuario?.toLowerCase().includes(termo) ||
-            log.tipo_alteracao?.toLowerCase().includes(termo) ||
-            log.detalhes?.toLowerCase().includes(termo) ||
-            (log.codigo_imobilizado && log.codigo_imobilizado.toString().includes(termo))
-        );
-    });
-    setFilteredLogs(result);
-  }, [search, logs]);
+    useEffect(() => {
+        const result = logs.filter(log => {
+            if (!search) return true;
+
+            const termo = search.toLowerCase();
+            const usuario = String(log.usuario || '').toLowerCase();
+            const tipo = String(log.tipo_alteracao || '').toLowerCase();
+            const detalhes = String(log.detalhes || '').toLowerCase();
+            const codigo = String(log.codigo_imobilizado || '').toLowerCase();
+
+            return (
+                usuario.includes(termo) ||
+                tipo.includes(termo) ||
+                detalhes.includes(termo) ||
+                codigo.includes(termo)
+            );
+        });
+        setFilteredLogs(result);
+    }, [search, logs]);
 
   const columns = [
     {
