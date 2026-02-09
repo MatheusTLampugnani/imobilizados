@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button } from 'react-bootstrap';
-import { ShieldLock, BoxArrowRight, PersonCircle, PlayCircle, FileEarmarkText, ListUl } from 'react-bootstrap-icons'; 
+import { ShieldLock, BoxArrowRight, PersonCircle } from 'react-bootstrap-icons';
 import Header from './components/Header';
 import InputArea from './components/InputArea';
 import Inventory from './components/Inventory';
@@ -100,18 +100,27 @@ function App() {
     setFilteredItems(items);
   }, [filters, resultado, sortConfig]);
 
-  const handleLogin = (user) => { setCurrentUser(user); };
-  
-  const handleLogout = () => { 
-    setCurrentUser(null); 
-    sessionStorage.clear(); 
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    sessionStorage.clear();
     window.location.reload(); 
   };
 
-  if (!currentUser) return <LoginScreen onLoginSuccess={handleLogin} />;
+  if (!currentUser) {
+    return <LoginScreen onLoginSuccess={handleLogin} />;
+  }
 
-  const showStatus = (type, message) => { setStatusModal({ show: true, type, message }); };
-  const handleCloseStatus = () => { setStatusModal({ ...statusModal, show: false }); };
+  const showStatus = (type, message) => {
+    setStatusModal({ show: true, type, message });
+  };
+
+  const handleCloseStatus = () => {
+    setStatusModal({ ...statusModal, show: false });
+  };
 
   const fetchExpectedItems = async (cc) => {
     if (!cc) return;
@@ -127,10 +136,12 @@ function App() {
   const handleStartInventory = async (cc, _ignoredUser, localFisico) => {
     try {
       await axios.get(`${API_URL}/centro-custo/validate/${cc}`);
+      
       setInventarioCentroCusto(cc);
       setInventarioUsuario(currentUser.cracha);
       setInventarioLocal(localFisico);
       setInventarioAtivo(true);
+      
       fetchExpectedItems(cc);
       setInventario([]); 
       return true;
@@ -144,6 +155,7 @@ function App() {
     try {
       const response = await axios.get(`${API_URL}/inventory-item?codigo=${codeToAdd}`);
       const dados = response.data;
+      
       if (dados && dados.itens && dados.itens.length > 0) {
         const itemParaAdicionar = dados.itens[0];
         if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
@@ -208,6 +220,7 @@ function App() {
         };
         setInventario(prev => [itemParaLista, ...prev]);
     }
+    
     setShowAddItemModal(false);
   };
 
@@ -219,13 +232,17 @@ function App() {
 
   const handleFinalizeInventory = async () => {
     setIsLoading(true);
+    
     const itemsToSave = inventario.filter(item => item.pendingSave && item.rawNewData);
+
     if (itemsToSave.length > 0) {
       try {
         await Promise.all(itemsToSave.map(item => {
           return axios.post(`${API_URL}/imobilizado`, item.rawNewData);
         }));
+        
         showStatus('success', `${itemsToSave.length} novos itens cadastrados com sucesso!`);
+        
       } catch (error) {
         console.error("Erro ao salvar itens novos:", error);
         showStatus('error', "Houve um erro ao salvar alguns itens novos.");
@@ -233,8 +250,11 @@ function App() {
     } else {
         showStatus('success', "Inventário finalizado com sucesso!");
     }
+
     setIsLoading(false);
-    setTimeout(() => { setShowDivergenceReport(true); }, 2000);
+    setTimeout(() => {
+        setShowDivergenceReport(true);
+    }, 2000);
   };
 
   const handleCodeSearch = async () => {
@@ -247,6 +267,7 @@ function App() {
     setIsLoading(true);
     setError('');
     handleResetFilters(); 
+
     try {
       const response = await axios.get(`${API_URL}/imobilizado?codigo=${codigo}`);
       setResultado(response.data);
@@ -262,13 +283,24 @@ function App() {
   };
 
   const handleFilterChange = (newFilters) => setFilters(newFilters);
+  
   const handleResetFilters = () => {
     setFilters({ serie: '', subn: '', centroCusto: '' });
     setSortConfig({ field: 'Descrição', order: 'asc' });
   };
+  
   const handleSortChange = (newSortConfig) => setSortConfig(newSortConfig);
-  const refreshData = () => { if (codigo) handleCodeSearch(codigo); };
-  const handleClearSearch = () => { setCodigo(''); setResultado(null); setError(''); };
+
+  const refreshData = () => {
+    if (codigo) handleCodeSearch(codigo);
+  };
+
+  const handleClearSearch = () => {
+    setCodigo('');
+    setResultado(null);
+    setError('');
+  };
+
   const handleFinishAndReset = () => {
     setShowDivergenceReport(false);
     setInventarioAtivo(false);
@@ -283,106 +315,146 @@ function App() {
 
   return (
     <div className="app-wrapper">
-      <div className="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-3" style={{ zIndex: 1000 }}>
+      <div 
+        className="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-3" 
+        style={{ zIndex: 1000 }}
+      >
         <div className="d-flex align-items-center text-secondary bg-white px-3 py-1 rounded shadow-sm border d-none d-md-flex">
             <PersonCircle className="me-2" />
             <span className="small">Olá, <strong>{currentUser.nome}</strong></span>
         </div>
         {view === 'home' && currentUser?.isAdmin && (
             <Button 
-                variant="dark" size="sm" onClick={() => setView('admin_logs')}
-                className="d-flex align-items-center gap-2 shadow-sm" title="Acessar Auditoria"
+                variant="dark" 
+                size="sm"
+                onClick={() => setView('admin_logs')}
+                className="d-flex align-items-center gap-2 shadow-sm"
+                title="Acessar Auditoria e Logs"
             >
-                <ShieldLock size={14} /> <span className="d-none d-md-inline">Auditoria</span>
+                <ShieldLock size={14} /> 
+                <span className="d-none d-md-inline">Alterações</span>
             </Button>
         )}
         <Button 
-            variant="outline-danger" size="sm" onClick={handleLogout}
-            className="d-flex align-items-center gap-2" title="Sair"
+            variant="outline-danger" 
+            size="sm" 
+            onClick={handleLogout}
+            className="d-flex align-items-center gap-2"
+            title="Sair do Sistema"
         >
-            <BoxArrowRight size={16} /> <span className="d-none d-md-inline">Sair</span>
+            <BoxArrowRight size={16} />
+            <span className="d-none d-md-inline">Sair</span>
         </Button>
       </div>
-
       <Container>
         <Header />
         {view === 'home' && (
             <>
                 <InputArea
-                  codigo={codigo} setCodigo={setCodigo} onConsultar={handleCodeSearch}
-                  onLimpar={handleClearSearch} isLoading={isLoading}
+                  codigo={codigo}
+                  setCodigo={setCodigo}
+                  onConsultar={handleCodeSearch}
+                  onLimpar={handleClearSearch}
+                  isLoading={isLoading}
                 />
+
                 {resultado && resultado.itens.length > 0 && (
                   <FilterControls
-                    filters={filters} onFilterChange={handleFilterChange} onResetFilters={handleResetFilters}
-                    sortConfig={sortConfig} onSortChange={handleSortChange} itemsCount={filteredItems.length}
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    onResetFilters={handleResetFilters}
+                    sortConfig={sortConfig}
+                    onSortChange={handleSortChange}
+                    itemsCount={filteredItems.length}
                   />
                 )}
 
                 <ResultsDisplay
-                  isLoading={isLoading} error={error}
+                  isLoading={isLoading}
+                  error={error}
                   resultado={resultado ? { ...resultado, itens: filteredItems } : null}
-                  onRefresh={refreshData} currentUser={currentUser}
+                  onRefresh={refreshData}
+                  currentUser={currentUser}
                 />
-
-                <div className="main-actions-container d-flex flex-wrap justify-content-center gap-3 mt-4">
-                  <Button 
-                    size="lg" 
-                    onClick={() => setShowCcInputModal(true)}
-                    className="border-0 shadow-sm text-nowrap d-flex align-items-center gap-2 px-4"
-                    style={{ backgroundColor: '#e7f5ff', color: '#004085', fontWeight: '500' }}
-                  >
-                    <PlayCircle size={20} /> Iniciar Inventário
+                
+                <div className="main-actions-container">
+                  <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
+                    Iniciar Inventário
+                  </Button>
+                  <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
+                    Gerar Relatórios
                   </Button>
                   <Button 
+                    variant="secondary" 
                     size="lg" 
-                    onClick={() => setShowReportModal(true)}
-                    className="border-0 shadow-sm text-nowrap d-flex align-items-center gap-2 px-4"
-                    style={{ backgroundColor: '#f3e5f5', color: '#4a148c', fontWeight: '500' }}
-                  >
-                    <FileEarmarkText size={20} /> Gerar Relatórios
-                  </Button>
-                  <Button 
-                    size="lg" 
+                    className="mt-2 mt-md-0 ms-md-2" 
                     onClick={() => setShowRegisteredList(true)}
-                    className="border-0 shadow-sm text-nowrap d-flex align-items-center gap-2 px-4"
-                    style={{ backgroundColor: '#e0f2f1', color: '#004d40', fontWeight: '500' }}
                   >
-                    <ListUl size={20} /> Ver Cadastrados
+                    Ver Cadastrados
                   </Button>
                 </div>
+
                 {inventarioAtivo && (
                   <Inventory
-                    inventario={inventario} setInventario={setInventario} onClose={() => setInventarioAtivo(false)}
-                    onAddItem={handleAddItemToInventory} inventarioCentroCusto={inventarioCentroCusto}
-                    expectedItems={expectedItems} onFinishInventory={handleFinalizeInventory} onRemoveItem={handleRemoveItem}
+                    inventario={inventario}
+                    setInventario={setInventario}
+                    onClose={() => setInventarioAtivo(false)}
+                    onAddItem={handleAddItemToInventory}
+                    inventarioCentroCusto={inventarioCentroCusto}
+                    expectedItems={expectedItems}
+                    onFinishInventory={handleFinalizeInventory}
+                    onRemoveItem={handleRemoveItem}
                   />
                 )}
             </>
         )}
-
         {view === 'admin_logs' && (
             <AdminLogs onBack={() => setView('home')} />
         )}
-
       </Container>
 
-      {/* --- MODAIS --- */}
-      <CcInputModal show={showCcInputModal} onClose={() => setShowCcInputModal(false)} onConfirm={handleStartInventory} />
+      <CcInputModal
+        show={showCcInputModal}
+        onClose={() => setShowCcInputModal(false)}
+        onConfirm={handleStartInventory}
+      />
+
       {showReportModal && <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} />}
+
       {showDivergenceReport && (
         <DivergenceReport
-          show={showDivergenceReport} onClose={() => setShowDivergenceReport(false)} onFinishAndReset={handleFinishAndReset}
-          collectedItems={inventario} expectedItems={expectedItems} inventoryCc={inventarioCentroCusto}
-          centroCusto={inventarioCentroCusto} user={currentUser?.cracha}
+          show={showDivergenceReport}
+          onClose={() => setShowDivergenceReport(false)}
+          onFinishAndReset={handleFinishAndReset}
+          collectedItems={inventario}
+          expectedItems={expectedItems}
+          inventoryCc={inventarioCentroCusto}
+          centroCusto={inventarioCentroCusto} 
+          user={currentUser?.cracha}
         />
       )}
+
       <AddNotFoundItemModal
-        show={showAddItemModal} onClose={() => setShowAddItemModal(false)} onConfirm={handleConfirmAddItem}
-        itemCode={itemCodeToAdd} defaultLocal={inventarioLocal} centroCusto={inventarioCentroCusto} user={currentUser?.cracha}
+        show={showAddItemModal}
+        onClose={() => setShowAddItemModal(false)}
+        onConfirm={handleConfirmAddItem}
+        itemCode={itemCodeToAdd}
+        defaultLocal={inventarioLocal}
+        centroCusto={inventarioCentroCusto} 
+        user={currentUser?.cracha}
       />
-      <RegisteredItemsList show={showRegisteredList} onClose={() => setShowRegisteredList(false)} />
-      <StatusModal show={statusModal.show} type={statusModal.type} message={statusModal.message} onClose={handleCloseStatus} />
+
+      <RegisteredItemsList 
+        show={showRegisteredList} 
+        onClose={() => setShowRegisteredList(false)} 
+      />
+
+      <StatusModal 
+        show={statusModal.show} 
+        type={statusModal.type} 
+        message={statusModal.message} 
+        onClose={handleCloseStatus} 
+      />
 
       <footer className="app-footer">
         <p className="mb-0">© {new Date().getFullYear()} - Sistema de Consulta de Imobilizados | Desenvolvido para Videplast</p>
