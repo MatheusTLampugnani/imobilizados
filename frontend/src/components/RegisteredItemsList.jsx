@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DataTable from 'react-data-table-component';
 import { Modal, Button, Spinner, Alert, Form, Row, Col, InputGroup, Card } from 'react-bootstrap';
-import { Calendar, Building, Search, FileEarmarkSpreadsheet, PencilSquare, Trash, ListCheck, CardText, GeoAlt, Hash } from 'react-bootstrap-icons';
+import { Calendar, Building, Search, FileEarmarkSpreadsheet, PencilSquare, Trash, ListCheck, CardText, GeoAlt, Hash, ExclamationTriangle } from 'react-bootstrap-icons';
 import { API_URL } from '../apiConfig';
 import { locationsData } from '../utils/locais';
 
@@ -24,6 +24,9 @@ const RegisteredItemsList = ({ show, onClose }) => {
   const [editSector, setEditSector] = useState('');
   const [editSubLocal, setEditSubLocal] = useState('');
   const [editSubLocalOptions, setEditSubLocalOptions] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const customStyles = {
     headCells: {
@@ -93,15 +96,25 @@ const RegisteredItemsList = ({ show, onClose }) => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Tem certeza que deseja excluir este item permanentemente?")) {
-      try {
-        await axios.delete(`${API_URL}/imobilizados-cadastrados/${id}`);
-        setItems(prev => prev.filter(item => item.id !== id));
-      } catch (err) {
-        console.error(err); 
-        alert("Erro ao excluir o item.");
-      }
+  const confirmDelete = (row) => {
+    setItemToDelete(row);
+    setShowDeleteModal(true);
+  };
+
+  const executeDelete = async () => {
+    if (!itemToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await axios.delete(`${API_URL}/imobilizados-cadastrados/${itemToDelete.id}`);
+      setItems(prev => prev.filter(item => item.id !== itemToDelete.id));
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+    } catch (err) {
+      console.error(err); 
+      alert("Erro ao excluir o item.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -110,7 +123,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
 
     let currentSector = '';
     let currentSub = '';
-    
+
     if (row.local && row.local.includes(' - ')) {
         const parts = row.local.split(' - ');
         currentSector = parts[0];
@@ -135,7 +148,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
   const handleEditSectorChange = (e) => {
     const sector = e.target.value;
     setEditSector(sector);
-    
+
     if (sector && locationsData[sector]) {
         setEditSubLocalOptions(locationsData[sector]);
         setEditSubLocal('');
@@ -156,7 +169,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
   const handleSaveEdit = async () => {
     try {
       if (editSector && !editSubLocal) {
-         alert("Por favor, selecione o ambiente (sub-local).");
+         alert("Por favor, selecione o ambiente específico (sub-local).");
          return;
       }
 
@@ -178,12 +191,12 @@ const RegisteredItemsList = ({ show, onClose }) => {
   };
 
   const columns = [
-    { name: 'Data', selector: row => new Date(row.created_at).toLocaleDateString('pt-BR'), sortable: true, width: '100px' },
+    { name: 'Data', selector: row => new Date(row.created_at).toLocaleDateString('pt-BR'), sortable: true, width: '180px' },
     { name: 'Descrição', selector: row => row.descricao, sortable: true, wrap: true, grow: 2 },
-    { name: 'Inventário', selector: row => row.codigo_inventario, sortable: true, width: '110px' },
-    { name: 'Série', selector: row => row.numero_serie, sortable: true, width: '110px' },
-    { name: 'C. Custo', selector: row => row.centro_custo, sortable: true, width: '90px', center: true },
-    { name: 'Local', selector: row => row.local, sortable: true, width: '120px' },
+    { name: 'Inventário', selector: row => row.codigo_inventario, sortable: true, width: '90px' },
+    { name: 'Série', selector: row => row.numero_serie, sortable: true, width: '180px' },
+    { name: 'C. Custo', selector: row => row.centro_custo, sortable: true, width: '180px', center: true },
+    { name: 'Local', selector: row => row.local, sortable: true, width: '180px' },
     { name: 'Resp.', selector: row => row.cracha, sortable: true, width: '90px', center: true },
     {
       name: 'Ações',
@@ -194,7 +207,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
           <Button variant="outline-primary" size="sm" className="px-2" onClick={() => handleEditClick(row)} title="Editar">
             <PencilSquare />
           </Button>
-          <Button variant="outline-danger" size="sm" className="px-2" onClick={() => handleDelete(row.id)} title="Excluir">
+          <Button variant="outline-danger" size="sm" className="px-2" onClick={() => confirmDelete(row)} title="Excluir">
             <Trash />
           </Button>
         </div>
@@ -204,13 +217,12 @@ const RegisteredItemsList = ({ show, onClose }) => {
 
   return (
     <>
-      <Modal show={show} onHide={onClose} size="xl" centered backdrop="static">
+      <Modal show={show} onHide={onClose} size="xxl" centered backdrop="static">
         <Modal.Header closeButton className="bg-danger text-white border-0 shadow-sm">
           <Modal.Title className="d-flex align-items-center gap-2">
             <ListCheck size={24} /> Itens Cadastrados (Novos)
           </Modal.Title>
         </Modal.Header>
-        
         <Modal.Body className="bg-light">
           <Card className="mb-3 border-0 shadow-sm">
             <Card.Body className="p-3">
@@ -302,7 +314,6 @@ const RegisteredItemsList = ({ show, onClose }) => {
           <Button variant="secondary" onClick={onClose}>Fechar</Button>
         </Modal.Footer>
       </Modal>
-
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered backdrop="static">
         <Modal.Header closeButton className="bg-primary text-white border-0 shadow-sm">
           <Modal.Title className="h6 mb-0 d-flex align-items-center">
@@ -343,11 +354,11 @@ const RegisteredItemsList = ({ show, onClose }) => {
                     </Form.Group>
                 </Col>
              </Row>
-
              <Form.Group className="mb-2">
                <Form.Label className="small fw-bold text-secondary">LOCALIZAÇÃO</Form.Label>
                <InputGroup>
                   <InputGroup.Text className="bg-light"><GeoAlt /></InputGroup.Text>
+                  
                   <Form.Select 
                     value={editSector} 
                     onChange={handleEditSectorChange}
@@ -358,6 +369,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
                       <option key={sector} value={sector}>{sector}</option>
                     ))}
                   </Form.Select>
+
                   <Form.Select 
                     value={editSubLocal} 
                     onChange={handleEditSubLocalChange}
@@ -375,6 +387,26 @@ const RegisteredItemsList = ({ show, onClose }) => {
         <Modal.Footer className="bg-light border-top-0">
           <Button variant="outline-secondary" onClick={() => setShowEditModal(false)}>Cancelar</Button>
           <Button variant="primary" onClick={handleSaveEdit} className="px-4 shadow-sm">Salvar</Button>
+        </Modal.Footer>
+      </Modal>
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal.Header className="bg-danger text-white border-0">
+            <Modal.Title className="h5 d-flex align-items-center">
+                <ExclamationTriangle className="me-2" /> Confirmar Exclusão
+            </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center py-4">
+            <p className="mb-1 text-secondary">Você está prestes a excluir o item:</p>
+            <h5 className="mb-3 text-dark fw-bold">{itemToDelete?.descricao}</h5>
+            <p className="text-muted small">Essa ação é permanente e não poderá ser desfeita.</p>
+        </Modal.Body>
+        <Modal.Footer className="border-0 justify-content-center pb-4">
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)} disabled={isDeleting} className="px-4">
+                Cancelar
+            </Button>
+            <Button variant="danger" onClick={executeDelete} disabled={isDeleting} className="px-4">
+                {isDeleting ? <Spinner as="span" animation="border" size="sm" /> : 'Sim, Excluir'}
+            </Button>
         </Modal.Footer>
       </Modal>
     </>

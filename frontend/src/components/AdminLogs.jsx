@@ -107,7 +107,7 @@ const AdminLogs = ({ onBack }) => {
                 <ArrowLeft /> Voltar
             </Button>
             <h4 className="m-0 text-dark d-flex align-items-center">
-                <ShieldLock className="me-2 text-danger" /> Logs de Alteração de Imobilizados
+                <ShieldLock className="me-2 text-danger" /> Logs de Alteração
             </h4>
         </div>
         <div style={{ width: '300px' }}>

@@ -60,7 +60,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
           IMOBILIZADOS
         </Card.Header>
         <Card.Body>
-          <Accordion defaultActiveKey={resultado.itens[0]?.id?.toString()} alwaysOpen className="mt-2">
+          <Accordion defaultActiveKey={resultado.itens[0]?.id?.toString()} className="mt-2">
             {resultado.itens.map((item) => (
               <Accordion.Item eventKey={item.id?.toString()} key={item.id}>
                 <Accordion.Header>
@@ -74,6 +74,10 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                         <td>{item.codigo_imobilizado || 'Sem código'}</td>
                       </tr>
                       <tr>
+                        <td><strong>SUB NÚMERO</strong></td>
+                        <td>{item['Subnº']}</td>
+                      </tr>
+                      <tr>
                         <td><strong>DESCRIÇÃO</strong></td>
                         <td>{item.Descrição || 'Sem descrição'}</td>
                       </tr>
@@ -81,7 +85,6 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                         <td><strong>DATA INCORPORAÇÃO</strong></td>
                         <td>{item.Data || 'Sem data'}</td>
                       </tr>
-                      
                       <tr>
                         <td><strong>INVENTÁRIO</strong></td>
                         <td className="d-flex justify-content-between align-items-center border-0">
@@ -92,12 +95,10 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                             />
                         </td>
                       </tr>
-                      
                       <tr>
                         <td><strong>INVENTÁRIO ANTIGO</strong></td>
                         <td>{item.Inventário_Antigo || '---'}</td>
                       </tr>
-
                       <tr>
                         <td><strong>NÚMERO DE SÉRIE</strong></td>
                         <td className="d-flex justify-content-between align-items-center border-0">
@@ -108,7 +109,6 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                             />
                         </td>
                       </tr>
-
                       <tr>
                         <td><strong>CENTRO DE CUSTO</strong></td>
                         <td className="d-flex justify-content-between align-items-center border-0">
@@ -119,7 +119,6 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                             />
                         </td>
                       </tr>
-        
                       <tr>
                         <td><strong>LOCAL</strong></td>
                         <td className="d-flex justify-content-between align-items-center border-0">
@@ -130,10 +129,6 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                             />
                         </td>
                       </tr>                      
-                      <tr>
-                        <td><strong>SUB NÚMERO</strong></td>
-                        <td>{item['Subnº']}</td>
-                      </tr>
                     </tbody>
                   </Table>
                 </Accordion.Body>
