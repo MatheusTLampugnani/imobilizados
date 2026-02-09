@@ -54,7 +54,7 @@ const AdminLogs = ({ onBack }) => {
       name: 'Data',
       selector: row => new Date(row.created_at).toLocaleString('pt-BR'),
       sortable: true,
-      width: '160px',
+      width: '180px',
       style: { fontWeight: 'bold', fontSize: '0.8rem' }
     },
     {
@@ -83,7 +83,7 @@ const AdminLogs = ({ onBack }) => {
       grow: 2
     },
     {
-      name: 'Item (Cód)',
+      name: 'Imobilizado',
       selector: row => row.codigo_imobilizado || '-',
       width: '100px',
       center: true
