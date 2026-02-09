@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button } from 'react-bootstrap';
+import { ShieldLock } from 'react-bootstrap-icons';
 import Header from './components/Header';
 import InputArea from './components/InputArea';
 import Inventory from './components/Inventory';
@@ -13,37 +14,33 @@ import FilterControls from './components/FilterControls';
 import StatusModal from './components/StatusModal';
 import LoginScreen from './components/Login';
 import RegisteredItemsList from './components/RegisteredItemsList';
+import AdminLogs from './components/AdminLogs';
 import { API_URL } from './apiConfig';
 import './App.css';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
-
   const [showCcInputModal, setShowCcInputModal] = useState(false);
   const [codigo, setCodigo] = useState('');
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
   const [inventarioUsuario, setInventarioUsuario] = useState('');
   const [inventarioLocal, setInventarioLocal] = useState('');
   const [expectedItems, setExpectedItems] = useState([]);
-  
   const [showReportModal, setShowReportModal] = useState(false);
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
-  
   const [showRegisteredList, setShowRegisteredList] = useState(false);
-  
   const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
-
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
+  const [view, setView] = useState('home');
 
   useEffect(() => {
     try {
@@ -322,65 +319,77 @@ function App() {
         <span className="me-2 text-muted d-none d-md-inline">Olá, <strong>{currentUser.nome}</strong></span>
         <Button variant="outline-secondary" size="sm" onClick={handleLogout}>Sair</Button>
       </div>
-
       <Container>
         <Header />
-        <InputArea
-          codigo={codigo}
-          setCodigo={setCodigo}
-          onConsultar={handleCodeSearch}
-          onLimpar={handleClearSearch}
-          isLoading={isLoading}
-        />
-
-        {resultado && resultado.itens.length > 0 && (
-          <FilterControls
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onResetFilters={handleResetFilters}
-            sortConfig={sortConfig}
-            onSortChange={handleSortChange}
-            itemsCount={filteredItems.length}
-          />
+        {view === 'home' && currentUser?.isAdmin && (
+            <div className="d-flex justify-content-end mb-3">
+                <Button 
+                    variant="dark" 
+                    onClick={() => setView('admin_logs')}
+                    className="d-flex align-items-center gap-2 shadow-sm"
+                >
+                    <ShieldLock /> Auditoria (Admin)
+                </Button>
+            </div>
         )}
-
-        <ResultsDisplay
-          isLoading={isLoading}
-          error={error}
-          resultado={resultado ? { ...resultado, itens: filteredItems } : null}
-          onRefresh={refreshData}
-          currentUser={currentUser}
-        />
-        
-        <div className="main-actions-container">
-          <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
-            Iniciar Inventário
-          </Button>
-          <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
-            Gerar Relatórios
-          </Button>
-          
-          <Button 
-            variant="secondary" 
-            size="lg" 
-            className="mt-2 mt-md-0 ms-md-2" 
-            onClick={() => setShowRegisteredList(true)}
-          >
-            Ver Cadastrados
-          </Button>
-        </div>
-
-        {inventarioAtivo && (
-          <Inventory
-            inventario={inventario}
-            setInventario={setInventario}
-            onClose={() => setInventarioAtivo(false)}
-            onAddItem={handleAddItemToInventory}
-            inventarioCentroCusto={inventarioCentroCusto}
-            expectedItems={expectedItems}
-            onFinishInventory={handleFinalizeInventory}
-            onRemoveItem={handleRemoveItem}
-          />
+        {view === 'home' && (
+            <>
+                <InputArea
+                  codigo={codigo}
+                  setCodigo={setCodigo}
+                  onConsultar={handleCodeSearch}
+                  onLimpar={handleClearSearch}
+                  isLoading={isLoading}
+                />
+                {resultado && resultado.itens.length > 0 && (
+                  <FilterControls
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    onResetFilters={handleResetFilters}
+                    sortConfig={sortConfig}
+                    onSortChange={handleSortChange}
+                    itemsCount={filteredItems.length}
+                  />
+                )}
+                <ResultsDisplay
+                  isLoading={isLoading}
+                  error={error}
+                  resultado={resultado ? { ...resultado, itens: filteredItems } : null}
+                  onRefresh={refreshData}
+                  currentUser={currentUser}
+                />
+                <div className="main-actions-container">
+                  <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
+                    Iniciar Inventário
+                  </Button>
+                  <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
+                    Gerar Relatórios
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    size="lg" 
+                    className="mt-2 mt-md-0 ms-md-2" 
+                    onClick={() => setShowRegisteredList(true)}
+                  >
+                    Ver Cadastrados
+                  </Button>
+                </div>
+                {inventarioAtivo && (
+                  <Inventory
+                    inventario={inventario}
+                    setInventario={setInventario}
+                    onClose={() => setInventarioAtivo(false)}
+                    onAddItem={handleAddItemToInventory}
+                    inventarioCentroCusto={inventarioCentroCusto}
+                    expectedItems={expectedItems}
+                    onFinishInventory={handleFinalizeInventory}
+                    onRemoveItem={handleRemoveItem}
+                  />
+                )}
+            </>
+        )}
+        {view === 'admin_logs' && (
+            <AdminLogs onBack={() => setView('home')} />
         )}
       </Container>
 

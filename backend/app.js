@@ -215,6 +215,23 @@ app.get('/api/inventory-item', async (req, res) => {
     }
 });
 
+app.get('/api/logs', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('logs_alteracoes')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(500);
+
+        if (error) throw error;
+
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error("ERRO LOGS GERAIS:", error);
+        return res.status(500).json({ message: error.message });
+    }
+});
+
 app.post('/api/login', async (req, res) => {
     const { cracha } = req.body;
 
@@ -235,7 +252,7 @@ app.post('/api/login', async (req, res) => {
 
         return res.status(200).json({ 
             message: 'Login OK', 
-            user: { cracha: data.id, nome: data.nome_completo } 
+            user: { cracha: data.id, nome: data.nome_completo, isAdmin: data.admin } 
         });
 
     } catch (err) {
