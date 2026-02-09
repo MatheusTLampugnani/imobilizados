@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Button } from 'react-bootstrap';
+import { ShieldLock, BoxArrowRight, PersonCircle } from 'react-bootstrap-icons';
 import Header from './components/Header';
 import InputArea from './components/InputArea';
 import Inventory from './components/Inventory';
@@ -13,37 +14,33 @@ import FilterControls from './components/FilterControls';
 import StatusModal from './components/StatusModal';
 import LoginScreen from './components/Login';
 import RegisteredItemsList from './components/RegisteredItemsList';
+import AdminLogs from './components/AdminLogs';
 import { API_URL } from './apiConfig';
 import './App.css';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
-
   const [showCcInputModal, setShowCcInputModal] = useState(false);
   const [codigo, setCodigo] = useState('');
   const [resultado, setResultado] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
   const [inventarioAtivo, setInventarioAtivo] = useState(false);
   const [inventario, setInventario] = useState([]);
   const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
   const [inventarioUsuario, setInventarioUsuario] = useState('');
   const [inventarioLocal, setInventarioLocal] = useState('');
   const [expectedItems, setExpectedItems] = useState([]);
-  
   const [showReportModal, setShowReportModal] = useState(false);
   const [showDivergenceReport, setShowDivergenceReport] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
-  
   const [showRegisteredList, setShowRegisteredList] = useState(false);
-  
   const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
-
   const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
   const [filteredItems, setFilteredItems] = useState([]);
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
+  const [view, setView] = useState('home');
 
   useEffect(() => {
     try {
@@ -318,69 +315,101 @@ function App() {
 
   return (
     <div className="app-wrapper">
-      <div className="position-absolute top-0 end-0 p-3" style={{ zIndex: 1000 }}>
-        <span className="me-2 text-muted d-none d-md-inline">Olá, <strong>{currentUser.nome}</strong></span>
-        <Button variant="outline-secondary" size="sm" onClick={handleLogout}>Sair</Button>
+      <div 
+        className="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-3" 
+        style={{ zIndex: 1000 }}
+      >
+        <div className="d-flex align-items-center text-secondary bg-white px-3 py-1 rounded shadow-sm border d-none d-md-flex">
+            <PersonCircle className="me-2" />
+            <span className="small">Olá, <strong>{currentUser.nome}</strong></span>
+        </div>
+        {view === 'home' && currentUser?.isAdmin && (
+            <Button 
+                variant="dark" 
+                size="sm"
+                onClick={() => setView('admin_logs')}
+                className="d-flex align-items-center gap-2 shadow-sm"
+                title="Acessar Auditoria e Logs"
+            >
+                <ShieldLock size={14} /> 
+                <span className="d-none d-md-inline">Alterações</span>
+            </Button>
+        )}
+        <Button 
+            variant="outline-danger" 
+            size="sm" 
+            onClick={handleLogout}
+            className="d-flex align-items-center gap-2"
+            title="Sair do Sistema"
+        >
+            <BoxArrowRight size={16} />
+            <span className="d-none d-md-inline">Sair</span>
+        </Button>
       </div>
-
       <Container>
         <Header />
-        <InputArea
-          codigo={codigo}
-          setCodigo={setCodigo}
-          onConsultar={handleCodeSearch}
-          onLimpar={handleClearSearch}
-          isLoading={isLoading}
-        />
+        {view === 'home' && (
+            <>
+                <InputArea
+                  codigo={codigo}
+                  setCodigo={setCodigo}
+                  onConsultar={handleCodeSearch}
+                  onLimpar={handleClearSearch}
+                  isLoading={isLoading}
+                />
 
-        {resultado && resultado.itens.length > 0 && (
-          <FilterControls
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onResetFilters={handleResetFilters}
-            sortConfig={sortConfig}
-            onSortChange={handleSortChange}
-            itemsCount={filteredItems.length}
-          />
+                {resultado && resultado.itens.length > 0 && (
+                  <FilterControls
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    onResetFilters={handleResetFilters}
+                    sortConfig={sortConfig}
+                    onSortChange={handleSortChange}
+                    itemsCount={filteredItems.length}
+                  />
+                )}
+
+                <ResultsDisplay
+                  isLoading={isLoading}
+                  error={error}
+                  resultado={resultado ? { ...resultado, itens: filteredItems } : null}
+                  onRefresh={refreshData}
+                  currentUser={currentUser}
+                />
+                
+                <div className="main-actions-container">
+                  <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
+                    Iniciar Inventário
+                  </Button>
+                  <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
+                    Gerar Relatórios
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    size="lg" 
+                    className="mt-2 mt-md-0 ms-md-2" 
+                    onClick={() => setShowRegisteredList(true)}
+                  >
+                    Ver Cadastrados
+                  </Button>
+                </div>
+
+                {inventarioAtivo && (
+                  <Inventory
+                    inventario={inventario}
+                    setInventario={setInventario}
+                    onClose={() => setInventarioAtivo(false)}
+                    onAddItem={handleAddItemToInventory}
+                    inventarioCentroCusto={inventarioCentroCusto}
+                    expectedItems={expectedItems}
+                    onFinishInventory={handleFinalizeInventory}
+                    onRemoveItem={handleRemoveItem}
+                  />
+                )}
+            </>
         )}
-
-        <ResultsDisplay
-          isLoading={isLoading}
-          error={error}
-          resultado={resultado ? { ...resultado, itens: filteredItems } : null}
-          onRefresh={refreshData}
-          currentUser={currentUser}
-        />
-        
-        <div className="main-actions-container">
-          <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
-            Iniciar Inventário
-          </Button>
-          <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
-            Gerar Relatórios
-          </Button>
-          
-          <Button 
-            variant="secondary" 
-            size="lg" 
-            className="mt-2 mt-md-0 ms-md-2" 
-            onClick={() => setShowRegisteredList(true)}
-          >
-            Ver Cadastrados
-          </Button>
-        </div>
-
-        {inventarioAtivo && (
-          <Inventory
-            inventario={inventario}
-            setInventario={setInventario}
-            onClose={() => setInventarioAtivo(false)}
-            onAddItem={handleAddItemToInventory}
-            inventarioCentroCusto={inventarioCentroCusto}
-            expectedItems={expectedItems}
-            onFinishInventory={handleFinalizeInventory}
-            onRemoveItem={handleRemoveItem}
-          />
+        {view === 'admin_logs' && (
+            <AdminLogs onBack={() => setView('home')} />
         )}
       </Container>
 
