@@ -210,40 +210,43 @@ const RegisteredItemsList = ({ show, onClose }) => {
         name: 'Descrição', 
         selector: row => row.descricao, 
         sortable: true, 
-        wrap: true,
+        wrap: true, 
         grow: 2 
     },
     { 
         name: 'Inventário', 
         selector: row => row.codigo_inventario, 
         sortable: true, 
-        width: '110px' 
+        wrap: true,
+        width: '120px' 
     },
     { 
         name: 'Série', 
         selector: row => row.numero_serie, 
         sortable: true, 
-        width: '110px' 
+        wrap: true,
+        width: '120px' 
     },
     { 
         name: 'C. Custo', 
         selector: row => row.centro_custo, 
         sortable: true, 
-        width: '90px', 
+        wrap: true,
+        width: '140px',
         center: true 
     },
     { 
         name: 'Local', 
         selector: row => row.local, 
         sortable: true, 
-        wrap: true,
-        width: '140px' 
+        wrap: true, 
+        width: '150px' 
     },
     { 
         name: 'Resp.', 
         selector: row => row.cracha, 
         sortable: true, 
-        width: '90px', 
+        width: '100px', 
         center: true 
     },
     {
