@@ -43,123 +43,92 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
 
   const EditButton = ({ onClick, title }) => (
     <Button 
-      size="sm"
-      className="ms-2 border-0 shadow-sm d-flex align-items-center justify-content-center" 
+      variant="link" 
+      className="p-0 ms-2 text-decoration-none text-danger" 
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       title={title || "Editar"}
-      style={{ 
-          backgroundColor: '#e7f5ff', 
-          color: '#004085',
-          width: '32px',
-          height: '32px',
-          padding: 0
-      }}
+      style={{ verticalAlign: 'middle', display: 'inline-flex', alignItems: 'center' }}
     >
       <PencilSquare size={16} />
     </Button>
   );
 
-  const cellStyle = {
-      verticalAlign: 'middle',
-      whiteSpace: 'normal',
-      wordBreak: 'break-word'
-  };
-
   return (
     <>
       <Card className="mt-4 shadow-sm border-0">
         <Card.Header as="h5" className="bg-danger text-white">
-          IMOBILIZADOS ENCONTRADOS
+          IMOBILIZADOS
         </Card.Header>
         <Card.Body>
-          <Accordion defaultActiveKey={resultado.itens[0]?.id?.toString()} alwaysOpen className="mt-2">
+          <Accordion defaultActiveKey={resultado.itens[0]?.id?.toString()} className="mt-2">
             {resultado.itens.map((item) => (
               <Accordion.Item eventKey={item.id?.toString()} key={item.id}>
                 <Accordion.Header>
-                  <div style={{ whiteSpace: 'normal', lineHeight: '1.4', marginRight: '10px' }}>
-                      <strong>Item (Subnº {item['Subnº']}):</strong> {item.Descrição || 'Sem descrição'}
-                  </div>
+                  Item (Subnº {item['Subnº']}): {item.Descrição || 'Sem descrição'}
                 </Accordion.Header>
                 <Accordion.Body>
                   <Table striped bordered hover responsive size="sm">
                     <tbody>
                       <tr>
-                        <td style={{ width: '30%', fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>CÓDIGO DO IMOBILIZADO</td>
-                        <td style={cellStyle}>{item.codigo_imobilizado || 'Sem código'}</td>
+                        <td style={{ width: '30%' }}><strong>CÓDIGO DO IMOBILIZADO</strong></td>
+                        <td>{item.codigo_imobilizado || 'Sem código'}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>DESCRIÇÃO</td>
-                        <td style={cellStyle}>{item.Descrição || 'Sem descrição'}</td>
+                        <td><strong>SUB NÚMERO</strong></td>
+                        <td>{item['Subnº']}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>DATA INCORPORAÇÃO</td>
-                        <td style={cellStyle}>{item.Data || 'Sem data'}</td>
+                        <td><strong>DESCRIÇÃO</strong></td>
+                        <td>{item.Descrição || 'Sem descrição'}</td>
                       </tr>
-                      
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>INVENTÁRIO</td>
-                        <td style={cellStyle}>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <span>{item.Inventário || 'Sem número'}</span>
-                                <EditButton 
-                                    onClick={() => handleEditClick(item, 'inventory')} 
-                                    title="Editar Código de Inventário" 
-                                />
-                            </div>
+                        <td><strong>DATA INCORPORAÇÃO</strong></td>
+                        <td>{item.Data || 'Sem data'}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>INVENTÁRIO</strong></td>
+                        <td className="d-flex justify-content-between align-items-center border-0">
+                            <span>{item.Inventário || 'Sem número'}</span>
+                            <EditButton 
+                                onClick={() => handleEditClick(item, 'inventory')} 
+                                title="Editar Código de Inventário" 
+                            />
                         </td>
                       </tr>
-                      
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>INVENTÁRIO ANTIGO</td>
-                        <td style={cellStyle}>{item.Inventário_Antigo || '---'}</td>
+                        <td><strong>INVENTÁRIO ANTIGO</strong></td>
+                        <td>{item.Inventário_Antigo || '---'}</td>
                       </tr>
-
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>NÚMERO DE SÉRIE</td>
-                        <td style={cellStyle}>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <span>{item.Série || item.numero_serie || 'Sem número'}</span>
-                                <EditButton 
-                                    onClick={() => handleEditClick(item, 'serial')} 
-                                    title="Editar Número de Série" 
-                                />
-                            </div>
+                        <td><strong>NÚMERO DE SÉRIE</strong></td>
+                        <td className="d-flex justify-content-between align-items-center border-0">
+                            <span>{item.Série || item.numero_serie || 'Sem número'}</span>
+                            <EditButton 
+                                onClick={() => handleEditClick(item, 'serial')} 
+                                title="Editar Número de Série" 
+                            />
                         </td>
                       </tr>
-
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>CENTRO DE CUSTO</td>
-                        <td style={cellStyle}>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <span style={{ marginRight: '10px' }}>
-                                    {item.CentroCusto || 'N/A'} {item.CentroCustoNome ? `- ${item.CentroCustoNome}` : ''}
-                                </span>
-                                <EditButton 
-                                    onClick={() => handleEditClick(item, 'cost_center')} 
-                                    title="Editar Centro de Custo" 
-                                />
-                            </div>
+                        <td><strong>CENTRO DE CUSTO</strong></td>
+                        <td className="d-flex justify-content-between align-items-center border-0">
+                            <span>{item.CentroCusto || 'N/A'} {item.CentroCustoNome ? `- ${item.CentroCustoNome}` : ''}</span>
+                            <EditButton 
+                                onClick={() => handleEditClick(item, 'cost_center')} 
+                                title="Editar Centro de Custo" 
+                            />
                         </td>
                       </tr>
-        
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>LOCAL</td>
-                        <td style={cellStyle}>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <span style={{ marginRight: '10px' }}>
-                                    {item.Local || 'Não informado'}
-                                </span>
-                                <EditButton 
-                                    onClick={() => handleEditClick(item, 'local')} 
-                                    title="Editar Localização" 
-                                />
-                            </div>
+                        <td><strong>LOCAL</strong></td>
+                        <td className="d-flex justify-content-between align-items-center border-0">
+                            <span>{item.Local || 'Não informado'}</span>
+                            <EditButton 
+                                onClick={() => handleEditClick(item, 'local')} 
+                                title="Editar Localização" 
+                            />
                         </td>
                       </tr>                      
-                      <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>SUB NÚMERO</td>
-                        <td style={cellStyle}>{item['Subnº']}</td>
-                      </tr>
                     </tbody>
                   </Table>
                 </Accordion.Body>
