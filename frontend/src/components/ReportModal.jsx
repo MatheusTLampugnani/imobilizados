@@ -65,7 +65,7 @@ const ReportModal = ({ show, onClose } ) => {
           type="text"
           value={centroCusto}
           onChange={(e) => setCentroCusto(e.target.value)}
-          placeholder="Ex: 100005002"
+          placeholder="Ex: 1005ADMI03"
           autoFocus
         />
         {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
