@@ -244,6 +244,16 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
             </>
         )}
       </Modal.Body>
+      {viewState === 'form' && (
+          <Modal.Footer className="bg-light border-top-0 justify-content-end">
+            <Button variant="outline-secondary" onClick={handleCloseInternal} className="me-2">
+                Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleUpdate} disabled={isUpdating} className="px-4 shadow-sm">
+                {isUpdating ? <Spinner as="span" animation="border" size="sm" /> : 'Confirmar Alteração'}
+            </Button>
+          </Modal.Footer>
+      )}
     </Modal>
   );
 };
