@@ -94,6 +94,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
       }
 
       const idsToUpdate = selectedRows.map(r => r.id);
+
       const updatedLogs = logs.map(l => 
           idsToUpdate.includes(l.id) ? { ...l, verificado: status } : l
       );
@@ -119,7 +120,6 @@ const AdminLogs = ({ onBack, currentUser }) => {
       setSelectedRows(selectedRows);
   };
 
-  // --- EXPORTAÇÃO CSV ---
   const handleExportCSV = () => {
       const headers = ["Data", "Usuario", "Acao", "Detalhes", "Item", "Status"];
       const csvContent = [
@@ -174,10 +174,12 @@ const AdminLogs = ({ onBack, currentUser }) => {
 
   const getActionStyle = (actionType) => {
       const type = String(actionType || '').toLowerCase();
+      
       if (type.includes('inventário')) return { backgroundColor: '#e7f5ff', color: '#004085', border: '1px solid #b8daff' }; 
       if (type.includes('série')) return { backgroundColor: '#e0f2f1', color: '#004d40', border: '1px solid #b2dfdb' }; 
       if (type.includes('centro de custo')) return { backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba' }; 
       if (type.includes('local')) return { backgroundColor: '#f3e5f5', color: '#4a148c', border: '1px solid #e1bee7' }; 
+      
       return { backgroundColor: '#f8f9fa', color: '#383d41', border: '1px solid #d6d8db' };
   };
 
@@ -195,7 +197,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
                     disabled={true}
                     style={{ 
                         transform: 'scale(1.2)',
-                        opacity: 1,
+                        opacity: 1, 
                         cursor: 'help'
                     }}
                 />
@@ -222,9 +224,20 @@ const AdminLogs = ({ onBack, currentUser }) => {
       name: 'Ação Realizada',
       selector: row => row.tipo_alteracao,
       sortable: true,
-      width: '180px',
+      width: '230px', 
       cell: row => (
-        <div style={{ ...getActionStyle(row.tipo_alteracao), padding: '6px 8px', borderRadius: '6px', fontWeight: '600', fontSize: '0.75rem', width: '100%', textAlign: 'center', whiteSpace: 'normal', lineHeight: '1.2' }}>
+        <div style={{ 
+            ...getActionStyle(row.tipo_alteracao), 
+            padding: '6px 8px', 
+            borderRadius: '6px', 
+            fontWeight: '600', 
+            fontSize: '0.75rem', 
+            width: '100%', 
+            textAlign: 'center', 
+            whiteSpace: 'nowrap', 
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+        }}>
             {row.tipo_alteracao}
         </div>
       )
@@ -281,15 +294,12 @@ const AdminLogs = ({ onBack, currentUser }) => {
               <Card.Body>
                   <Row className="g-3">
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Data Início</Form.Label>
                           <Form.Control type="date" size="sm" name="dataInicio" value={filters.dataInicio} onChange={handleFilterChange} />
                       </Col>
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Data Fim</Form.Label>
                           <Form.Control type="date" size="sm" name="dataFim" value={filters.dataFim} onChange={handleFilterChange} />
                       </Col>
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Tipo Ação</Form.Label>
                           <Form.Select size="sm" name="tipoAcao" value={filters.tipoAcao} onChange={handleFilterChange}>
                               <option value="">Todas</option>
                               <option value="Inventário">Inventário</option>
@@ -299,19 +309,16 @@ const AdminLogs = ({ onBack, currentUser }) => {
                           </Form.Select>
                       </Col>
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Status</Form.Label>
                           <Form.Select size="sm" name="statusVerificacao" value={filters.statusVerificacao} onChange={handleFilterChange}>
-                              <option value="">Todos</option>
+                              <option value="">Status: Todos</option>
                               <option value="true">Verificados</option>
                               <option value="false">Pendentes</option>
                           </Form.Select>
                       </Col>
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Usuário</Form.Label>
-                          <Form.Control type="text" size="sm" placeholder="Crachá/Nome" name="usuario" value={filters.usuario} onChange={handleFilterChange} />
+                          <Form.Control type="text" size="sm" placeholder="Usuário" name="usuario" value={filters.usuario} onChange={handleFilterChange} />
                       </Col>
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Imobilizado</Form.Label>
                           <Form.Control type="text" size="sm" placeholder="Código" name="imobilizado" value={filters.imobilizado} onChange={handleFilterChange} />
                       </Col>
                       <Col md={12}>
@@ -335,8 +342,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
             <DataTable
               columns={columns}
               data={filteredLogs}
-              pagination
-              paginationComponentOptions={{ rowsPerPageText: 'Registros:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
+              paginationpaginationComponentOptions={{ rowsPerPageText: 'Registros:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
               selectableRows={isAdmin} 
               onSelectedRowsChange={handleRowSelected}
               clearSelectedRows={toggleCleared}
@@ -350,7 +356,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
           )}
         </Card.Body>
       </Card>
-      
+
       {isAdmin && selectedRows.length > 0 && (
           <div 
             className="fixed-bottom p-3 d-flex justify-content-center align-items-center gap-3 shadow-lg"

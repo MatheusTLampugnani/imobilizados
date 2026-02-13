@@ -378,7 +378,7 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
         if (updateError) throw updateError;
 
         await registrarLog(
-            itemId, user, 'Alteração de Centro de Custo', valorAntigo, newCostCenter,
+            itemId, user, 'Alteração de CC', valorAntigo, newCostCenter,
             currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
         );
 
