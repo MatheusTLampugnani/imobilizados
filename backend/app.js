@@ -528,22 +528,25 @@ app.put('/api/imobilizados-cadastrados/:id', async (req, res) => {
     }
 });
 
-app.put('/api/logs/:id/verify', async (req, res) => {
-    const { id } = req.params;
-    const { verificado } = req.body;
+app.put('/api/logs/verify-batch', async (req, res) => {
+    const { ids, verificado } = req.body;
+
+    if (!ids || ids.length === 0) {
+        return res.status(400).json({ message: 'Nenhum ID fornecido.' });
+    }
 
     try {
         const { data, error } = await supabase
             .from('logs_alteracoes')
             .update({ verificado: verificado })
-            .eq('id', id)
+            .in('id', ids)
             .select();
 
         if (error) throw error;
 
-        return res.status(200).json({ message: 'Status atualizado com sucesso', data });
+        return res.status(200).json({ message: `${ids.length} logs atualizados.`, data });
     } catch (error) {
-        console.error("Erro ao atualizar log:", error);
+        console.error("Erro em lote:", error);
         return res.status(500).json({ message: error.message });
     }
 });

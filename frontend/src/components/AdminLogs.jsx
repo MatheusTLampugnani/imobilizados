@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Spinner, Button, Form, InputGroup, Row, Col, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, Spinner, Button, Form, InputGroup, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import DataTable from 'react-data-table-component';
 import { ArrowLeft, ShieldLock, Search, FileEarmarkPdf, FiletypeCsv, Funnel, CheckCircle, XCircle } from 'react-bootstrap-icons';
 import axios from 'axios';
@@ -11,6 +11,8 @@ const AdminLogs = ({ onBack }) => {
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [toggleCleared, setToggleCleared] = useState(false);
   const [filters, setFilters] = useState({
     usuario: '',
     tipoAcao: '',
@@ -98,13 +100,45 @@ const AdminLogs = ({ onBack }) => {
           await axios.put(`${API_URL}/logs/${row.id}/verify`, { verificado: novoStatus });
       } catch (error) {
           console.error("Erro ao salvar verificação", error);
-          alert("Erro ao salvar status. Recarregando...");
           fetchLogs();
       }
   };
 
+  const handleBulkUpdate = async (status) => {
+      if (selectedRows.length === 0) return;
+
+      if (!window.confirm(`Deseja marcar ${selectedRows.length} itens como ${status ? 'VERIFICADOS' : 'PENDENTES'}?`)) {
+          return;
+      }
+
+      const idsToUpdate = selectedRows.map(r => r.id);
+      const updatedLogs = logs.map(l => 
+          idsToUpdate.includes(l.id) ? { ...l, verificado: status } : l
+      );
+      setLogs(updatedLogs);
+
+      try {
+          await axios.put(`${API_URL}/logs/verify-batch`, { 
+              ids: idsToUpdate, 
+              verificado: status 
+          });
+          
+          setToggleCleared(!toggleCleared);
+          setSelectedRows([]);
+
+      } catch (error) {
+          console.error("Erro em lote", error);
+          alert("Erro ao atualizar em massa. Tente novamente.");
+          fetchLogs();
+      }
+  };
+
+  const handleRowSelected = ({ selectedRows }) => {
+      setSelectedRows(selectedRows);
+  };
+
   const handleExportCSV = () => {
-      const headers = ["Data", "Usuario", "Acao", "Detalhes", "Item", "Verificado"];
+      const headers = ["Data", "Usuario", "Acao", "Detalhes", "Item", "Status"];
       const csvContent = [
           headers.join(","),
           ...filteredLogs.map(row => [
@@ -113,7 +147,7 @@ const AdminLogs = ({ onBack }) => {
               row.tipo_alteracao,
               `"${row.detalhes?.replace(/"/g, '""')}"`,
               row.codigo_imobilizado,
-              row.verificado ? "SIM" : "NAO"
+              row.verificado ? "VERIFICADO" : "PENDENTE"
           ].join(","))
       ].join("\n");
 
@@ -127,7 +161,7 @@ const AdminLogs = ({ onBack }) => {
   };
 
   const handleExportPDF = () => {
-      const doc = new jsPDF('l', 'mm', 'a4'); 
+      const doc = new jsPDF('l', 'mm', 'a4');
       
       doc.text("Relatório de Auditoria de Imobilizados", 14, 15);
       doc.setFontSize(10);
@@ -149,9 +183,7 @@ const AdminLogs = ({ onBack }) => {
           startY: 30,
           styles: { fontSize: 8, cellPadding: 2 },
           headStyles: { fillColor: [52, 58, 64] },
-          columnStyles: { 
-              3: { cellWidth: 80 }
-          }
+          columnStyles: { 3: { cellWidth: 80 } }
       });
 
       doc.save(`Auditoria_Logs_${new Date().toLocaleDateString()}.pdf`);
@@ -175,9 +207,8 @@ const AdminLogs = ({ onBack }) => {
         <OverlayTrigger overlay={<Tooltip>{row.verificado ? "Verificado" : "Pendente"}</Tooltip>}>
             <Form.Check 
                 type="switch"
-                checked={!!row.verificado} // Garante booleano
+                checked={!!row.verificado}
                 onChange={() => toggleVerification(row)}
-                className="custom-switch"
                 style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
             />
         </OverlayTrigger>
@@ -226,19 +257,13 @@ const AdminLogs = ({ onBack }) => {
   ];
 
   const customStyles = {
-    headCells: {
-      style: { backgroundColor: '#343a40', color: '#fff', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.8rem' },
-    },
-    rows: {
-      style: { fontSize: '0.85rem', minHeight: '60px' },
-    },
-    cells: {
-        style: { paddingLeft: '8px', paddingRight: '8px' }
-    }
+    headCells: { style: { backgroundColor: '#343a40', color: '#fff', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.8rem' } },
+    rows: { style: { fontSize: '0.85rem', minHeight: '60px' } },
+    cells: { style: { paddingLeft: '8px', paddingRight: '8px' } }
   };
 
   return (
-    <div className="mt-3 fade-in">
+    <div className="mt-3 fade-in position-relative">
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-3">
         <div className="d-flex align-items-center">
             <Button variant="outline-dark" onClick={onBack} className="me-3 shadow-sm border-0 bg-white">
@@ -250,12 +275,7 @@ const AdminLogs = ({ onBack }) => {
         </div>
         
         <div className="d-flex gap-2">
-            <Button 
-                variant={showFilters ? "primary" : "outline-primary"} 
-                size="sm" 
-                onClick={() => setShowFilters(!showFilters)}
-                className="d-flex align-items-center gap-2 shadow-sm"
-            >
+            <Button variant={showFilters ? "primary" : "outline-primary"} size="sm" onClick={() => setShowFilters(!showFilters)}>
                 <Funnel /> Filtros
             </Button>
             <Button variant="outline-success" size="sm" onClick={handleExportCSV} className="d-flex align-items-center gap-2 shadow-sm">
@@ -316,29 +336,65 @@ const AdminLogs = ({ onBack }) => {
           </Card>
       )}
 
-      <Card className="shadow-sm border-0">
+      <Card className="shadow-sm border-0 mb-5">
         <Card.Body className="p-0 rounded overflow-hidden">
           {loading ? (
              <div className="text-center p-5">
                 <Spinner animation="border" variant="primary" />
-                <p className="mt-2 text-muted">Carregando histórico...</p>
              </div>
           ) : (
             <DataTable
               columns={columns}
               data={filteredLogs}
               pagination
-              paginationComponentOptions={{ rowsPerPageText: 'Linhas:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
+              selectableRows
+              onSelectedRowsChange={handleRowSelected}
+              clearSelectedRows={toggleCleared}
+              selectableRowsHighlight
               highlightOnHover
               striped
-              responsive
               dense
               customStyles={customStyles}
-              noDataComponent={<div className="p-5 text-center text-muted">Nenhum registro encontrado com os filtros atuais.</div>}
+              noDataComponent={<div className="p-5 text-center text-muted">Nenhum registro encontrado.</div>}
             />
           )}
         </Card.Body>
       </Card>
+
+      {selectedRows.length > 0 && (
+          <div 
+            className="fixed-bottom p-3 d-flex justify-content-center align-items-center gap-3 shadow-lg"
+            style={{ 
+                backgroundColor: 'rgba(52, 58, 64, 0.95)', 
+                backdropFilter: 'blur(5px)',
+                borderTop: '1px solid #495057',
+                zIndex: 1050,
+                width: '100%'
+            }}
+          >
+              <span className="text-white fw-bold me-3">
+                  {selectedRows.length} itens selecionados
+              </span>
+              
+              <Button 
+                variant="success" 
+                size="sm" 
+                className="px-4 fw-bold rounded-pill shadow"
+                onClick={() => handleBulkUpdate(true)}
+              >
+                  <CheckCircle className="me-2" /> Validar Todos
+              </Button>
+
+              <Button 
+                variant="danger" 
+                size="sm" 
+                className="px-4 fw-bold rounded-pill shadow"
+                onClick={() => handleBulkUpdate(false)}
+              >
+                  <XCircle className="me-2" /> Invalidar Todos
+              </Button>
+          </div>
+      )}
     </div>
   );
 };
