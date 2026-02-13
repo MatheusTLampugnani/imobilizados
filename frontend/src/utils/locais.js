@@ -91,5 +91,9 @@ export const locationsData = {
   "CLICHERIA": [
     "SALA CLI ADM",
     "AREA PROD COLG"
+  ],
+  "BAIXA": [
+    "BAIXA IMOB",
+    "NAO ENCONTRADO"
   ]
 };
