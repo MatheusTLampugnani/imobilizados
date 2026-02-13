@@ -378,7 +378,7 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
         if (updateError) throw updateError;
 
         await registrarLog(
-            itemId, user, 'Alteração de Centro de Custo', valorAntigo, newCostCenter,
+            itemId, user, 'Alteração de CC', valorAntigo, newCostCenter,
             currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
         );
 
@@ -525,6 +525,29 @@ app.put('/api/imobilizados-cadastrados/:id', async (req, res) => {
         return res.status(200).json(data);
     } catch (error) {
         return res.status(500).json({ message: `Erro ao editar: ${error.message}` });
+    }
+});
+
+app.put('/api/logs/verify-batch', async (req, res) => {
+    const { ids, verificado } = req.body;
+
+    if (!ids || ids.length === 0) {
+        return res.status(400).json({ message: 'Nenhum ID fornecido.' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('logs_alteracoes')
+            .update({ verificado: verificado })
+            .in('id', ids)
+            .select();
+
+        if (error) throw error;
+
+        return res.status(200).json({ message: `${ids.length} logs atualizados.`, data });
+    } catch (error) {
+        console.error("Erro em lote:", error);
+        return res.status(500).json({ message: error.message });
     }
 });
 

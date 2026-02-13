@@ -82,6 +82,7 @@ export const locationsData = {
     "GERAL"
   ],
   "FATURAMENTO": [
+    "FATURAMENTO ADM",
     "SALA ARQUIVO"
   ],
   "ALPHA CLICHERIA": [
@@ -90,5 +91,9 @@ export const locationsData = {
   "CLICHERIA": [
     "SALA CLI ADM",
     "AREA PROD COLG"
+  ],
+  "BAIXA": [
+    "BAIXA IMOB",
+    "NAO ENCONTRADO"
   ]
 };
