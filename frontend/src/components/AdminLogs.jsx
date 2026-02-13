@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Spinner, Button, Form, InputGroup, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Card, Spinner, Button, Form, InputGroup, Row, Col, OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
 import DataTable from 'react-data-table-component';
 import { ArrowLeft, ShieldLock, Search, FileEarmarkPdf, FiletypeCsv, Funnel, CheckCircle, XCircle } from 'react-bootstrap-icons';
 import axios from 'axios';
@@ -7,20 +7,17 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { API_URL } from '../apiConfig';
 
-const AdminLogs = ({ onBack }) => {
+  const AdminLogs = ({ onBack, currentUser }) => {
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const isAdmin = currentUser?.isAdmin === true;
   const [selectedRows, setSelectedRows] = useState([]);
   const [toggleCleared, setToggleCleared] = useState(false);
+
   const [filters, setFilters] = useState({
-    usuario: '',
-    tipoAcao: '',
-    detalhes: '',
-    imobilizado: '',
-    dataInicio: '',
-    dataFim: '',
-    statusVerificacao: ''
+    usuario: '', tipoAcao: '', detalhes: '', imobilizado: '',
+    dataInicio: '', dataFim: '', statusVerificacao: ''
   });
 
   const [showFilters, setShowFilters] = useState(false);
@@ -45,24 +42,16 @@ const AdminLogs = ({ onBack }) => {
 
   useEffect(() => {
     const result = logs.filter(log => {
-        const usuarioMatch = !filters.usuario || 
-            String(log.usuario || '').toLowerCase().includes(filters.usuario.toLowerCase());
-
-        const tipoMatch = !filters.tipoAcao || 
-            String(log.tipo_alteracao || '').toLowerCase().includes(filters.tipoAcao.toLowerCase());
-
-        const detalhesMatch = !filters.detalhes || 
-            String(log.detalhes || '').toLowerCase().includes(filters.detalhes.toLowerCase());
-
-        const codigoMatch = !filters.imobilizado || 
-            String(log.codigo_imobilizado || '').toLowerCase().includes(filters.imobilizado.toLowerCase());
+        const usuarioMatch = !filters.usuario || String(log.usuario || '').toLowerCase().includes(filters.usuario.toLowerCase());
+        const tipoMatch = !filters.tipoAcao || String(log.tipo_alteracao || '').toLowerCase().includes(filters.tipoAcao.toLowerCase());
+        const detalhesMatch = !filters.detalhes || String(log.detalhes || '').toLowerCase().includes(filters.detalhes.toLowerCase());
+        const codigoMatch = !filters.imobilizado || String(log.codigo_imobilizado || '').toLowerCase().includes(filters.imobilizado.toLowerCase());
 
         let dataMatch = true;
         if (filters.dataInicio || filters.dataFim) {
             const logDate = new Date(log.created_at).setHours(0,0,0,0);
             const start = filters.dataInicio ? new Date(filters.dataInicio).setHours(0,0,0,0) : null;
             const end = filters.dataFim ? new Date(filters.dataFim).setHours(0,0,0,0) : null;
-
             if (start && logDate < start) dataMatch = false;
             if (end && logDate > end) dataMatch = false;
         }
@@ -92,6 +81,8 @@ const AdminLogs = ({ onBack }) => {
   };
 
   const toggleVerification = async (row) => {
+      if (!isAdmin) return;
+
       const novoStatus = !row.verificado;
       const updatedLogs = logs.map(l => l.id === row.id ? { ...l, verificado: novoStatus } : l);
       setLogs(updatedLogs);
@@ -99,13 +90,13 @@ const AdminLogs = ({ onBack }) => {
       try {
           await axios.put(`${API_URL}/logs/${row.id}/verify`, { verificado: novoStatus });
       } catch (error) {
-          console.error("Erro ao salvar verificação", error);
+          console.error("Erro", error);
           fetchLogs();
       }
   };
 
   const handleBulkUpdate = async (status) => {
-      if (selectedRows.length === 0) return;
+      if (!isAdmin || selectedRows.length === 0) return;
 
       if (!window.confirm(`Deseja marcar ${selectedRows.length} itens como ${status ? 'VERIFICADOS' : 'PENDENTES'}?`)) {
           return;
@@ -122,13 +113,11 @@ const AdminLogs = ({ onBack }) => {
               ids: idsToUpdate, 
               verificado: status 
           });
-          
           setToggleCleared(!toggleCleared);
           setSelectedRows([]);
-
       } catch (error) {
           console.error("Erro em lote", error);
-          alert("Erro ao atualizar em massa. Tente novamente.");
+          alert("Erro ao atualizar em massa.");
           fetchLogs();
       }
   };
@@ -162,7 +151,6 @@ const AdminLogs = ({ onBack }) => {
 
   const handleExportPDF = () => {
       const doc = new jsPDF('l', 'mm', 'a4');
-      
       doc.text("Relatório de Auditoria de Imobilizados", 14, 15);
       doc.setFontSize(10);
       doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 22);
@@ -185,7 +173,6 @@ const AdminLogs = ({ onBack }) => {
           headStyles: { fillColor: [52, 58, 64] },
           columnStyles: { 3: { cellWidth: 80 } }
       });
-
       doc.save(`Auditoria_Logs_${new Date().toLocaleDateString()}.pdf`);
   };
 
@@ -209,7 +196,9 @@ const AdminLogs = ({ onBack }) => {
                 type="switch"
                 checked={!!row.verificado}
                 onChange={() => toggleVerification(row)}
-                style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
+                disabled={!isAdmin}
+                title={!isAdmin ? "Apenas administradores podem alterar o status" : ""}
+                style={{ cursor: isAdmin ? 'pointer' : 'not-allowed', transform: 'scale(1.2)' }}
             />
         </OverlayTrigger>
       )
@@ -292,15 +281,12 @@ const AdminLogs = ({ onBack }) => {
               <Card.Body>
                   <Row className="g-3">
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Data Início</Form.Label>
                           <Form.Control type="date" size="sm" name="dataInicio" value={filters.dataInicio} onChange={handleFilterChange} />
                       </Col>
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Data Fim</Form.Label>
                           <Form.Control type="date" size="sm" name="dataFim" value={filters.dataFim} onChange={handleFilterChange} />
                       </Col>
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Tipo Ação</Form.Label>
                           <Form.Select size="sm" name="tipoAcao" value={filters.tipoAcao} onChange={handleFilterChange}>
                               <option value="">Todas</option>
                               <option value="Inventário">Inventário</option>
@@ -310,19 +296,16 @@ const AdminLogs = ({ onBack }) => {
                           </Form.Select>
                       </Col>
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Status</Form.Label>
                           <Form.Select size="sm" name="statusVerificacao" value={filters.statusVerificacao} onChange={handleFilterChange}>
-                              <option value="">Todos</option>
+                              <option value="">Status: Todos</option>
                               <option value="true">Verificados</option>
                               <option value="false">Pendentes</option>
                           </Form.Select>
                       </Col>
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Usuário</Form.Label>
-                          <Form.Control type="text" size="sm" placeholder="Crachá/Nome" name="usuario" value={filters.usuario} onChange={handleFilterChange} />
+                          <Form.Control type="text" size="sm" placeholder="Usuário" name="usuario" value={filters.usuario} onChange={handleFilterChange} />
                       </Col>
                       <Col md={2}>
-                          <Form.Label className="small fw-bold">Imobilizado</Form.Label>
                           <Form.Control type="text" size="sm" placeholder="Código" name="imobilizado" value={filters.imobilizado} onChange={handleFilterChange} />
                       </Col>
                       <Col md={12}>
@@ -345,9 +328,10 @@ const AdminLogs = ({ onBack }) => {
           ) : (
             <DataTable
               columns={columns}
+              paginationComponentOptions={{ rowsPerPageText: 'Registros:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
               data={filteredLogs}
               pagination
-              selectableRows
+              selectableRows={isAdmin} 
               onSelectedRowsChange={handleRowSelected}
               clearSelectedRows={toggleCleared}
               selectableRowsHighlight
@@ -361,7 +345,7 @@ const AdminLogs = ({ onBack }) => {
         </Card.Body>
       </Card>
 
-      {selectedRows.length > 0 && (
+      {isAdmin && selectedRows.length > 0 && (
           <div 
             className="fixed-bottom p-3 d-flex justify-content-center align-items-center gap-3 shadow-lg"
             style={{ 
@@ -376,21 +360,11 @@ const AdminLogs = ({ onBack }) => {
                   {selectedRows.length} itens selecionados
               </span>
               
-              <Button 
-                variant="success" 
-                size="sm" 
-                className="px-4 fw-bold rounded-pill shadow"
-                onClick={() => handleBulkUpdate(true)}
-              >
+              <Button variant="success" size="sm" className="px-4 fw-bold rounded-pill shadow" onClick={() => handleBulkUpdate(true)}>
                   <CheckCircle className="me-2" /> Validar Todos
               </Button>
 
-              <Button 
-                variant="danger" 
-                size="sm" 
-                className="px-4 fw-bold rounded-pill shadow"
-                onClick={() => handleBulkUpdate(false)}
-              >
+              <Button variant="danger" size="sm" className="px-4 fw-bold rounded-pill shadow" onClick={() => handleBulkUpdate(false)}>
                   <XCircle className="me-2" /> Invalidar Todos
               </Button>
           </div>

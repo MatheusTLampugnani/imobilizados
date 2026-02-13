@@ -323,7 +323,7 @@ function App() {
             <PersonCircle className="me-2" />
             <span className="small">Olá, <strong>{currentUser.nome}</strong></span>
         </div>
-        {view === 'home' && currentUser?.isAdmin && (
+        {view === 'home' && (
             <Button 
                 variant="dark" 
                 size="sm"
@@ -408,8 +408,12 @@ function App() {
                 )}
             </>
         )}
+        
         {view === 'admin_logs' && (
-            <AdminLogs onBack={() => setView('home')} />
+            <AdminLogs 
+                onBack={() => setView('home')} 
+                currentUser={currentUser}
+            />
         )}
       </Container>
 
@@ -419,7 +423,12 @@ function App() {
         onConfirm={handleStartInventory}
       />
 
-      {showReportModal && <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} />}
+      {showReportModal && 
+        <ReportModal 
+          show={showReportModal} 
+          onClose={() => setShowReportModal(false)} 
+        />
+      }
 
       {showDivergenceReport && (
         <DivergenceReport

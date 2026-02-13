@@ -82,6 +82,7 @@ export const locationsData = {
     "GERAL"
   ],
   "FATURAMENTO": [
+    "FATURAMENTO ADM",
     "SALA ARQUIVO"
   ],
   "ALPHA CLICHERIA": [
