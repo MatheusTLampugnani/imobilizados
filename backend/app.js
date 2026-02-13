@@ -528,6 +528,26 @@ app.put('/api/imobilizados-cadastrados/:id', async (req, res) => {
     }
 });
 
+app.put('/api/logs/:id/verify', async (req, res) => {
+    const { id } = req.params;
+    const { verificado } = req.body;
+
+    try {
+        const { data, error } = await supabase
+            .from('logs_alteracoes')
+            .update({ verificado: verificado })
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+
+        return res.status(200).json({ message: 'Status atualizado com sucesso', data });
+    } catch (error) {
+        console.error("Erro ao atualizar log:", error);
+        return res.status(500).json({ message: error.message });
+    }
+});
+
 app.get('/api/report/excel', async (req, res) => {
     try {
         const { start_date, end_date, centro_custo } = req.query;
