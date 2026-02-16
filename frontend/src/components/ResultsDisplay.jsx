@@ -53,12 +53,6 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
     </Button>
   );
 
-  const cellStyle = {
-      verticalAlign: 'middle',
-      whiteSpace: 'normal',
-      wordBreak: 'break-word'
-  };
-
   return (
     <>
       <Card className="mt-4 shadow-sm border-0">
@@ -78,10 +72,6 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                       <tr>
                         <td style={{ width: '30%' }}><strong>CÓDIGO DO IMOBILIZADO</strong></td>
                         <td>{item.codigo_imobilizado || 'Sem código'}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>SUB NÚMERO</strong></td>
-                        <td>{item['Subnº']}</td>
                       </tr>
                       <tr>
                         <td><strong>DESCRIÇÃO</strong></td>
@@ -126,18 +116,19 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                         </td>
                       </tr>
                       <tr>
-                        <td style={cellStyle}>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <span style={{ marginRight: '10px' }}>
-                                  {item.Local || item.local || 'Não informado'}
-                                </span>
-                                <EditButton 
-                                  onClick={() => handleEditClick(item, 'local')} 
-                                  title="Editar Localização" 
-                                />
-                            </div>
+                        <td><strong>LOCAL</strong></td>
+                        <td className="d-flex justify-content-between align-items-center border-0">
+                            <span>{item.Local || 'Não informado'}</span>
+                            <EditButton 
+                                onClick={() => handleEditClick(item, 'local')} 
+                                title="Editar Localização" 
+                            />
                         </td>
-                      </tr>                      
+                      </tr>
+                      <tr>
+                        <td><strong>SUB NÚMERO</strong></td>
+                        <td>{item['Subnº']}</td>
+                      </tr>              
                     </tbody>
                   </Table>
                 </Accordion.Body>
