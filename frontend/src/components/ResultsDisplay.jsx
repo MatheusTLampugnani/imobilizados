@@ -74,6 +74,10 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                         <td>{item.codigo_imobilizado || 'Sem código'}</td>
                       </tr>
                       <tr>
+                        <td><strong>SUB NÚMERO</strong></td>
+                        <td>{item['Subnº']}</td>
+                      </tr>
+                      <tr>
                         <td><strong>DESCRIÇÃO</strong></td>
                         <td>{item.Descrição || 'Sem descrição'}</td>
                       </tr>
@@ -124,11 +128,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                                 title="Editar Localização" 
                             />
                         </td>
-                      </tr>
-                      <tr>
-                        <td><strong>SUB NÚMERO</strong></td>
-                        <td>{item['Subnº']}</td>
-                      </tr>              
+                      </tr>                      
                     </tbody>
                   </Table>
                 </Accordion.Body>
@@ -137,7 +137,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
           </Accordion>
         </Card.Body>
       </Card>
-      
+
       <EditInventoryModal
         show={showEditModal}
         onClose={handleCloseModal}
