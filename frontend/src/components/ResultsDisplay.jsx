@@ -48,7 +48,6 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       title={title || "Editar"}
       style={{ 
-          backgroundColor: '#e7f5ff', 
           color: '#ff0000',
           width: '32px',
           height: '32px',
@@ -84,20 +83,27 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                   <Table striped bordered hover responsive size="sm">
                     <tbody>
                       <tr>
-                        <td style={{ width: '30%', fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>CÓDIGO DO IMOBILIZADO</td>
+                        <td style={{ width: '30%', fontWeight: 'bold' }}>CÓDIGO DO IMOBILIZADO</td>
                         <td style={cellStyle}>{item.codigo_imobilizado || 'Sem código'}</td>
                       </tr>
+
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>DESCRIÇÃO</td>
+                        <td style={{ fontWeight: 'bold' }}>SUB NÚMERO</td>
+                        <td style={cellStyle}>{item['Subnº']}</td>
+                      </tr>
+                      
+                      <tr>
+                        <td style={{ fontWeight: 'bold' }}>DESCRIÇÃO</td>
                         <td style={cellStyle}>{item.Descrição || 'Sem descrição'}</td>
                       </tr>
+                      
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>DATA INCORPORAÇÃO</td>
+                        <td style={{ fontWeight: 'bold' }}>DATA INCORPORAÇÃO</td>
                         <td style={cellStyle}>{item.Data || 'Sem data'}</td>
                       </tr>
                       
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>INVENTÁRIO</td>
+                        <td style={{ fontWeight: 'bold' }}>INVENTÁRIO</td>
                         <td style={cellStyle}>
                             <div className="d-flex justify-content-between align-items-center">
                                 <span>{item.Inventário || 'Sem número'}</span>
@@ -110,12 +116,12 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                       </tr>
                       
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>INVENTÁRIO ANTIGO</td>
+                        <td style={{ fontWeight: 'bold' }}>INVENTÁRIO ANTIGO</td>
                         <td style={cellStyle}>{item.Inventário_Antigo || '---'}</td>
                       </tr>
 
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>NÚMERO DE SÉRIE</td>
+                        <td style={{ fontWeight: 'bold'}}>NÚMERO DE SÉRIE</td>
                         <td style={cellStyle}>
                             <div className="d-flex justify-content-between align-items-center">
                                 <span>{item.Série || item.numero_serie || 'Sem número'}</span>
@@ -128,7 +134,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                       </tr>
 
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>CENTRO DE CUSTO</td>
+                        <td style={{ fontWeight: 'bold' }}>CENTRO DE CUSTO</td>
                         <td style={cellStyle}>
                             <div className="d-flex justify-content-between align-items-center">
                                 <span style={{ marginRight: '10px' }}>
@@ -143,7 +149,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                       </tr>
         
                       <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>LOCAL</td>
+                        <td style={{ fontWeight: 'bold' }}>LOCAL</td>
                         <td style={cellStyle}>
                             <div className="d-flex justify-content-between align-items-center">
                                 <span style={{ marginRight: '10px' }}>
@@ -155,10 +161,6 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                                 />
                             </div>
                         </td>
-                      </tr>                      
-                      <tr>
-                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>SUB NÚMERO</td>
-                        <td style={cellStyle}>{item['Subnº']}</td>
                       </tr>
                     </tbody>
                   </Table>

@@ -85,7 +85,7 @@ app.get('/api/imobilizado', async (req, res) => {
 
     try {
         const searchByText = async (field, value) => {
-        const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, `%${value}%`);
+            const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, `%${value}%`);
             if (error) throw error;
             return data || [];
         };
@@ -140,6 +140,7 @@ app.get('/api/imobilizado', async (req, res) => {
             }
             
             const imobilizadoPrincipalCodigo = itensEncontrados[0].codigo_imobilizado;
+            
             const responseData = {
                 codigo_imobilizado: imobilizadoPrincipalCodigo,
                 itens: itensEncontrados.map(item => ({
@@ -152,7 +153,9 @@ app.get('/api/imobilizado', async (req, res) => {
                     "Série": item.numero_serie,
                     "CentroCusto": item.centro_custo,
                     "CentroCustoNome": centroCustoMap[item.centro_custo] || '',
-                    "codigo_imobilizado": item.codigo_imobilizado
+                    "codigo_imobilizado": item.codigo_imobilizado,
+                    "Local": item.local,
+                    "local": item.local
                 }))
             };
             return res.status(200).json(responseData);
