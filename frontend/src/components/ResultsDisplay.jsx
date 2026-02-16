@@ -48,10 +48,11 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       title={title || "Editar"}
       style={{ 
-          color: '#ff0000',
-          width: '32px',
-          height: '32px',
-          padding: 0
+        backgroundColor: '#FFFFFF' ,
+        color: '#ff0000',
+        width: '30px',
+        height: '30px',
+        padding: 0
       }}
     >
       <PencilSquare size={16} />
@@ -83,27 +84,27 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                   <Table striped bordered hover responsive size="sm">
                     <tbody>
                       <tr>
-                        <td style={{ width: '30%', fontWeight: 'bold' }}>CÓDIGO DO IMOBILIZADO</td>
+                        <td><strong>CÓDIGO DO IMOBILIZADO</strong></td>
                         <td style={cellStyle}>{item.codigo_imobilizado || 'Sem código'}</td>
                       </tr>
 
                       <tr>
-                        <td style={{ fontWeight: 'bold' }}>SUB NÚMERO</td>
+                        <td><strong>SUB NÚMERO</strong></td>
                         <td style={cellStyle}>{item['Subnº']}</td>
                       </tr>
                       
                       <tr>
-                        <td style={{ fontWeight: 'bold' }}>DESCRIÇÃO</td>
+                        <td><strong>DESCRIÇÃO</strong></td>
                         <td style={cellStyle}>{item.Descrição || 'Sem descrição'}</td>
                       </tr>
                       
                       <tr>
-                        <td style={{ fontWeight: 'bold' }}>DATA INCORPORAÇÃO</td>
+                        <td><strong>DATA INCORPORAÇÃO</strong></td>
                         <td style={cellStyle}>{item.Data || 'Sem data'}</td>
                       </tr>
                       
                       <tr>
-                        <td style={{ fontWeight: 'bold' }}>INVENTÁRIO</td>
+                        <td><strong>INVENTÁRIO</strong></td>
                         <td style={cellStyle}>
                             <div className="d-flex justify-content-between align-items-center">
                                 <span>{item.Inventário || 'Sem número'}</span>
@@ -116,12 +117,12 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                       </tr>
                       
                       <tr>
-                        <td style={{ fontWeight: 'bold' }}>INVENTÁRIO ANTIGO</td>
+                        <td><strong>INVENTÁRIO ANTIGO</strong></td>
                         <td style={cellStyle}>{item.Inventário_Antigo || '---'}</td>
                       </tr>
 
                       <tr>
-                        <td style={{ fontWeight: 'bold'}}>NÚMERO DE SÉRIE</td>
+                        <td><strong>NÚMERO DE SÉRIE</strong></td>
                         <td style={cellStyle}>
                             <div className="d-flex justify-content-between align-items-center">
                                 <span>{item.Série || item.numero_serie || 'Sem número'}</span>
@@ -134,7 +135,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                       </tr>
 
                       <tr>
-                        <td style={{ fontWeight: 'bold' }}>CENTRO DE CUSTO</td>
+                        <td><strong>CENTRO DE CUSTO</strong></td>
                         <td style={cellStyle}>
                             <div className="d-flex justify-content-between align-items-center">
                                 <span style={{ marginRight: '10px' }}>
@@ -149,7 +150,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                       </tr>
         
                       <tr>
-                        <td style={{ fontWeight: 'bold' }}>LOCAL</td>
+                        <td><strong>LOCAL</strong></td>
                         <td style={cellStyle}>
                             <div className="d-flex justify-content-between align-items-center">
                                 <span style={{ marginRight: '10px' }}>
