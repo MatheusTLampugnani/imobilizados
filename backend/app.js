@@ -431,7 +431,7 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
 
         const { data: currentItem, error: fetchError } = await supabase
             .from('imobilizados')
-            .select('local, codigo_imobilizado, subnumero, data_incorporacao') 
+            .select('local, codigo_imobilizado, sub_numero, data_incorporacao') 
             .eq('id', itemId)
             .single();
             
@@ -445,7 +445,7 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
 
         await registrarLog(
             itemId, user, 'Alteração de Local', newLocal,
-            currentItem.codigo_imobilizado, currentItem.subnumero, currentItem.data_incorporacao
+            currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
         );
 
         return res.status(200).json({ message: 'Local atualizado com sucesso!' });
