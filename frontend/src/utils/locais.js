@@ -95,5 +95,15 @@ export const locationsData = {
   "BAIXA": [
     "BAIXA IMOB",
     "NAO ENCONTRADO"
+  ],
+  "MAQUINAS":[
+    "MÁQUINA 109",
+    "MÁQUINA 115",
+    "MÁQUINA 116",
+    "MÁQUINA 117",
+    "ESTRUTURA/INSTALAÇÕES",
+    "ADM IMPRESSÃO",
+    "SALA DE PEÇAS",
+    "MÁQUINA 402"
   ]
 };
