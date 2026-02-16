@@ -378,7 +378,7 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
         if (updateError) throw updateError;
 
         await registrarLog(
-            itemId, user, 'Alteração de CC', valorAntigo, newCostCenter,
+            itemId, user, 'Alteração de Centro de Custo', valorAntigo, newCostCenter,
             currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
         );
 
@@ -427,7 +427,9 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
     try {
         const { itemId, newLocal, user } = req.body;
 
-        if (!itemId || !newLocal) return res.status(400).json({ message: 'Dados inválidos.' });
+        if (!itemId || !newLocal) {
+            return res.status(400).json({ message: 'Dados inválidos (ID ou Local faltando).' });
+        }
 
         const { data: currentItem, error: fetchError } = await supabase
             .from('imobilizados')
@@ -436,19 +438,32 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
             .single();
             
         if (fetchError) throw fetchError;
-        const { error: updateError } = await supabase.from('imobilizados').update({
-            local: newLocal,
-            usuario_atualizacao: user || 'Sistema'
-        }).eq('id', itemId);
+
+        const { error: updateError } = await supabase
+            .from('imobilizados')
+            .update({
+                local: newLocal,
+                usuario_atualizacao: user || 'Sistema'
+            })
+            .eq('id', itemId);
         
         if (updateError) throw updateError;
 
+        const localAntigo = currentItem.local || 'Não informado';
+        const detalhesLog = `Valor Antigo: ${localAntigo}; Novo Valor: ${newLocal}`;
+
         await registrarLog(
-            itemId, user, 'Alteração de Local', newLocal,
-            currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
+            itemId, 
+            user, 
+            'Alteração de Local',
+            detalhesLog,
+            currentItem.codigo_imobilizado, 
+            currentItem.sub_numero, 
+            currentItem.data_incorporacao
         );
 
         return res.status(200).json({ message: 'Local atualizado com sucesso!' });
+
     } catch(error) {
         console.error("ERRO UPDATE LOCAL:", error);
         return res.status(500).json({ message: error.message });
