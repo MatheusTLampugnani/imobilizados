@@ -315,18 +315,19 @@ const AdminLogs = ({ onBack, currentUser }) => {
              </div>
           ) : (
             <DataTable
-              columns={columns}
-              data={filteredLogs}
-              pagination
-              selectableRows={isAdmin} 
-              onSelectedRowsChange={handleRowSelected}
-              clearSelectedRows={toggleCleared}
-              selectableRowsHighlight
-              highlightOnHover
-              striped
-              dense
-              customStyles={customStyles}
-              noDataComponent={<div className="p-5 text-center text-muted">Nenhum registro encontrado.</div>}
+                columns={columns}
+                data={filteredLogs}
+                pagination
+                paginationComponentOptions={{ rowsPerPageText: 'Registros:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
+                selectableRows={isAdmin} 
+                onSelectedRowsChange={handleRowSelected}
+                clearSelectedRows={toggleCleared}
+                selectableRowsHighlight
+                highlightOnHover
+                striped
+                dense
+                customStyles={customStyles}
+                noDataComponent={<div className="p-5 text-center text-muted">Nenhum registro encontrado.</div>}
             />
           )}
         </Card.Body>
