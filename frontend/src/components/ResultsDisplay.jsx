@@ -120,13 +120,17 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                         </td>
                       </tr>
                       <tr>
-                        <td><strong>LOCAL</strong></td>
-                        <td className="d-flex justify-content-between align-items-center border-0">
-                            <span>{item.local || 'Não informado'}</span>
-                            <EditButton 
-                                onClick={() => handleEditClick(item, 'local')} 
-                                title="Editar Localização" 
-                            />
+                        <td style={{ fontWeight: 'bold', backgroundColor: '#f8f9fa' }}>LOCAL</td>
+                        <td style={cellStyle}>
+                            <div className="d-flex justify-content-between align-items-center">
+                                <span style={{ marginRight: '10px' }}>
+                                  {item.Local || item.local || 'Não informado'}
+                                </span>
+                                <EditButton 
+                                  onClick={() => handleEditClick(item, 'local')} 
+                                  title="Editar Localização" 
+                                />
+                            </div>
                         </td>
                       </tr>                      
                     </tbody>
