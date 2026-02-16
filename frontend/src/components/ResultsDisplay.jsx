@@ -122,7 +122,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                       <tr>
                         <td><strong>LOCAL</strong></td>
                         <td className="d-flex justify-content-between align-items-center border-0">
-                            <span>{item.Local || 'Não informado'}</span>
+                            <span>{item.local || 'Não informado'}</span>
                             <EditButton 
                                 onClick={() => handleEditClick(item, 'local')} 
                                 title="Editar Localização" 
