@@ -88,27 +88,18 @@ const AdminLogs = ({ onBack, currentUser }) => {
 
   const handleBulkUpdate = async (status) => {
       if (!isAdmin || selectedRows.length === 0) return;
-
       if (!window.confirm(`Deseja marcar ${selectedRows.length} itens como ${status ? 'VERIFICADOS' : 'PENDENTES'}?`)) {
           return;
       }
 
       const idsToUpdate = selectedRows.map(r => r.id);
-
-      const updatedLogs = logs.map(l => 
-          idsToUpdate.includes(l.id) ? { ...l, verificado: status } : l
-      );
+      const updatedLogs = logs.map(l => idsToUpdate.includes(l.id) ? { ...l, verificado: status } : l);
       setLogs(updatedLogs);
 
       try {
-          await axios.put(`${API_URL}/logs/verify-batch`, { 
-              ids: idsToUpdate, 
-              verificado: status 
-          });
-          
+          await axios.put(`${API_URL}/logs/verify-batch`, { ids: idsToUpdate, verificado: status });
           setToggleCleared(!toggleCleared);
           setSelectedRows([]);
-
       } catch (error) {
           console.error("Erro em lote", error);
           alert("Erro ao atualizar em massa. Tente novamente.");
@@ -116,12 +107,10 @@ const AdminLogs = ({ onBack, currentUser }) => {
       }
   };
 
-  const handleRowSelected = ({ selectedRows }) => {
-      setSelectedRows(selectedRows);
-  };
+  const handleRowSelected = ({ selectedRows }) => { setSelectedRows(selectedRows); };
 
   const handleExportCSV = () => {
-      const headers = ["Data", "Usuario", "Acao", "Detalhes", "Item", "Status"];
+      const headers = ["Data", "Usuario", "Acao", "Detalhes", "Item", "Subnº", "Status"];
       const csvContent = [
           headers.join(","),
           ...filteredLogs.map(row => [
@@ -130,6 +119,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
               row.tipo_alteracao,
               `"${row.detalhes?.replace(/"/g, '""')}"`,
               row.codigo_imobilizado,
+              row.sub_numero || '0',
               row.verificado ? "VERIFICADO" : "PENDENTE"
           ].join(","))
       ].join("\n");
@@ -145,48 +135,41 @@ const AdminLogs = ({ onBack, currentUser }) => {
 
   const handleExportPDF = () => {
       const doc = new jsPDF('l', 'mm', 'a4'); 
-      
       doc.text("Relatório de Auditoria de Imobilizados", 14, 15);
       doc.setFontSize(10);
       doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 22);
-
-      const tableColumn = ["Data", "Usuário", "Ação", "Detalhes", "Item", "Status"];
+      
+      const tableColumn = ["Data", "Usuário", "Ação", "Detalhes", "Item", "Sub", "Status"];
       const tableRows = filteredLogs.map(row => [
           new Date(row.created_at).toLocaleDateString('pt-BR'),
           row.usuario,
           row.tipo_alteracao,
           row.detalhes,
           row.codigo_imobilizado || '-',
+          row.sub_numero || '0',
           row.verificado ? "Verificado" : "Pendente"
       ]);
-
       doc.autoTable({
-          head: [tableColumn],
-          body: tableRows,
-          startY: 30,
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [52, 58, 64] },
+          head: [tableColumn], body: tableRows, startY: 30,
+          styles: { fontSize: 8, cellPadding: 2 }, headStyles: { fillColor: [52, 58, 64] },
           columnStyles: { 3: { cellWidth: 80 } }
       });
-
       doc.save(`Auditoria_Logs_${new Date().toLocaleDateString()}.pdf`);
   };
 
   const getActionStyle = (actionType) => {
       const type = String(actionType || '').toLowerCase();
-      
       if (type.includes('inventário')) return { backgroundColor: '#e7f5ff', color: '#004085', border: '1px solid #b8daff' }; 
       if (type.includes('série')) return { backgroundColor: '#e0f2f1', color: '#004d40', border: '1px solid #b2dfdb' }; 
       if (type.includes('centro de custo')) return { backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba' }; 
       if (type.includes('local')) return { backgroundColor: '#f3e5f5', color: '#4a148c', border: '1px solid #e1bee7' }; 
-      
       return { backgroundColor: '#f8f9fa', color: '#383d41', border: '1px solid #d6d8db' };
   };
 
   const columns = [
     {
       name: 'Status',
-      width: '90px',
+      width: '70px',
       center: true,
       cell: row => (
         <OverlayTrigger overlay={<Tooltip>{row.verificado ? "Verificado" : "Pendente"}</Tooltip>}>
@@ -195,11 +178,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
                     type="switch"
                     checked={!!row.verificado}
                     disabled={true}
-                    style={{ 
-                        transform: 'scale(1.2)',
-                        opacity: 1, 
-                        cursor: 'help'
-                    }}
+                    style={{ transform: 'scale(1.2)', opacity: 1, cursor: 'help' }}
                 />
             </div>
         </OverlayTrigger>
@@ -209,14 +188,14 @@ const AdminLogs = ({ onBack, currentUser }) => {
       name: 'Data',
       selector: row => new Date(row.created_at).toLocaleString('pt-BR'),
       sortable: true,
-      width: '150px',
+      width: '140px',
       style: { fontWeight: 'bold', fontSize: '0.8rem', color: '#555' }
     },
     {
       name: 'Usuário',
       selector: row => row.usuario,
       sortable: true,
-      width: '100px',
+      width: '90px',
       center: true,
       cell: row => <span className="badge bg-light text-dark border shadow-sm text-wrap">{row.usuario}</span>
     },
@@ -224,20 +203,9 @@ const AdminLogs = ({ onBack, currentUser }) => {
       name: 'Ação Realizada',
       selector: row => row.tipo_alteracao,
       sortable: true,
-      width: '230px', 
+      width: '210px', 
       cell: row => (
-        <div style={{ 
-            ...getActionStyle(row.tipo_alteracao), 
-            padding: '6px 8px', 
-            borderRadius: '6px', 
-            fontWeight: '600', 
-            fontSize: '0.75rem', 
-            width: '100%', 
-            textAlign: 'center', 
-            whiteSpace: 'nowrap', 
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-        }}>
+        <div style={{ ...getActionStyle(row.tipo_alteracao), padding: '6px 8px', borderRadius: '6px', fontWeight: '600', fontSize: '0.75rem', width: '100%', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {row.tipo_alteracao}
         </div>
       )
@@ -255,6 +223,13 @@ const AdminLogs = ({ onBack, currentUser }) => {
       width: '90px',
       center: true,
       style: { fontWeight: 'bold' }
+    },
+    {
+      name: 'Subnº',
+      selector: row => row.sub_numero || '0',
+      width: '70px',
+      center: true,
+      style: { fontSize: '0.85rem', color: '#555', fontWeight: 'bold' }
     }
   ];
 
@@ -340,18 +315,19 @@ const AdminLogs = ({ onBack, currentUser }) => {
              </div>
           ) : (
             <DataTable
-              columns={columns}
-              data={filteredLogs}
-              paginationpaginationComponentOptions={{ rowsPerPageText: 'Registros:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
-              selectableRows={isAdmin} 
-              onSelectedRowsChange={handleRowSelected}
-              clearSelectedRows={toggleCleared}
-              selectableRowsHighlight
-              highlightOnHover
-              striped
-              dense
-              customStyles={customStyles}
-              noDataComponent={<div className="p-5 text-center text-muted">Nenhum registro encontrado.</div>}
+                columns={columns}
+                data={filteredLogs}
+                pagination
+                paginationComponentOptions={{ rowsPerPageText: 'Registros:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
+                selectableRows={isAdmin} 
+                onSelectedRowsChange={handleRowSelected}
+                clearSelectedRows={toggleCleared}
+                selectableRowsHighlight
+                highlightOnHover
+                striped
+                dense
+                customStyles={customStyles}
+                noDataComponent={<div className="p-5 text-center text-muted">Nenhum registro encontrado.</div>}
             />
           )}
         </Card.Body>
