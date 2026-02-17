@@ -72,6 +72,9 @@ export const locationsData = {
     "SALA ARQUIVO",
     "AREA PROD AUDITI"
   ],
+  "SERVIÇOS GERAIS":[
+    "SERVIÇOS GERAIS"
+  ],
   "PESQUISA E DESENVOLVIMENTO": [
     "SALA ADM"
   ],
@@ -101,9 +104,16 @@ export const locationsData = {
     "MÁQUINA 115",
     "MÁQUINA 116",
     "MÁQUINA 117",
+    "MÁQUINA 402",
     "ESTRUTURA/INSTALAÇÕES",
-    "ADM IMPRESSÃO",
     "SALA DE PEÇAS",
-    "MÁQUINA 402"
+    "EXT MAQ 15",
+    "EXT MAQ 14",
+    "EXT MAQ 12",
+    "EXT MAQ 06",
+    "EXT MAQ 05",
+    "EXT MAQ 04",
+    "EXT MAQ 02",
+    "MISTURA"
   ]
 };
