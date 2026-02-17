@@ -31,18 +31,29 @@ function formatarValor(valor) {
     return str;
 }
 
-const registrarLog = async (itemId, usuario, tipo, detalhes, codImob, subNum, dataInc) => {
-    const { error } = await supabase.from('logs_alteracoes').insert({
-        item_id: itemId,
-        usuario: usuario,
-        tipo_alteracao: tipo,
-        detalhes: detalhes,
-        codigo_imobilizado: codImob,
-        sub_numero: subNum,
-        created_at: new Date()
-    });
-    if (error) console.error("Erro interno ao inserir log:", error);
-};
+async function registrarLog(itemId, usuario, tipo, detalhes, codImob, sub, dataInc) {
+    try {
+        const { error } = await supabase
+            .from('logs_alteracoes')
+            .insert([{
+                item_id: itemId,
+                usuario: usuario,
+                tipo_alteracao: tipo,
+                detalhes: detalhes,
+                codigo_imobilizado: codImob,
+                sub_numero: sub,
+                data_incorporacao: dataInc
+            }]);
+
+        if (error) {
+            console.error('Erro do Supabase ao salvar log:', error.message);
+        } else {
+            console.log(`Log registrado: ${tipo} - Item ${codImob}`);
+        }
+    } catch (err) {
+        console.error('Erro interno ao salvar log:', err);
+    }
+}
 
 app.get('/api/centro-custo/validate/:cc', async (req, res) => {
   const { cc } = req.params;
@@ -451,13 +462,13 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
                 itemId, 
                 user, 
                 'Alteração de Local',
-                detalhesLog,
+                detalhesLog, 
                 currentItem.codigo_imobilizado, 
                 currentItem.sub_numero, 
                 currentItem.data_incorporacao
             );
         } catch (logError) {
-            console.error("ERRO AO GRAVAR LOG (A atualização funcionou, mas o log falhou):", logError);
+            console.error("ERRO AO GRAVAR LOG:", logError);
         }
 
         return res.status(200).json({ message: 'Local atualizado e log registrado com sucesso!' });
