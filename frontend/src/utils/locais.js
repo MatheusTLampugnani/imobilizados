@@ -104,6 +104,14 @@ export const locationsData = {
     "ESTRUTURA/INSTALAÇÕES",
     "ADM IMPRESSÃO",
     "SALA DE PEÇAS",
-    "MÁQUINA 402"
+    "MÁQUINA 402",
+    "EXT MAQ 15",
+    "EXT MAQ 14",
+    "EXT MAQ 12",
+    "EXT MAQ 06",
+    "EXT MAQ 05",
+    "EXT MAQ 04",
+    "EXT MAQ 02",
+    "MISTURA"
   ]
 };
