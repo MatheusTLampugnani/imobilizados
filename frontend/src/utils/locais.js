@@ -72,6 +72,9 @@ export const locationsData = {
     "SALA ARQUIVO",
     "AREA PROD AUDITI"
   ],
+  "SERVIÇOS GERAIS":[
+    "SERVIÇOS GERAIS"
+  ],
   "PESQUISA E DESENVOLVIMENTO": [
     "SALA ADM"
   ],
