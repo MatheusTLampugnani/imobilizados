@@ -14,7 +14,6 @@ const AdminLogs = ({ onBack, currentUser }) => {
   const isAdmin = currentUser?.isAdmin === true;
   const [selectedRows, setSelectedRows] = useState([]);
   const [toggleCleared, setToggleCleared] = useState(false); 
-
   const [filters, setFilters] = useState({
     usuario: '',
     tipoAcao: '',
@@ -114,7 +113,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
       const csvContent = [
           headers.join(","),
           ...filteredLogs.map(row => [
-              new Date(row.created_at).toLocaleString('pt-BR').replace(',', ''),
+              new Date(row.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }).replace(',', ''),
               row.usuario,
               row.tipo_alteracao,
               `"${row.detalhes?.replace(/"/g, '""')}"`,
@@ -137,11 +136,11 @@ const AdminLogs = ({ onBack, currentUser }) => {
       const doc = new jsPDF('l', 'mm', 'a4'); 
       doc.text("Relatório de Auditoria de Imobilizados", 14, 15);
       doc.setFontSize(10);
-      doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 22);
+      doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`, 14, 22);
       
       const tableColumn = ["Data", "Usuário", "Ação", "Detalhes", "Item", "Sub", "Status"];
       const tableRows = filteredLogs.map(row => [
-          new Date(row.created_at).toLocaleDateString('pt-BR'),
+          new Date(row.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
           row.usuario,
           row.tipo_alteracao,
           row.detalhes,
@@ -177,7 +176,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
                 <Form.Check 
                     type="switch"
                     checked={!!row.verificado}
-                    disabled={true}
+                    disabled={true} 
                     style={{ transform: 'scale(1.2)', opacity: 1, cursor: 'help' }}
                 />
             </div>
@@ -186,9 +185,9 @@ const AdminLogs = ({ onBack, currentUser }) => {
     },
     {
       name: 'Data',
-      selector: row => new Date(row.created_at).toLocaleString('pt-BR'),
+      selector: row => new Date(row.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
       sortable: true,
-      width: '140px',
+      width: '150px',
       style: { fontWeight: 'bold', fontSize: '0.8rem', color: '#555' }
     },
     {
@@ -315,19 +314,19 @@ const AdminLogs = ({ onBack, currentUser }) => {
              </div>
           ) : (
             <DataTable
-                columns={columns}
-                data={filteredLogs}
-                pagination
-                paginationComponentOptions={{ rowsPerPageText: 'Registros:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
-                selectableRows={isAdmin} 
-                onSelectedRowsChange={handleRowSelected}
-                clearSelectedRows={toggleCleared}
-                selectableRowsHighlight
-                highlightOnHover
-                striped
-                dense
-                customStyles={customStyles}
-                noDataComponent={<div className="p-5 text-center text-muted">Nenhum registro encontrado.</div>}
+              columns={columns}
+              data={filteredLogs}
+              pagination
+              paginationComponentOptions={{ rowsPerPageText: 'Registros:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
+              selectableRows={isAdmin} 
+              onSelectedRowsChange={handleRowSelected}
+              clearSelectedRows={toggleCleared}
+              selectableRowsHighlight
+              highlightOnHover
+              striped
+              dense
+              customStyles={customStyles}
+              noDataComponent={<div className="p-5 text-center text-muted">Nenhum registro encontrado.</div>}
             />
           )}
         </Card.Body>
