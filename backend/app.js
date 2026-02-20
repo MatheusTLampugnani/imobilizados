@@ -226,7 +226,7 @@ app.get('/api/logs', async (req, res) => {
             .from('logs_alteracoes')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(500);
+            .limit(100000);
 
         if (error) throw error;
 
