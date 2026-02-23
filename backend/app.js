@@ -31,10 +31,8 @@ function formatarValor(valor) {
     return str;
 }
 
-async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo, codImob, sub, dataInc) {
+async function registrarLog(itemId, usuario, tipo, detalhes, codImob, sub, dataInc) {
     try {
-        const detalhes = `Valor Antigo: ${valorAntigo || 'Vazio'}; Novo Valor: ${valorNovo}`;
-        
         const { error } = await supabase
             .from('logs_alteracoes')
             .insert([{
@@ -47,7 +45,11 @@ async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo, codIm
                 data_incorporacao: dataInc
             }]);
 
-        if (error) console.error('Erro ao salvar log:', error);
+        if (error) {
+            console.error('Erro do Supabase ao salvar log:', error.message);
+        } else {
+            console.log(`Log salvo com sucesso: ${tipo} (${codImob})`);
+        }
     } catch (err) {
         console.error('Erro interno ao salvar log:', err);
     }
@@ -224,7 +226,7 @@ app.get('/api/logs', async (req, res) => {
             .from('logs_alteracoes')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(500);
+            .limit(100000);
 
         if (error) throw error;
 
@@ -337,7 +339,8 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
             .single();
         
         if (fetchError) throw fetchError;
-        const valorAntigo = currentItem.codigo_inventario;
+        const valorAntigo = currentItem.codigo_inventario || 'Vazio';
+        
         const { error: updateError } = await supabase.from('imobilizados').update({
             codigo_inventario: newCode,
             codigo_inventario_antigo: valorAntigo,
@@ -346,8 +349,9 @@ app.put('/api/imobilizado/update-inventory', async (req, res) => {
         
         if (updateError) throw updateError;
 
+        const detalhesLog = `Valor Antigo: ${valorAntigo}; Novo Valor: ${newCode}`;
         await registrarLog(
-            itemId, user, 'Alteração de Inventário', valorAntigo, newCode,
+            itemId, user, 'Alteração de Inventário', detalhesLog,
             currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
         );
 
@@ -371,7 +375,8 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
             .single();
             
         if (fetchError) throw fetchError;
-        const valorAntigo = currentItem.centro_custo;
+        const valorAntigo = currentItem.centro_custo || 'Vazio';
+        
         const { error: updateError } = await supabase.from('imobilizados').update({
             centro_custo: newCostCenter,
             centro_custo_antigo: valorAntigo,
@@ -380,8 +385,9 @@ app.put('/api/imobilizado/update-cost-center', async (req, res) => {
         
         if (updateError) throw updateError;
 
+        const detalhesLog = `Valor Antigo: ${valorAntigo}; Novo Valor: ${newCostCenter}`;
         await registrarLog(
-            itemId, user, 'Alteração de Centro de Custo', valorAntigo, newCostCenter,
+            itemId, user, 'Alteração de Centro de Custo', detalhesLog,
             currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
         );
 
@@ -405,7 +411,8 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
             .single();
             
         if (fetchError) throw fetchError;
-        const valorAntigo = currentItem.numero_serie;
+        const valorAntigo = currentItem.numero_serie || 'Vazio';
+        
         const { error: updateError } = await supabase.from('imobilizados').update({
             numero_serie: newSerial,
             numero_serie_antigo: valorAntigo,
@@ -414,8 +421,9 @@ app.put('/api/imobilizado/update-serial', async (req, res) => {
         
         if (updateError) throw updateError;
 
+        const detalhesLog = `Valor Antigo: ${valorAntigo}; Novo Valor: ${newSerial}`;
         await registrarLog(
-            itemId, user, 'Alteração de N. Série', valorAntigo, newSerial,
+            itemId, user, 'Alteração de N. Série', detalhesLog,
             currentItem.codigo_imobilizado, currentItem.sub_numero, currentItem.data_incorporacao
         );
 
@@ -452,7 +460,7 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
         
         if (updateError) throw updateError;
 
-        const localAntigo = currentItem.local || 'Não informado';
+        const localAntigo = currentItem.local || 'Vazio';
         const detalhesLog = `Valor Antigo: ${localAntigo}; Novo Valor: ${newLocal}`;
 
         await registrarLog(
@@ -497,7 +505,6 @@ app.get('/api/imobilizados-cadastrados', async (req, res) => {
             if (isNumeric) {
                 orConditions.push(`codigo_inventario.eq.${termo}`);
                 orConditions.push(`cracha.eq.${termo}`);
-            } else {
             }
 
             query = query.or(orConditions.join(','));
