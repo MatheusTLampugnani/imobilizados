@@ -42,9 +42,12 @@ export const locationsData = {
   ],
   "MANUTENÇÃO": [
     "SALA TRE 04",
-    "SALA REU GER",
+    "PCM",
     "GERAL",
-    "GERADOR"
+    "GERADOR",
+    "COORDENAÇÃO",
+    "COMPRESSOR DE AR",
+    "SISTEMA DE ÁGUA"
   ],
   "ALMOXARIFADO": [
     "SALA ADM",
