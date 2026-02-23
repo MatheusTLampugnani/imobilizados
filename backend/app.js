@@ -31,8 +31,10 @@ function formatarValor(valor) {
     return str;
 }
 
-async function registrarLog(itemId, usuario, tipo, detalhes, codImob, sub, dataInc) {
+async function registrarLog(itemId, usuario, tipo, valorAntigo, valorNovo, codImob, sub, dataInc) {
     try {
+        const detalhes = `Valor Antigo: ${valorAntigo || 'Vazio'}; Novo Valor: ${valorNovo}`;
+        
         const { error } = await supabase
             .from('logs_alteracoes')
             .insert([{
@@ -45,11 +47,7 @@ async function registrarLog(itemId, usuario, tipo, detalhes, codImob, sub, dataI
                 data_incorporacao: dataInc
             }]);
 
-        if (error) {
-            console.error('Erro do Supabase ao salvar log:', error.message);
-        } else {
-            console.log(`Log registrado: ${tipo} - Item ${codImob}`);
-        }
+        if (error) console.error('Erro ao salvar log:', error);
     } catch (err) {
         console.error('Erro interno ao salvar log:', err);
     }
@@ -226,7 +224,7 @@ app.get('/api/logs', async (req, res) => {
             .from('logs_alteracoes')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(100000);
+            .limit(500);
 
         if (error) throw error;
 
@@ -433,7 +431,7 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
         const { itemId, newLocal, user } = req.body;
 
         if (!itemId || !newLocal) {
-            return res.status(400).json({ message: 'Dados inválidos. ID e Novo Local são obrigatórios.' });
+            return res.status(400).json({ message: 'Dados inválidos (ID ou Local faltando).' });
         }
 
         const { data: currentItem, error: fetchError } = await supabase
@@ -457,24 +455,20 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
         const localAntigo = currentItem.local || 'Não informado';
         const detalhesLog = `Valor Antigo: ${localAntigo}; Novo Valor: ${newLocal}`;
 
-        try {
-            await registrarLog(
-                itemId, 
-                user, 
-                'Alteração de Local',
-                detalhesLog, 
-                currentItem.codigo_imobilizado, 
-                currentItem.sub_numero, 
-                currentItem.data_incorporacao
-            );
-        } catch (logError) {
-            console.error("ERRO AO GRAVAR LOG:", logError);
-        }
+        await registrarLog(
+            itemId, 
+            user, 
+            'Alteração de Local',
+            detalhesLog,
+            currentItem.codigo_imobilizado, 
+            currentItem.sub_numero, 
+            currentItem.data_incorporacao
+        );
 
-        return res.status(200).json({ message: 'Local atualizado e log registrado com sucesso!' });
+        return res.status(200).json({ message: 'Local atualizado com sucesso!' });
 
     } catch(error) {
-        console.error("ERRO CRÍTICO UPDATE LOCAL:", error);
+        console.error("ERRO UPDATE LOCAL:", error);
         return res.status(500).json({ message: error.message });
     }
 });

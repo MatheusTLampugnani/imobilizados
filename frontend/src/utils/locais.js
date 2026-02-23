@@ -7,7 +7,8 @@ export const locationsData = {
   "ACABAMENTO": [
     "SALA ADM ACA",
     "SALA TRE ACA",
-    "AREA PROD ACA"
+    "AREA PROD ACA",
+    "AREA PROD REF"
   ],
   "IMPRESSÃO": [
     "SALA ADM IMP",
