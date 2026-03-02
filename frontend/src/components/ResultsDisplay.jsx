@@ -49,7 +49,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
       title={title || "Editar"}
       style={{ 
           backgroundColor: '#e7f5ff', 
-          color: '#004085',
+          color: '#ff0000',
           width: '32px',
           height: '32px',
           padding: 0,
