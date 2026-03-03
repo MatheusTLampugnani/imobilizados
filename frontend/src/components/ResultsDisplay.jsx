@@ -48,6 +48,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       title={title || "Editar"}
       style={{ 
+          backgroundColor: '#ffffff', 
           color: '#ff0000',
           width: '32px',
           height: '32px',
