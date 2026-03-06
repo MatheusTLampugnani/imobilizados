@@ -70,7 +70,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
             statusMatch = isVerified === filterValue;
         }
 
-        return usuarioMatch && tipoMatch && detalhesMatch && codigoMatch &&  localMatch && dataMatch && statusMatch;
+        return usuarioMatch && tipoMatch && detalhesMatch && codigoMatch && localMatch && dataMatch && statusMatch;
     });
     setFilteredLogs(result);
   }, [filters, logs]);
@@ -148,7 +148,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
           row.tipo_alteracao,
           row.detalhes,
           row.codigo_imobilizado || '-',
-          row.local,
+          row.local || '-',
           row.sub_numero || '0',
           row.verificado ? "Verificado" : "Pendente"
       ]);
@@ -219,6 +219,13 @@ const AdminLogs = ({ onBack, currentUser }) => {
       wrap: true,
       grow: 3,
       style: { fontSize: '0.85rem', lineHeight: '1.5', padding: '10px 0' }
+    },
+    {
+      name: 'Local',
+      selector: row => row.local || '-',
+      width: '100px',
+      center: true,
+      style: { fontSize: '0.85rem' }
     },
     {
       name: 'Item',
@@ -299,7 +306,10 @@ const AdminLogs = ({ onBack, currentUser }) => {
                       <Col md={2}>
                           <Form.Control type="text" size="sm" placeholder="Código" name="imobilizado" value={filters.imobilizado} onChange={handleFilterChange} />
                       </Col>
-                      <Col md={12}>
+                      <Col md={3}>
+                          <Form.Control type="text" size="sm" placeholder="Filtrar por Local..." name="local" value={filters.local} onChange={handleFilterChange} />
+                      </Col>
+                      <Col md={9}>
                           <Form.Control type="text" size="sm" placeholder="Buscar nos detalhes..." name="detalhes" value={filters.detalhes} onChange={handleFilterChange} />
                       </Col>
                       <Col md={12} className="text-end">
