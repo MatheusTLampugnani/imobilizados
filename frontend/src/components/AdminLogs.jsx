@@ -21,7 +21,8 @@ const AdminLogs = ({ onBack, currentUser }) => {
     imobilizado: '',
     dataInicio: '',
     dataFim: '',
-    statusVerificacao: '' 
+    statusVerificacao: '',
+    local: ''
   });
 
   const [showFilters, setShowFilters] = useState(false);

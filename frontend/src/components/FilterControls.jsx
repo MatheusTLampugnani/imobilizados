@@ -67,7 +67,7 @@ const FilterControls = ({
             <Form.Label>Local</Form.Label>
             <Form.Control
               type="text"
-              name="Local"
+              name="local"
               value={filters.local}
               onChange={handleInputChange}
               placeholder="Filtrar..."
