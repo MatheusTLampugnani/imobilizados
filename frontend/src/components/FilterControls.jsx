@@ -61,6 +61,18 @@ const FilterControls = ({
               placeholder="Filtrar..."
             />
           </Form.Group>
+        </Col>        
+        <Col md={2}>
+          <Form.Group>
+            <Form.Label>Local</Form.Label>
+            <Form.Control
+              type="text"
+              name="Local"
+              value={filters.local}
+              onChange={handleInputChange}
+              placeholder="Filtrar..."
+            />
+          </Form.Group>
         </Col>
         <Col md={3}>
           <Form.Group>
@@ -74,6 +86,7 @@ const FilterControls = ({
                 <option value="Descrição">Descrição</option>
                 <option value="Série">Nº de Série</option>
                 <option value="CentroCusto">Centro de Custo</option>
+                <option value="Local">Local</option>
                 <option value="Subnº">Subnº</option>
                 <option value="Inventário">Inventário</option>
               </Form.Select>
