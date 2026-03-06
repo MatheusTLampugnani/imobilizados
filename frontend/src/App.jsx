@@ -37,7 +37,7 @@ function App() {
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
   const [showRegisteredList, setShowRegisteredList] = useState(false);
   const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
-  const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' });
+  const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' , local: ''});
   const [filteredItems, setFilteredItems] = useState([]);
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
   const [view, setView] = useState('home');
