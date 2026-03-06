@@ -21,7 +21,8 @@ const AdminLogs = ({ onBack, currentUser }) => {
     imobilizado: '',
     dataInicio: '',
     dataFim: '',
-    statusVerificacao: '' 
+    statusVerificacao: '',
+    local: ''
   });
 
   const [showFilters, setShowFilters] = useState(false);
@@ -50,6 +51,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
         const tipoMatch = !filters.tipoAcao || String(log.tipo_alteracao || '').toLowerCase().includes(filters.tipoAcao.toLowerCase());
         const detalhesMatch = !filters.detalhes || String(log.detalhes || '').toLowerCase().includes(filters.detalhes.toLowerCase());
         const codigoMatch = !filters.imobilizado || String(log.codigo_imobilizado || '').toLowerCase().includes(filters.imobilizado.toLowerCase());
+        const localMatch = !filters.local || String(log.local || '').toLowerCase().includes(filters.local.toLowerCase());
 
         let dataMatch = true;
         if (filters.dataInicio || filters.dataFim) {
@@ -68,7 +70,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
             statusMatch = isVerified === filterValue;
         }
 
-        return usuarioMatch && tipoMatch && detalhesMatch && codigoMatch && dataMatch && statusMatch;
+        return usuarioMatch && tipoMatch && detalhesMatch && codigoMatch && localMatch && dataMatch && statusMatch;
     });
     setFilteredLogs(result);
   }, [filters, logs]);
@@ -81,7 +83,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
   const clearFilters = () => {
       setFilters({
         usuario: '', tipoAcao: '', detalhes: '', imobilizado: '',
-        dataInicio: '', dataFim: '', statusVerificacao: ''
+        dataInicio: '', dataFim: '', statusVerificacao: '', local: ''
       });
   };
 
@@ -109,7 +111,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
   const handleRowSelected = ({ selectedRows }) => { setSelectedRows(selectedRows); };
 
   const handleExportCSV = () => {
-      const headers = ["Data", "Usuario", "Acao", "Detalhes", "Item", "Subnº", "Status"];
+      const headers = ["Data", "Usuario", "Acao", "Detalhes", "Item", "Local", "Subnº", "Status"];
       const csvContent = [
           headers.join(","),
           ...filteredLogs.map(row => [
@@ -118,6 +120,7 @@ const AdminLogs = ({ onBack, currentUser }) => {
               row.tipo_alteracao,
               `"${row.detalhes?.replace(/"/g, '""')}"`,
               row.codigo_imobilizado,
+              row.local,
               row.sub_numero || '0',
               row.verificado ? "VERIFICADO" : "PENDENTE"
           ].join(","))
@@ -138,13 +141,14 @@ const AdminLogs = ({ onBack, currentUser }) => {
       doc.setFontSize(10);
       doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`, 14, 22);
       
-      const tableColumn = ["Data", "Usuário", "Ação", "Detalhes", "Item", "Sub", "Status"];
+      const tableColumn = ["Data", "Usuário", "Ação", "Detalhes", "Item", "Local", "Sub", "Status"];
       const tableRows = filteredLogs.map(row => [
           new Date(row.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
           row.usuario,
           row.tipo_alteracao,
           row.detalhes,
           row.codigo_imobilizado || '-',
+          row.local || '-',
           row.sub_numero || '0',
           row.verificado ? "Verificado" : "Pendente"
       ]);
@@ -215,6 +219,13 @@ const AdminLogs = ({ onBack, currentUser }) => {
       wrap: true,
       grow: 3,
       style: { fontSize: '0.85rem', lineHeight: '1.5', padding: '10px 0' }
+    },
+    {
+      name: 'Local',
+      selector: row => row.local || '-',
+      width: '100px',
+      center: true,
+      style: { fontSize: '0.85rem' }
     },
     {
       name: 'Item',
@@ -295,7 +306,10 @@ const AdminLogs = ({ onBack, currentUser }) => {
                       <Col md={2}>
                           <Form.Control type="text" size="sm" placeholder="Código" name="imobilizado" value={filters.imobilizado} onChange={handleFilterChange} />
                       </Col>
-                      <Col md={12}>
+                      <Col md={3}>
+                          <Form.Control type="text" size="sm" placeholder="Filtrar por Local..." name="local" value={filters.local} onChange={handleFilterChange} />
+                      </Col>
+                      <Col md={9}>
                           <Form.Control type="text" size="sm" placeholder="Buscar nos detalhes..." name="detalhes" value={filters.detalhes} onChange={handleFilterChange} />
                       </Col>
                       <Col md={12} className="text-end">

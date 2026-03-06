@@ -26,43 +26,59 @@ const FilterControls = ({
   return (
     <div className="my-4 p-3 border rounded bg-light shadow-sm">
       <Row className="g-3 align-items-end">
-        <Col md={3}>
+        <Col xl={2} lg={3} md={4} xs={12}>
           <Form.Group>
             <Form.Label>Nº de Série</Form.Label>
             <Form.Control
               type="text"
               name="serie"
-              value={filters.serie}
+              value={filters.serie || ''}
               onChange={handleInputChange}
               placeholder="Filtrar por série..."
             />
           </Form.Group>
         </Col>
-        <Col md={2}>
+
+        <Col xl={2} lg={3} md={4} xs={6}>
           <Form.Group>
             <Form.Label>Subnúmero</Form.Label>
             <Form.Control
               type="text"
               name="subn"
-              value={filters.subn}
+              value={filters.subn || ''}
               onChange={handleInputChange}
               placeholder="Filtrar..."
             />
           </Form.Group>
         </Col>
-        <Col md={2}>
+
+        <Col xl={2} lg={3} md={4} xs={6}>
           <Form.Group>
             <Form.Label>Centro de Custo</Form.Label>
             <Form.Control
               type="text"
               name="centroCusto"
-              value={filters.centroCusto}
+              value={filters.centroCusto || ''}
+              onChange={handleInputChange}
+              placeholder="Filtrar..."
+            />
+          </Form.Group>
+        </Col>        
+
+        <Col xl={2} lg={3} md={4} xs={12}>
+          <Form.Group>
+            <Form.Label>Local</Form.Label>
+            <Form.Control
+              type="text"
+              name="local"
+              value={filters.local || ''}
               onChange={handleInputChange}
               placeholder="Filtrar..."
             />
           </Form.Group>
         </Col>
-        <Col md={3}>
+
+        <Col xl={3} lg={4} md={6} xs={12}>
           <Form.Group>
             <Form.Label>Ordenar por</Form.Label>
             <InputGroup>
@@ -74,6 +90,7 @@ const FilterControls = ({
                 <option value="Descrição">Descrição</option>
                 <option value="Série">Nº de Série</option>
                 <option value="CentroCusto">Centro de Custo</option>
+                <option value="Local">Local</option>
                 <option value="Subnº">Subnº</option>
                 <option value="Inventário">Inventário</option>
               </Form.Select>
@@ -84,13 +101,14 @@ const FilterControls = ({
           </Form.Group>
         </Col>
 
-        <Col md={2} className="d-flex align-items-end">
+        <Col xl="auto" lg={2} md={2} xs={12} className="d-flex align-items-end mt-3 mt-md-0">
           <Button variant="outline-secondary" onClick={onResetFilters} className="w-100">
-            <X /> Limpar
+            <X size={20} /> Limpar
           </Button>
         </Col>
       </Row>
-      <div className="text-end mt-2 text-muted">
+
+      <div className="text-end mt-3 text-muted">
         <strong>{itemsCount}</strong> {itemsCount === 1 ? 'item encontrado' : 'itens encontrados'}
       </div>
     </div>
