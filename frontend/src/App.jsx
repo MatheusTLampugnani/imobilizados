@@ -73,20 +73,27 @@ function App() {
     }
   }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal, currentUser]);
   
-  useEffect(() => {
+useEffect(() => {
     if (!resultado) return;
 
     const lowercasedFilters = {
-      serie: filters.serie.toLowerCase(),
-      subn: filters.subn.toLowerCase(),
-      centroCusto: filters.centroCusto.toLowerCase(),
+      serie: (filters.serie || '').toLowerCase(),
+      subn: (filters.subn || '').toLowerCase(),
+      centroCusto: (filters.centroCusto || '').toLowerCase(),
+      local: (filters.local || '').toLowerCase(),
     };
 
     let items = resultado.itens.filter(item => {
       const serieMatch = !lowercasedFilters.serie || String(item.Série || '').toLowerCase().includes(lowercasedFilters.serie);
       const subnMatch = !lowercasedFilters.subn || String(item['Subnº'] || '').toLowerCase().includes(lowercasedFilters.subn);
       const centroCustoMatch = !lowercasedFilters.centroCusto || String(item.CentroCusto || '').toLowerCase().includes(lowercasedFilters.centroCusto);
-      return serieMatch && subnMatch && centroCustoMatch;
+      const removeAcentos = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const filtroLocalLimpo = removeAcentos(lowercasedFilters.local);
+      const valorLocalBanco = String(item.Local || item.local || 'Não informado').toLowerCase();
+      const valorLocalLimpo = removeAcentos(valorLocalBanco);
+      const localMatch = !filtroLocalLimpo || valorLocalLimpo.includes(filtroLocalLimpo);
+
+      return serieMatch && subnMatch && centroCustoMatch && localMatch;
     });
 
     items.sort((a, b) => {
@@ -285,7 +292,7 @@ function App() {
   const handleFilterChange = (newFilters) => setFilters(newFilters);
   
   const handleResetFilters = () => {
-    setFilters({ serie: '', subn: '', centroCusto: '' });
+    setFilters({ serie: '', subn: '', centroCusto: '',  local: '' });
     setSortConfig({ field: 'Descrição', order: 'asc' });
   };
   
