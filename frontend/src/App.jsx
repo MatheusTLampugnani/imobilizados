@@ -87,8 +87,11 @@ useEffect(() => {
       const serieMatch = !lowercasedFilters.serie || String(item.Série || '').toLowerCase().includes(lowercasedFilters.serie);
       const subnMatch = !lowercasedFilters.subn || String(item['Subnº'] || '').toLowerCase().includes(lowercasedFilters.subn);
       const centroCustoMatch = !lowercasedFilters.centroCusto || String(item.CentroCusto || '').toLowerCase().includes(lowercasedFilters.centroCusto);
-      const localValue = String(item.Local || item.local || '').toLowerCase();
-      const localMatch = !lowercasedFilters.local || localValue.includes(lowercasedFilters.local);
+      const removeAcentos = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const filtroLocalLimpo = removeAcentos(lowercasedFilters.local);
+      const valorLocalBanco = String(item.Local || item.local || 'Não informado').toLowerCase();
+      const valorLocalLimpo = removeAcentos(valorLocalBanco);
+      const localMatch = !filtroLocalLimpo || valorLocalLimpo.includes(filtroLocalLimpo);
 
       return serieMatch && subnMatch && centroCustoMatch && localMatch;
     });
