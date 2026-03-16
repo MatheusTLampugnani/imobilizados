@@ -3,7 +3,7 @@
 set -o errexit
 
 echo "Instalando dependências e buildando o frontend..."
-npm install --prefix frontend
+npm install --legacy-peer-deps --prefix frontend
 npm run build --prefix frontend
 
 echo "Instalando as dependências do backend..."
