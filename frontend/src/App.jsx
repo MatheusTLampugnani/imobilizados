@@ -264,24 +264,27 @@ useEffect(() => {
     }, 2000);
   };
 
-  const handleCodeSearch = async () => {
+  const handleCodeSearch = async (codigoDireto) => {
     if (isLoading) return;
-    if (!codigo || codigo.trim() === '') {
+    const termoBusca = (typeof codigoDireto === 'string' && codigoDireto.trim() !== '') ? codigoDireto : codigo;
+
+    if (!termoBusca || termoBusca.trim() === '') {
       setError('Por favor, digite um código.');
       setResultado(null);
       return;
     }
+
     setIsLoading(true);
     setError('');
     handleResetFilters(); 
 
     try {
-      const response = await axios.get(`${API_URL}/imobilizado?codigo=${codigo}`);
+      const response = await axios.get(`${API_URL}/imobilizado?codigo=${termoBusca}`);
       setResultado(response.data);
     } catch (err) {
       setResultado(null);
       const errorMessage = err.response?.status === 404 
-        ? `Nenhum item encontrado para o termo: ${codigo}`
+        ? `Nenhum item encontrado para o termo: ${termoBusca}`
         : (err.response?.data?.message || 'Erro ao conectar ao servidor.');
       setError(errorMessage);
     } finally {
