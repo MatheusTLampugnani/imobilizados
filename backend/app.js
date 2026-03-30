@@ -80,26 +80,50 @@ app.get('/api', (req, res) => {
 });
 
 app.get('/api/imobilizado', async (req, res) => {
-    const { codigo } = req.query;
+    const { codigo, unidadeUsuario, isAdmin } = req.query; 
     const codigoFormatado = formatarValor(codigo);
 
     if (!codigoFormatado) return res.status(400).json({ message: "Nenhum código foi fornecido." });
 
     try {
+        let listaCCs = null;
+        if (isAdmin !== 'true' && unidadeUsuario) {
+            const { data: centrosDaUnidade, error: errCc } = await supabase
+                .from('centro_de_custo')
+                .select('centro_custo')
+                .eq('unidade', unidadeUsuario);
+
+            if (errCc) throw errCc;
+
+            listaCCs = centrosDaUnidade.map(cc => cc.centro_custo);
+
+            if (listaCCs.length === 0) {
+                return res.status(404).json({ message: `A unidade ${unidadeUsuario} não possui Centros de Custo vinculados.` });
+            }
+        }
+
+        const applyUnitFilter = (queryBuilder) => {
+            if (listaCCs) return queryBuilder.in('centro_custo', listaCCs);
+            return queryBuilder;
+        };
+
         const searchByText = async (field, value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*').ilike(field, `%${value}%`);
+            let query = supabase.from('imobilizados').select('*').ilike(field, `%${value}%`);
+            const { data, error } = await applyUnitFilter(query);
             if (error) throw error;
             return data || [];
         };
 
         const searchByNumber = async (field, value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*').eq(field, value);
+            let query = supabase.from('imobilizados').select('*').eq(field, value);
+            const { data, error } = await applyUnitFilter(query);
             if (error) throw error;
             return data || [];
         };
 
         const searchByDescription = async (value) => {
-            const { data, error } = await supabase.from('imobilizados').select('*').ilike('descricao', `%${value}%`);
+            let query = supabase.from('imobilizados').select('*').ilike('descricao', `%${value}%`);
+            const { data, error } = await applyUnitFilter(query);
             if (error) throw error;
             return data || [];
         };
@@ -257,7 +281,12 @@ app.post('/api/login', async (req, res) => {
 
         return res.status(200).json({ 
             message: 'Login OK', 
-            user: { cracha: data.id, nome: data.nome_completo, isAdmin: data.admin } 
+            user: { 
+                cracha: data.id, 
+                nome: data.nome_completo, 
+                isAdmin: data.admin,
+                unidade: data.unidade
+            } 
         });
 
     } catch (err) {

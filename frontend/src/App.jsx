@@ -279,12 +279,15 @@ useEffect(() => {
     handleResetFilters(); 
 
     try {
-      const response = await axios.get(`${API_URL}/imobilizado?codigo=${termoBusca}`);
+      const unidade = currentUser?.unidade || ''; 
+      const isAdmin = currentUser?.isAdmin || false;
+      const response = await axios.get(`${API_URL}/imobilizado?codigo=${termoBusca}&unidadeUsuario=${unidade}&isAdmin=${isAdmin}`);
+      
       setResultado(response.data);
     } catch (err) {
       setResultado(null);
       const errorMessage = err.response?.status === 404 
-        ? `Nenhum item encontrado para o termo: ${termoBusca}`
+        ? `Nenhum item encontrado.`
         : (err.response?.data?.message || 'Erro ao conectar ao servidor.');
       setError(errorMessage);
     } finally {
