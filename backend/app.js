@@ -483,16 +483,26 @@ app.put('/api/imobilizado/update-local', async (req, res) => {
 
 app.get('/api/imobilizados-cadastrados', async (req, res) => {
     try {
-        const { start_date, end_date, centro_custo, termo } = req.query;
+        const { start_date, end_date, centro_custo, termo, baixas_only } = req.query;
 
-        let query = supabase
-            .from('imobilizados_cadastrados')
-            .select('*')
-            .order('created_at', { ascending: false });
+        let query;
+        if (baixas_only === 'true') {
+            query = supabase
+                .from('imobilizados')
+                .select('*')
+                .ilike('local', '%baixa%');
 
-        if (start_date) query = query.gte('created_at', `${start_date}T00:00:00`);
-        if (end_date) query = query.lte('created_at', `${end_date}T23:59:59`);
-        if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
+            if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
+        } else {
+            query = supabase
+                .from('imobilizados_cadastrados')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (start_date) query = query.gte('created_at', `${start_date}T00:00:00`);
+            if (end_date) query = query.lte('created_at', `${end_date}T23:59:59`);
+            if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
+        }
 
         if (termo) {
             const isNumeric = /^\d+$/.test(termo);
@@ -504,7 +514,9 @@ app.get('/api/imobilizados-cadastrados', async (req, res) => {
 
             if (isNumeric) {
                 orConditions.push(`codigo_inventario.eq.${termo}`);
-                orConditions.push(`cracha.eq.${termo}`);
+                if (baixas_only !== 'true') {
+                    orConditions.push(`cracha.eq.${termo}`);
+                }
             }
 
             query = query.or(orConditions.join(','));
@@ -578,16 +590,26 @@ app.put('/api/logs/verify-batch', async (req, res) => {
 
 app.get('/api/report/excel', async (req, res) => {
     try {
-        const { start_date, end_date, centro_custo } = req.query;
+        const { start_date, end_date, centro_custo, baixas_only } = req.query;
 
-        let query = supabase
-            .from('imobilizados_cadastrados')
-            .select('*')
-            .order('created_at', { ascending: false });
+        let query;
+        if (baixas_only === 'true') {
+            query = supabase
+                .from('imobilizados')
+                .select('*')
+                .ilike('local', '%baixa%');
 
-        if (start_date) query = query.gte('created_at', `${start_date}T00:00:00`);
-        if (end_date) query = query.lte('created_at', `${end_date}T23:59:59`);
-        if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
+            if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
+        } else {
+            query = supabase
+                .from('imobilizados_cadastrados')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (start_date) query = query.gte('created_at', `${start_date}T00:00:00`);
+            if (end_date) query = query.lte('created_at', `${end_date}T23:59:59`);
+            if (centro_custo) query = query.ilike('centro_custo', `%${centro_custo}%`);
+        }
 
         const { data, error } = await query;
         if (error) throw error;
@@ -609,9 +631,16 @@ app.get('/api/report/excel', async (req, res) => {
         worksheet.getRow(1).font = { bold: true };
         
         data.forEach(item => {
+            let dateStr = '';
+            if (item.created_at) {
+                dateStr = new Date(item.created_at).toLocaleDateString('pt-BR');
+            } else if (item.data_incorporacao) {
+                const parsed = new Date(item.data_incorporacao);
+                dateStr = isNaN(parsed.getTime()) ? String(item.data_incorporacao) : parsed.toLocaleDateString('pt-BR');
+            }
             worksheet.addRow({
                 ...item,
-                created_at: new Date(item.created_at).toLocaleDateString('pt-BR')
+                created_at: dateStr
             });
         });
 

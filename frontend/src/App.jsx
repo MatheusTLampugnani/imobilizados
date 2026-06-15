@@ -41,6 +41,7 @@ function App() {
   const [filteredItems, setFilteredItems] = useState([]);
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
   const [view, setView] = useState('home');
+  const [viewBaixasOnly, setViewBaixasOnly] = useState(false);
 
   useEffect(() => {
     try {
@@ -398,9 +399,23 @@ useEffect(() => {
                     variant="secondary" 
                     size="lg" 
                     className="mt-2 mt-md-0 ms-md-2" 
-                    onClick={() => setShowRegisteredList(true)}
+                    onClick={() => {
+                      setViewBaixasOnly(false);
+                      setShowRegisteredList(true);
+                    }}
                   >
                     Ver Cadastrados
+                  </Button>
+                  <Button 
+                    variant="warning" 
+                    size="lg" 
+                    className="mt-2 mt-md-0 ms-md-2" 
+                    onClick={() => {
+                      setViewBaixasOnly(true);
+                      setShowRegisteredList(true);
+                    }}
+                  >
+                    Ver Baixas
                   </Button>
                 </div>
 
@@ -466,6 +481,7 @@ useEffect(() => {
       <RegisteredItemsList 
         show={showRegisteredList} 
         onClose={() => setShowRegisteredList(false)} 
+        baixasOnly={viewBaixasOnly}
       />
 
       <StatusModal 

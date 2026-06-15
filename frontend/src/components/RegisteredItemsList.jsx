@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DataTable from 'react-data-table-component';
 import { Modal, Button, Spinner, Alert, Form, Row, Col, InputGroup, Card } from 'react-bootstrap';
-import { Calendar, Building, Search, FileEarmarkSpreadsheet, PencilSquare, Trash, ListCheck, CardText, GeoAlt, Hash, ExclamationTriangle } from 'react-bootstrap-icons';
+import { Calendar, Building, Search, FileEarmarkSpreadsheet, PencilSquare, Trash, ListCheck, CardText, GeoAlt, Hash, ExclamationTriangle, FileEarmarkPdf } from 'react-bootstrap-icons';
 import { API_URL } from '../apiConfig';
 import { locationsData } from '../utils/locais';
+import SbbiModal from './SbbiModal';
 
-const RegisteredItemsList = ({ show, onClose }) => {
+const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,6 +28,8 @@ const RegisteredItemsList = ({ show, onClose }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showSbbiModal, setShowSbbiModal] = useState(false);
+  const [sbbiItem, setSbbiItem] = useState(null);
 
   const customStyles = {
     headCells: {
@@ -65,6 +68,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
       if (filters.endDate) params.append('end_date', filters.endDate);
       if (filters.centroCusto) params.append('centro_custo', filters.centroCusto);
       if (filters.termo) params.append('termo', filters.termo);
+      if (baixasOnly) params.append('baixas_only', 'true');
 
       const response = await axios.get(`${API_URL}/imobilizados-cadastrados?${params.toString()}`);
       setItems(response.data);
@@ -78,7 +82,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
 
   useEffect(() => {
     if (show) fetchData();
-  }, [show]); 
+  }, [show, baixasOnly]); 
 
   const handleExport = async () => {
     try {
@@ -87,6 +91,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
       if (filters.endDate) params.append('end_date', filters.endDate);
       if (filters.centroCusto) params.append('centro_custo', filters.centroCusto);
       if (filters.termo) params.append('termo', filters.termo);
+      if (baixasOnly) params.append('baixas_only', 'true');
 
       const response = await axios.get(`${API_URL}/report/excel?${params.toString()}`, {
         responseType: 'blob',
@@ -202,7 +207,12 @@ const RegisteredItemsList = ({ show, onClose }) => {
   const columns = [
     { 
         name: 'Data', 
-        selector: row => new Date(row.created_at).toLocaleDateString('pt-BR'), 
+        selector: row => {
+            const dateVal = row.created_at || row.data_incorporacao;
+            if (!dateVal) return 'N/A';
+            const parsed = new Date(dateVal);
+            return isNaN(parsed.getTime()) ? String(dateVal) : parsed.toLocaleDateString('pt-BR');
+        }, 
         sortable: true, 
         width: '100px' 
     },
@@ -252,7 +262,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
     {
       name: 'Ações',
       button: true, 
-      width: '120px',
+      width: '150px',
       cell: (row) => (
         <div className="d-flex gap-2">
           <Button 
@@ -263,6 +273,19 @@ const RegisteredItemsList = ({ show, onClose }) => {
             style={{ backgroundColor: '#e7f5ff', color: '#004085' }}
           >
             <PencilSquare />
+          </Button>
+          
+          <Button 
+            size="sm" 
+            className="px-2 border-0 shadow-sm" 
+            onClick={() => {
+              setSbbiItem(row);
+              setShowSbbiModal(true);
+            }} 
+            title="Solicitar Baixa (SBBI)"
+            style={{ backgroundColor: '#ffe8cc', color: '#d9480f' }}
+          >
+            <FileEarmarkPdf />
           </Button>
           
           <Button 
@@ -279,12 +302,17 @@ const RegisteredItemsList = ({ show, onClose }) => {
     }
   ];
 
+  // --- LÓGICA DE FILTRAGEM NO BANCO (PostgreSQL ILIKE '%baixa%') ---
+  // SELECT * FROM imobilizados_cadastrados WHERE local ILIKE '%baixa%';
+  // O filtro agora é feito diretamente no banco para maior precisão e performance.
+  const displayedItems = items;
+
   return (
     <>
       <Modal show={show} onHide={onClose} size="xl" centered backdrop="static">
         <Modal.Header closeButton className="bg-danger text-white border-0 shadow-sm">
           <Modal.Title className="d-flex align-items-center gap-2">
-            <ListCheck size={24} /> Itens Cadastrados (Novos)
+            <ListCheck size={24} /> {baixasOnly ? 'Itens com Baixa de Imobilizado' : 'Itens Cadastrados (Novos)'}
           </Modal.Title>
         </Modal.Header>
         
@@ -361,7 +389,7 @@ const RegisteredItemsList = ({ show, onClose }) => {
                 ) : (
                     <DataTable
                       columns={columns}
-                      data={items}
+                      data={displayedItems}
                       pagination
                       paginationComponentOptions={{ rowsPerPageText: 'Registros:', rangeSeparatorText: 'de', selectAllRowsItem: true, selectAllRowsItemText: 'Todos' }}
                       highlightOnHover
@@ -478,6 +506,15 @@ const RegisteredItemsList = ({ show, onClose }) => {
             </Button>
         </Modal.Footer>
       </Modal>
+
+      <SbbiModal 
+        show={showSbbiModal} 
+        onClose={() => {
+          setShowSbbiModal(false);
+          setSbbiItem(null);
+        }} 
+        item={sbbiItem} 
+      />
     </>
   );
 };
