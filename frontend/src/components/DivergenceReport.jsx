@@ -17,7 +17,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
   const [wrongCcItems, setWrongCcItems] = useState([]);
   const [notFoundItems, setNotFoundItems] = useState([]);
   const [isGenerating, setIsGenerating] = useState(null);
-  
+
   const [filters, setFilters] = useState({
     ok: true,
     missing: true,
@@ -29,7 +29,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     if (show) {
       const newNotFound = collectedItems.filter(item => item.notFound);
       const foundAndCollected = collectedItems.filter(item => !item.notFound);
-      
+
       const newOk = [];
       const newWrongCc = [];
       foundAndCollected.forEach(item => {
@@ -46,7 +46,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
           collectedIdMap.set(item.id, item);
         }
       });
-      
+
       const newMissing = expectedItems.filter(expected => {
         return !collectedIdMap.has(expected.id);
       });
@@ -70,35 +70,35 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
     await new Promise(resolve => setTimeout(resolve, 50));
 
     try {
-      const tableColumns = ["Status", "Imobilizado", "Inventario", "Subnº", "Descrição", "Centro de Custo", "Local"];
+      const tableColumns = ["Status", "Imobilizado", "Inventario", "Subn", "Descricao", "Centro de Custo", "Local"];
       const tableRows = [];
 
       const createRow = (status, item) => [
         status,
-        item.codigo_imobilizado || 'Sem código',
-        item.Inventário || 'Sem código',
+        item.codigo_imobilizado || 'Sem codigo',
+        item.Inventário || 'Sem codigo',
         item.Subnº,
-        item.Descrição || 'Sem descrição',
+        item.Descrição || 'Sem descricao',
         item.CentroCusto || 'N/A',
-        item.Local || item.local || 'Não informado' 
+        item.Local || item.local || 'Nao informado'
       ];
 
       if (filters.ok) okItems.forEach(item => tableRows.push(createRow("Ok", item)));
       if (filters.missing) missingItems.forEach(item => tableRows.push(createRow("Faltante", item)));
       if (filters.wrongCc) wrongCcItems.forEach(item => tableRows.push(createRow("CC Errado", item)));
-      if (filters.notFound) notFoundItems.forEach(item => tableRows.push(createRow("Não Cadastrado", item)));
-      
+      if (filters.notFound) notFoundItems.forEach(item => tableRows.push(createRow("Nao Cadastrado", item)));
+
       if (format === 'pdf') {
         const doc = new jsPDF();
-        
+
         const imgWidth = 50;
-        const imgHeight = 12; 
+        const imgHeight = 12;
         const centerX = (doc.internal.pageSize.getWidth() - imgWidth) / 2;
         doc.addImage(logoVideplast, 'PNG', centerX, 10, imgWidth, imgHeight);
 
         doc.setFontSize(18);
         doc.text(`Relatório de Divergências - CC: ${inventoryCc}`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
-        
+
         autoTable(doc, {
           head: [tableColumns],
           body: tableRows,
@@ -107,13 +107,13 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
             if (data.section === 'body') {
               const status = data.row.raw[0];
               const colorMap = {
-                  'Ok': statusColors.ok,
-                  'Faltante': statusColors.faltante,
-                  'CC Errado': statusColors.ccErrado,
-                  'Não Cadastrado': statusColors.naoCadastrado,
+                'Ok': statusColors.ok,
+                'Faltante': statusColors.faltante,
+                'CC Errado': statusColors.ccErrado,
+                'Não Cadastrado': statusColors.naoCadastrado,
               };
               if (colorMap[status]) {
-                  data.cell.styles.fillColor = colorMap[status];
+                data.cell.styles.fillColor = colorMap[status];
               }
             }
           },
@@ -125,10 +125,10 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       }
 
       if (format === 'csv') {
-        let csvContent = "data:text/csv;charset=utf-8," 
-          + tableColumns.join(";") + "\n" 
+        let csvContent = "data:text/csv;charset=utf-8,"
+          + tableColumns.join(";") + "\n"
           + tableRows.map(e => e.join(";")).join("\n");
-        
+
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
@@ -154,9 +154,9 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
       </div>
       {type !== 'notFound' && <div>Imobilizado: {item.codigo_imobilizado || 'Sem código de imobilizado'}</div>}
       <div>Descrição: {item.Descrição || 'Sem descrição'}</div>
-      
+
       <div><strong>Local:</strong> {item.Local || item.local || 'Não informado'}</div>
-      
+
       {type === 'missing' && <div>Centro de Custo Esperado: {item.CentroCusto || 'Sem centro de custo'}</div>}
       {(type === 'wrongCc' || type === 'notFound') && <div>Centro de Custo: {item.CentroCusto || 'Sem centro de custo'}</div>}
     </>
@@ -189,7 +189,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
           <h6 className="mb-2">Filtros de Visualização:</h6>
           <Form>
             <div className="d-flex flex-wrap gap-3">
-              <Form.Check 
+              <Form.Check
                 type="checkbox"
                 id="filter-ok"
                 label={`Itens Corretos (${okItems.length})`}
@@ -197,7 +197,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
                 checked={filters.ok}
                 onChange={handleFilterChange}
               />
-              <Form.Check 
+              <Form.Check
                 type="checkbox"
                 id="filter-missing"
                 label={`Itens Faltantes (${missingItems.length})`}
@@ -205,7 +205,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
                 checked={filters.missing}
                 onChange={handleFilterChange}
               />
-              <Form.Check 
+              <Form.Check
                 type="checkbox"
                 id="filter-wrongCc"
                 label={`Itens em Outro CC (${wrongCcItems.length})`}
@@ -213,7 +213,7 @@ const DivergenceReport = ({ show, onClose, onFinishAndReset, collectedItems, exp
                 checked={filters.wrongCc}
                 onChange={handleFilterChange}
               />
-              <Form.Check 
+              <Form.Check
                 type="checkbox"
                 id="filter-notFound"
                 label={`Itens Não Cadastrados (${notFoundItems.length})`}

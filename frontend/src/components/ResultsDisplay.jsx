@@ -38,22 +38,22 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
   }
 
   if (!resultado || !resultado.itens || resultado.itens.length === 0) {
-    return null; 
+    return null;
   }
 
   const EditButton = ({ onClick, title }) => (
-    <Button 
+    <Button
       size="sm"
-      className="ms-2 border-0 shadow-sm d-flex align-items-center justify-content-center" 
+      className="ms-2 border-0 shadow-sm d-flex align-items-center justify-content-center"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       title={title || "Editar"}
-      style={{ 
-          backgroundColor: '#ffffff', 
-          color: '#ff0000',
-          width: '32px',
-          height: '32px',
-          padding: 0,
-          flexShrink: 0
+      style={{
+        backgroundColor: '#ffffff',
+        color: '#ff0000',
+        width: '32px',
+        height: '32px',
+        padding: 0,
+        flexShrink: 0
       }}
     >
       <PencilSquare size={16} />
@@ -61,24 +61,24 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
   );
 
   const tableStyle = {
-      tableLayout: 'fixed',
-      width: '100%',
-      marginBottom: 0
+    tableLayout: 'fixed',
+    width: '100%',
+    marginBottom: 0
   };
 
   const labelStyle = {
-      width: '35%',
-      minWidth: '160px',
-      fontWeight: 'bold',
-      backgroundColor: '#f8f9fa',
-      verticalAlign: 'middle'
+    width: '35%',
+    minWidth: '160px',
+    fontWeight: 'bold',
+    backgroundColor: '#f8f9fa',
+    verticalAlign: 'middle'
   };
 
   const cellStyle = {
-      verticalAlign: 'middle',
-      whiteSpace: 'normal',
-      wordBreak: 'break-word',
-      width: '65%'
+    verticalAlign: 'middle',
+    whiteSpace: 'normal',
+    wordBreak: 'break-word',
+    width: '65%'
   };
 
   return (
@@ -93,7 +93,7 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
               <Accordion.Item eventKey={item.id?.toString()} key={item.id}>
                 <Accordion.Header>
                   <div style={{ whiteSpace: 'normal', lineHeight: '1.4', marginRight: '10px' }}>
-                      <strong>Item (Subnº {item['Subnº'] || item.sub_numero}):</strong> {item.Descrição || item.descricao || 'Sem descrição'}
+                    <strong>Item (Subnº {item['Subnº']}):</strong> {item.Descrição || item.descricao || 'Sem descrição'}
                   </div>
                 </Accordion.Header>
                 <Accordion.Body className="p-0">
@@ -115,17 +115,17 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                         <td style={labelStyle}>DATA INCORPORAÇÃO</td>
                         <td style={cellStyle}>{item.Data || item.data_incorporacao || 'Sem data'}</td>
                       </tr>
-                      
+
                       <tr>
                         <td style={labelStyle}>INVENTÁRIO</td>
                         <td style={cellStyle}>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <span>{item.Inventário || item.codigo_inventario || 'Sem número'}</span>
-                                <EditButton onClick={() => handleEditClick(item, 'inventory')} title="Editar Código de Inventário" />
-                            </div>
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span>{item.Inventário || item.codigo_inventario || 'Sem número'}</span>
+                            <EditButton onClick={() => handleEditClick(item, 'inventory')} title="Editar Código de Inventário" />
+                          </div>
                         </td>
                       </tr>
-                      
+
                       <tr>
                         <td style={labelStyle}>INVENTÁRIO ANTIGO</td>
                         <td style={cellStyle}>{item.Inventário_Antigo || item.inventario_antigo || '---'}</td>
@@ -134,36 +134,36 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
                       <tr>
                         <td style={labelStyle}>NÚMERO DE SÉRIE</td>
                         <td style={cellStyle}>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <span>{item.Série || item.numero_serie || 'Sem número'}</span>
-                                <EditButton onClick={() => handleEditClick(item, 'serial')} title="Editar Número de Série" />
-                            </div>
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span>{item.Série || item.numero_serie || 'Sem número'}</span>
+                            <EditButton onClick={() => handleEditClick(item, 'serial')} title="Editar Número de Série" />
+                          </div>
                         </td>
                       </tr>
 
                       <tr>
                         <td style={labelStyle}>CENTRO DE CUSTO</td>
                         <td style={cellStyle}>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <span style={{ marginRight: '10px' }}>
-                                    {item.CentroCusto || item.centro_custo || 'N/A'} {item.CentroCustoNome ? `- ${item.CentroCustoNome}` : ''}
-                                </span>
-                                <EditButton onClick={() => handleEditClick(item, 'cost_center')} title="Editar Centro de Custo" />
-                            </div>
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span style={{ marginRight: '10px' }}>
+                              {item.CentroCusto || item.centro_custo || 'N/A'} {item.CentroCustoNome ? `- ${item.CentroCustoNome}` : ''}
+                            </span>
+                            <EditButton onClick={() => handleEditClick(item, 'cost_center')} title="Editar Centro de Custo" />
+                          </div>
                         </td>
                       </tr>
-        
+
                       <tr>
                         <td style={labelStyle}>LOCAL</td>
                         <td style={cellStyle}>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <span style={{ marginRight: '10px' }}>
-                                    {item.Local || item.local || 'Não informado'}
-                                </span>
-                                <EditButton onClick={() => handleEditClick(item, 'local')} title="Editar Localização" />
-                            </div>
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span style={{ marginRight: '10px' }}>
+                              {item.Local || item.local || 'Não informado'}
+                            </span>
+                            <EditButton onClick={() => handleEditClick(item, 'local')} title="Editar Localização" />
+                          </div>
                         </td>
-                      </tr>                      
+                      </tr>
                     </tbody>
                   </Table>
                 </Accordion.Body>
@@ -172,14 +172,14 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
           </Accordion>
         </Card.Body>
       </Card>
-      
+
       <EditInventoryModal
         show={showEditModal}
         onClose={handleCloseModal}
         item={editingItem}
-        editType={editType} 
+        editType={editType}
         onUpdateSuccess={handleUpdateSuccess}
-        currentUser={currentUser} 
+        currentUser={currentUser}
       />
     </>
   );

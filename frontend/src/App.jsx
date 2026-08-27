@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Button } from 'react-bootstrap';
+import { Row, Col, Container, Button } from 'react-bootstrap';
 import { ShieldLock, BoxArrowRight, PersonCircle } from 'react-bootstrap-icons';
 import Header from './components/Header';
 import InputArea from './components/InputArea';
@@ -37,10 +37,11 @@ function App() {
   const [itemCodeToAdd, setItemCodeToAdd] = useState('');
   const [showRegisteredList, setShowRegisteredList] = useState(false);
   const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
-  const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '' , local: ''});
+  const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '', local: '' });
   const [filteredItems, setFilteredItems] = useState([]);
   const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
   const [view, setView] = useState('home');
+  const [viewBaixasOnly, setViewBaixasOnly] = useState(false);
 
   useEffect(() => {
     try {
@@ -72,8 +73,8 @@ function App() {
       console.error("Erro ao salvar estado:", e);
     }
   }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal, currentUser]);
-  
-useEffect(() => {
+
+  useEffect(() => {
     if (!resultado) return;
 
     const lowercasedFilters = {
@@ -114,7 +115,7 @@ useEffect(() => {
   const handleLogout = () => {
     setCurrentUser(null);
     sessionStorage.clear();
-    window.location.reload(); 
+    window.location.reload();
   };
 
   if (!currentUser) {
@@ -143,14 +144,14 @@ useEffect(() => {
   const handleStartInventory = async (cc, _ignoredUser, localFisico) => {
     try {
       await axios.get(`${API_URL}/centro-custo/validate/${cc}`);
-      
+
       setInventarioCentroCusto(cc);
       setInventarioUsuario(currentUser.cracha);
       setInventarioLocal(localFisico);
       setInventarioAtivo(true);
-      
+
       fetchExpectedItems(cc);
-      setInventario([]); 
+      setInventario([]);
       return true;
     } catch (error) {
       console.error("Validação do Centro de Custo falhou:", error);
@@ -162,20 +163,20 @@ useEffect(() => {
     try {
       const response = await axios.get(`${API_URL}/inventory-item?codigo=${codeToAdd}`);
       const dados = response.data;
-      
+
       if (dados && dados.itens && dados.itens.length > 0) {
         const itemParaAdicionar = dados.itens[0];
         if (!inventario.some(invItem => invItem.id === itemParaAdicionar.id)) {
           setInventario(prevInventario => [itemParaAdicionar, ...prevInventario]);
         }
-        return 'ok'; 
+        return 'ok';
       }
       return 'error';
     } catch (error) {
       if (error.response?.status === 404) {
         setItemCodeToAdd(codeToAdd);
         setShowAddItemModal(true);
-        return '404'; 
+        return '404';
       } else {
         console.error("Erro ao adicionar item:", error);
         showStatus('error', 'Erro de comunicação com o servidor.');
@@ -186,48 +187,48 @@ useEffect(() => {
 
   const handleConfirmAddItem = (description, inventoryCode, serialNumber, itemLocal, savedData) => {
     if (savedData) {
-        const newItem = {
-            id: savedData.id,
-            "Subnº": 0,
-            "Data": new Date().toISOString().split('T')[0],
-            "Descrição": description,
-            "Inventário": inventoryCode,
-            "Série": serialNumber,
-            "CentroCusto": inventarioCentroCusto,
-            "CentroCustoNome": "Novo (Salvo)",
-            "codigo_imobilizado": savedData.codigo_imobilizado || "NOVO",
-            "Local": itemLocal || inventarioLocal,
-            notFound: true,
-            pendingSave: false,
-        };
-        setInventario(prev => [newItem, ...prev]);
+      const newItem = {
+        id: savedData.id,
+        "Subnº": 0,
+        "Data": new Date().toISOString().split('T')[0],
+        "Descrição": description,
+        "Inventário": inventoryCode,
+        "Série": serialNumber,
+        "CentroCusto": inventarioCentroCusto,
+        "CentroCustoNome": "Novo (Salvo)",
+        "codigo_imobilizado": savedData.codigo_imobilizado || "NOVO",
+        "Local": itemLocal || inventarioLocal,
+        notFound: true,
+        pendingSave: false,
+      };
+      setInventario(prev => [newItem, ...prev]);
     } else {
-        const tempId = `temp_${Date.now()}`;
-        const itemParaLista = {
-          id: tempId,
-          "Subnº": 0,
-          "Data": new Date().toISOString().split('T')[0],
-          "Descrição": description,
-          "Inventário": inventoryCode,
-          "Série": serialNumber,
-          "CentroCusto": inventarioCentroCusto,
-          "CentroCustoNome": "Novo (Aguardando)",
-          "codigo_imobilizado": "PENDENTE",
-          "Local": itemLocal || inventarioLocal,
-          notFound: true,
-          pendingSave: true,
-          rawNewData: {
-            descricao: description,
-            codigo_inventario: inventoryCode,
-            numero_serie: serialNumber,
-            centro_custo: inventarioCentroCusto,
-            user: currentUser.cracha,
-            local: itemLocal || inventarioLocal
-          }
-        };
-        setInventario(prev => [itemParaLista, ...prev]);
+      const tempId = `temp_${Date.now()}`;
+      const itemParaLista = {
+        id: tempId,
+        "Subnº": 0,
+        "Data": new Date().toISOString().split('T')[0],
+        "Descrição": description,
+        "Inventário": inventoryCode,
+        "Série": serialNumber,
+        "CentroCusto": inventarioCentroCusto,
+        "CentroCustoNome": "Novo (Aguardando)",
+        "codigo_imobilizado": "PENDENTE",
+        "Local": itemLocal || inventarioLocal,
+        notFound: true,
+        pendingSave: true,
+        rawNewData: {
+          descricao: description,
+          codigo_inventario: inventoryCode,
+          numero_serie: serialNumber,
+          centro_custo: inventarioCentroCusto,
+          user: currentUser.cracha,
+          local: itemLocal || inventarioLocal
+        }
+      };
+      setInventario(prev => [itemParaLista, ...prev]);
     }
-    
+
     setShowAddItemModal(false);
   };
 
@@ -239,7 +240,7 @@ useEffect(() => {
 
   const handleFinalizeInventory = async () => {
     setIsLoading(true);
-    
+
     const itemsToSave = inventario.filter(item => item.pendingSave && item.rawNewData);
 
     if (itemsToSave.length > 0) {
@@ -247,20 +248,20 @@ useEffect(() => {
         await Promise.all(itemsToSave.map(item => {
           return axios.post(`${API_URL}/imobilizado`, item.rawNewData);
         }));
-        
+
         showStatus('success', `${itemsToSave.length} novos itens cadastrados com sucesso!`);
-        
+
       } catch (error) {
         console.error("Erro ao salvar itens novos:", error);
         showStatus('error', "Houve um erro ao salvar alguns itens novos.");
       }
     } else {
-        showStatus('success', "Inventário finalizado com sucesso!");
+      showStatus('success', "Inventário finalizado com sucesso!");
     }
 
     setIsLoading(false);
     setTimeout(() => {
-        setShowDivergenceReport(true);
+      setShowDivergenceReport(true);
     }, 2000);
   };
 
@@ -276,17 +277,17 @@ useEffect(() => {
 
     setIsLoading(true);
     setError('');
-    handleResetFilters(); 
+    handleResetFilters();
 
     try {
-      const unidade = currentUser?.unidade || ''; 
+      const unidade = currentUser?.unidade || '';
       const isAdmin = currentUser?.isAdmin || false;
       const response = await axios.get(`${API_URL}/imobilizado?codigo=${termoBusca}&unidadeUsuario=${unidade}&isAdmin=${isAdmin}`);
-      
+
       setResultado(response.data);
     } catch (err) {
       setResultado(null);
-      const errorMessage = err.response?.status === 404 
+      const errorMessage = err.response?.status === 404
         ? `Nenhum item encontrado.`
         : (err.response?.data?.message || 'Erro ao conectar ao servidor.');
       setError(errorMessage);
@@ -296,12 +297,12 @@ useEffect(() => {
   };
 
   const handleFilterChange = (newFilters) => setFilters(newFilters);
-  
+
   const handleResetFilters = () => {
-    setFilters({ serie: '', subn: '', centroCusto: '',  local: '' });
+    setFilters({ serie: '', subn: '', centroCusto: '', local: '' });
     setSortConfig({ field: 'Descrição', order: 'asc' });
   };
-  
+
   const handleSortChange = (newSortConfig) => setSortConfig(newSortConfig);
 
   const refreshData = () => {
@@ -328,105 +329,140 @@ useEffect(() => {
 
   return (
     <div className="app-wrapper">
-      <div 
-        className="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-3" 
+      <div
+        className="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-3"
         style={{ zIndex: 1000 }}
       >
         <div className="d-flex align-items-center text-secondary bg-white px-3 py-1 rounded shadow-sm border d-none d-md-flex">
-            <PersonCircle className="me-2" />
-            <span className="small">Olá, <strong>{currentUser.nome}</strong></span>
+          <PersonCircle className="me-2" />
+          <span className="small">Olá, <strong>{currentUser.nome}</strong></span>
         </div>
         {view === 'home' && (
-            <Button 
-                variant="dark" 
-                size="sm"
-                onClick={() => setView('admin_logs')}
-                className="d-flex align-items-center gap-2 shadow-sm"
-                title="Acessar Auditoria e Logs"
-            >
-                <ShieldLock size={14} /> 
-                <span className="d-none d-md-inline">Alterações</span>
-            </Button>
+          <Button
+            variant="dark"
+            size="sm"
+            onClick={() => setView('admin_logs')}
+            className="d-flex align-items-center gap-2 shadow-sm"
+            title="Acessar Auditoria e Logs"
+          >
+            <ShieldLock size={14} />
+            <span className="d-none d-md-inline">Alterações</span>
+          </Button>
         )}
-        <Button 
-            variant="outline-danger" 
-            size="sm" 
-            onClick={handleLogout}
-            className="d-flex align-items-center gap-2"
-            title="Sair do Sistema"
+        <Button
+          variant="outline-danger"
+          size="sm"
+          onClick={handleLogout}
+          className="d-flex align-items-center gap-2"
+          title="Sair do Sistema"
         >
-            <BoxArrowRight size={16} />
-            <span className="d-none d-md-inline">Sair</span>
+          <BoxArrowRight size={16} />
+          <span className="d-none d-md-inline">Sair</span>
         </Button>
       </div>
       <Container>
         <Header />
         {view === 'home' && (
-            <>
-                <InputArea
-                  codigo={codigo}
-                  setCodigo={setCodigo}
-                  onConsultar={handleCodeSearch}
-                  onLimpar={handleClearSearch}
-                  isLoading={isLoading}
-                />
-
-                {resultado && resultado.itens.length > 0 && (
-                  <FilterControls
-                    filters={filters}
-                    onFilterChange={handleFilterChange}
-                    onResetFilters={handleResetFilters}
-                    sortConfig={sortConfig}
-                    onSortChange={handleSortChange}
-                    itemsCount={filteredItems.length}
-                  />
-                )}
-
-                <ResultsDisplay
-                  isLoading={isLoading}
-                  error={error}
-                  resultado={resultado ? { ...resultado, itens: filteredItems } : null}
-                  onRefresh={refreshData}
-                  currentUser={currentUser}
-                />
-                
-                <div className="main-actions-container">
-                  <Button variant="danger" size="lg" onClick={() => setShowCcInputModal(true)}>
-                    Iniciar Inventário
-                  </Button>
-                  <Button variant="outline-danger" size="lg" onClick={() => setShowReportModal(true)}>
-                    Gerar Relatórios
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    size="lg" 
-                    className="mt-2 mt-md-0 ms-md-2" 
-                    onClick={() => setShowRegisteredList(true)}
-                  >
-                    Ver Cadastrados
-                  </Button>
-                </div>
-
-                {inventarioAtivo && (
-                  <Inventory
-                    inventario={inventario}
-                    setInventario={setInventario}
-                    onClose={() => setInventarioAtivo(false)}
-                    onAddItem={handleAddItemToInventory}
-                    inventarioCentroCusto={inventarioCentroCusto}
-                    expectedItems={expectedItems}
-                    onFinishInventory={handleFinalizeInventory}
-                    onRemoveItem={handleRemoveItem}
-                  />
-                )}
-            </>
-        )}
-        
-        {view === 'admin_logs' && (
-            <AdminLogs 
-                onBack={() => setView('home')} 
-                currentUser={currentUser}
+          <>
+            <InputArea
+              codigo={codigo}
+              setCodigo={setCodigo}
+              onConsultar={handleCodeSearch}
+              onLimpar={handleClearSearch}
+              isLoading={isLoading}
             />
+
+            {resultado && resultado.itens.length > 0 && (
+              <FilterControls
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onResetFilters={handleResetFilters}
+                sortConfig={sortConfig}
+                onSortChange={handleSortChange}
+                itemsCount={filteredItems.length}
+              />
+            )}
+
+            <ResultsDisplay
+              isLoading={isLoading}
+              error={error}
+              resultado={resultado ? { ...resultado, itens: filteredItems } : null}
+              onRefresh={refreshData}
+              currentUser={currentUser}
+            />
+
+            <Row className="g-2 my-3">
+              <Col xs={6} md={3}>
+                <Button
+                  variant="danger"
+                  size="md"
+                  className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2"
+                  onClick={() => setShowCcInputModal(true)}
+                >
+                  Iniciar Inventário
+                </Button>
+              </Col>
+
+              <Col xs={6} md={3}>
+                <Button
+                  variant="outline-danger"
+                  size="md"
+                  className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2"
+                  onClick={() => setShowReportModal(true)}
+                >
+                  Gerar Relatórios
+                </Button>
+              </Col>
+
+              <Col xs={6} md={3}>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2"
+                  onClick={() => {
+                    setViewBaixasOnly(false);
+                    setShowRegisteredList(true);
+                  }}
+                >
+                  Ver Cadastrados
+                </Button>
+              </Col>
+
+              <Col xs={6} md={3}>
+                <Button
+                  variant="warning"
+                  size="md"
+                  className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2 text-dark fw-bold"
+                  onClick={() => {
+                    setViewBaixasOnly(true);
+                    setShowRegisteredList(true);
+                  }}
+                >
+                  Ver Baixas
+                </Button>
+              </Col>
+            </Row>
+
+            {inventarioAtivo && (
+              <Inventory
+                inventario={inventario}
+                setInventario={setInventario}
+                onClose={() => setInventarioAtivo(false)}
+                onAddItem={handleAddItemToInventory}
+                inventarioCentroCusto={inventarioCentroCusto}
+                expectedItems={expectedItems}
+                onFinishInventory={handleFinalizeInventory}
+                onRemoveItem={handleRemoveItem}
+              />
+            )}
+          </>
+        )}
+
+        {view === 'admin_logs' && (
+          <AdminLogs
+            onBack={() => setView('home')}
+            currentUser={currentUser}
+          />
         )}
       </Container>
 
@@ -436,10 +472,10 @@ useEffect(() => {
         onConfirm={handleStartInventory}
       />
 
-      {showReportModal && 
-        <ReportModal 
-          show={showReportModal} 
-          onClose={() => setShowReportModal(false)} 
+      {showReportModal &&
+        <ReportModal
+          show={showReportModal}
+          onClose={() => setShowReportModal(false)}
         />
       }
 
@@ -451,7 +487,7 @@ useEffect(() => {
           collectedItems={inventario}
           expectedItems={expectedItems}
           inventoryCc={inventarioCentroCusto}
-          centroCusto={inventarioCentroCusto} 
+          centroCusto={inventarioCentroCusto}
           user={currentUser?.cracha}
         />
       )}
@@ -462,20 +498,21 @@ useEffect(() => {
         onConfirm={handleConfirmAddItem}
         itemCode={itemCodeToAdd}
         defaultLocal={inventarioLocal}
-        centroCusto={inventarioCentroCusto} 
+        centroCusto={inventarioCentroCusto}
         user={currentUser?.cracha}
       />
 
-      <RegisteredItemsList 
-        show={showRegisteredList} 
-        onClose={() => setShowRegisteredList(false)} 
+      <RegisteredItemsList
+        show={showRegisteredList}
+        onClose={() => setShowRegisteredList(false)}
+        baixasOnly={viewBaixasOnly}
       />
 
-      <StatusModal 
-        show={statusModal.show} 
-        type={statusModal.type} 
-        message={statusModal.message} 
-        onClose={handleCloseStatus} 
+      <StatusModal
+        show={statusModal.show}
+        type={statusModal.type}
+        message={statusModal.message}
+        onClose={handleCloseStatus}
       />
 
       <footer className="app-footer">

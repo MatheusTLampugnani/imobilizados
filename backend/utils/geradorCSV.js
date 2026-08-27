@@ -14,7 +14,7 @@ function convertToCSV(data, centroCustoMap) {
         "ID", "Subn", "Data Incorporacao", "Descricao", "Centro de Custo", "Setor", "Local",
         "Codigo Imobilizado", "Codigo Inventario", "Codigo Inventario Antigo", "N de Série"
     ];
-    
+
     const rows = data.map(item => [
         item.id,
         item.sub_numero,
@@ -22,7 +22,7 @@ function convertToCSV(data, centroCustoMap) {
         `"${(item.descricao || '').replace(/"/g, '""')}"`,
         item.centro_custo,
         `"${(centroCustoMap[item.centro_custo] || '').replace(/"/g, '""')}"`,
-        `"${(item.local || '').replace(/"/g, '""')}"`, // ADICIONADO: Coluna Local
+        `"${(item.local || '').replace(/"/g, '""')}"`,
         item.codigo_imobilizado,
         item.codigo_inventario,
         item.codigo_inventario_antigo,
