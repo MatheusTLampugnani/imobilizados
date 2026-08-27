@@ -3,27 +3,24 @@ import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 
 const CcInputModal = ({ show, onClose, onConfirm }) => {
   const [cc, setCc] = useState('');
-  const [cracha, setCracha] = useState('');
+  const [localFisico, setLocalFisico] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  const crachaInputRef = useRef(null);
+
+  const localInputRef = useRef(null);
 
   const handleConfirm = async () => {
-    if (!cc.trim()) {
+    const cleanCc = cc.trim();
+    if (!cleanCc) {
       setError('Por favor, digite o Centro de Custo.');
-      return;
-    }
-    if (!cracha.trim()) {
-      setError('Por favor, informe o crachá do responsável.');
       return;
     }
 
     setIsLoading(true);
     setError('');
 
-    const isValid = await onConfirm(cc, cracha);
-    
+    const isValid = await onConfirm(cleanCc, null, localFisico.trim());
+
     setIsLoading(false);
 
     if (isValid) {
@@ -35,7 +32,7 @@ const CcInputModal = ({ show, onClose, onConfirm }) => {
 
   const handleClose = () => {
     setCc('');
-    setCracha('');
+    setLocalFisico('');
     setError('');
     setIsLoading(false);
     onClose();
@@ -44,12 +41,13 @@ const CcInputModal = ({ show, onClose, onConfirm }) => {
   const handleCcKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      crachaInputRef.current?.focus();
+      localInputRef.current?.focus();
     }
   };
 
-  const handleCrachaKeyDown = (e) => {
+  const handleLocalKeyDown = (e) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleConfirm();
     }
   };
@@ -60,8 +58,8 @@ const CcInputModal = ({ show, onClose, onConfirm }) => {
         <Modal.Title>Iniciar Inventário</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p>Informe os dados abaixo para carregar os itens esperados e iniciar a contagem.</p>
-        
+        <p>Informe o Centro de Custo para iniciar o inventário.</p>
+
         <Form.Group className="mb-3">
           <Form.Label>Centro de Custo</Form.Label>
           <Form.Control
@@ -71,18 +69,7 @@ const CcInputModal = ({ show, onClose, onConfirm }) => {
             placeholder="Ex: 1005ADMI03"
             autoFocus
             onKeyDown={handleCcKeyDown}
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Crachá do Responsável</Form.Label>
-          <Form.Control
-            type="text"
-            ref={crachaInputRef}
-            value={cracha}
-            onChange={(e) => setCracha(e.target.value)}
-            placeholder="Digite o crachá"
-            onKeyDown={handleCrachaKeyDown}
+            style={{ textTransform: 'uppercase' }}
           />
         </Form.Group>
 

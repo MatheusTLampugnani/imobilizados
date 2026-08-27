@@ -4,8 +4,6 @@ import { FileEarmarkPdfFill } from 'react-bootstrap-icons';
 import { gerarPdfBaixa } from '../utils/sbbiPdfGenerator';
 
 /**
- * SbbiModal - Modal para preenchimento e geração do formulário de SBBI em PDF.
- *
  * @param {boolean} show - Controla a exibição do modal.
  * @param {function} onClose - Função para fechar o modal.
  * @param {Object} item - O ativo/imobilizado que será baixado.
@@ -16,11 +14,9 @@ const SbbiModal = ({ show, onClose, item }) => {
 
   const handleGeneratePdf = () => {
     if (!item) return;
-    
-    // Chama a função utilitária para gerar o PDF
+
     gerarPdfBaixa(item, motivo, observacoes);
-    
-    // Fecha o modal após a geração
+
     onClose();
   };
 
@@ -39,9 +35,8 @@ const SbbiModal = ({ show, onClose, item }) => {
           <FileEarmarkPdfFill size={22} /> Solicitação de Baixa (SBBI)
         </Modal.Title>
       </Modal.Header>
-      
+
       <Modal.Body className="bg-light p-4">
-        {/* Info do Ativo */}
         <div className="bg-white p-3 rounded shadow-sm mb-4 border-start border-danger border-4">
           <h6 className="text-secondary small fw-bold text-uppercase mb-2">Item Selecionado</h6>
           <Row className="g-2">
@@ -69,7 +64,7 @@ const SbbiModal = ({ show, onClose, item }) => {
         </div>
 
         <Form>
-          {/* Seção 1: Motivo da Baixa */}
+          {/* Motivo da Baixa */}
           <Form.Group className="mb-4">
             <Form.Label className="fw-bold text-secondary mb-2 small text-uppercase">1. Selecione o Motivo da Baixa</Form.Label>
             <div className="bg-white p-3 rounded shadow-sm border">
@@ -92,7 +87,7 @@ const SbbiModal = ({ show, onClose, item }) => {
             </div>
           </Form.Group>
 
-          {/* Seção 2: Observações */}
+          {/* Observações */}
           <Form.Group className="mb-3">
             <Form.Label className="fw-bold text-secondary mb-2 small text-uppercase">2. Observações e Detalhes da Solicitação</Form.Label>
             <Form.Control
@@ -111,9 +106,9 @@ const SbbiModal = ({ show, onClose, item }) => {
         <Button variant="secondary" onClick={handleClose} className="px-4">
           Cancelar
         </Button>
-        <Button 
-          variant="danger" 
-          onClick={handleGeneratePdf} 
+        <Button
+          variant="danger"
+          onClick={handleGeneratePdf}
           className="d-flex align-items-center gap-2 px-4 shadow-sm"
         >
           <FileEarmarkPdfFill /> Gerar SBBI (PDF)

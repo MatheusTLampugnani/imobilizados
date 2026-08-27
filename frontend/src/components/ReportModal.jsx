@@ -9,7 +9,8 @@ const ReportModal = ({ show, onClose } ) => {
   const [error, setError] = useState('');
 
   const handleGenerate = async (format) => {
-    if (!centroCusto) {
+    const cleanCc = centroCusto.trim();
+    if (!cleanCc) {
       setError('Por favor, insira um centro de custo.');
       return;
     }
@@ -17,8 +18,8 @@ const ReportModal = ({ show, onClose } ) => {
     setError('');
 
     try {
-      const endpoint = `${API_URL}/report/${format}?centro_custo=${centroCusto}`;
-      const fileName = `Relatorio_CC_${centroCusto}.${format}`;
+      const endpoint = `${API_URL}/report/${format}?centro_custo=${cleanCc}`;
+      const fileName = `Relatorio_CC_${cleanCc}.${format}`;
 
       const response = await axios.get(endpoint, {
         responseType: 'blob',
@@ -54,6 +55,15 @@ const ReportModal = ({ show, onClose } ) => {
     onClose();
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (centroCusto.trim() && isGenerating === null) {
+        handleGenerate('csv');
+      }
+    }
+  };
+
   return (
     <Modal show={show} onHide={handleClose} centered>
       <Modal.Header closeButton>
@@ -64,9 +74,11 @@ const ReportModal = ({ show, onClose } ) => {
         <Form.Control
           type="text"
           value={centroCusto}
-          onChange={(e) => setCentroCusto(e.target.value)}
+          onChange={(e) => setCentroCusto(e.target.value.toUpperCase())}
           placeholder="Ex: 1005ADMI03"
           autoFocus
+          onKeyDown={handleKeyDown}
+          style={{ textTransform: 'uppercase' }}
         />
         {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
       </Modal.Body>

@@ -3,10 +3,8 @@ import autoTable from 'jspdf-autotable';
 import logoVideplast from '../assets/videplast-brand.png';
 
 /**
- * Gera o documento em formato PDF para a Solicitação de Baixa de Bens do Imobilizado (SBBI).
- *
  * @param {Object} item - Objeto contendo os dados do ativo.
- * @param {string} motivo - Motivo selecionado para a baixa ('Obsoleto', 'Quebra', 'Venda', 'Doação', 'Sinistro').
+ * @param {string} motivo - Motivo selecionado para a baixa.
  * @param {string} observacoes - Observações e detalhamentos adicionais para a solicitação.
  */
 export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
@@ -15,7 +13,6 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
     return;
   }
 
-  // Instancia o jsPDF no formato A4 em milímetros
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -26,19 +23,16 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const printableWidth = pageWidth - (2 * marginX);
 
-  // --- 1. CABEÇALHO ---
+  // CABEÇALHO
   try {
-    // Insere o logo da empresa no canto esquerdo
     doc.addImage(logoVideplast, 'PNG', marginX, 14, 45, 10);
   } catch (e) {
-    // Fallback de texto estilizado em caso de erro ao carregar o logo
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(16);
-    doc.setTextColor(185, 28, 28); // Vermelho institucional
+    doc.setTextColor(185, 28, 28);
     doc.text('VIDEPLAST', marginX, 22);
   }
 
-  // Título e identificação do documento no canto direito
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(40, 40, 40);
@@ -46,12 +40,10 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
   doc.setFontSize(9.5);
   doc.text('DO IMOBILIZADO (SBBI)', pageWidth - marginX, 22, { align: 'right' });
 
-  // Linha vermelha corporativa de separação
   doc.setDrawColor(185, 28, 28);
   doc.setLineWidth(0.8);
   doc.line(marginX, 27, pageWidth - marginX, 27);
 
-  // Data de Emissão do formulário
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(100, 100, 100);
@@ -61,7 +53,7 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
 
   let currentY = 38;
 
-  // --- 2. SEÇÃO: MOTIVO DA BAIXA ---
+  // MOTIVO DA BAIXA
   doc.setFillColor(242, 242, 242);
   doc.rect(marginX, currentY, printableWidth, 7, 'F');
   doc.setFont('Helvetica', 'bold');
@@ -71,27 +63,23 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
 
   currentY += 13;
 
-  // Checklist de motivos com checkboxes
   const motivosValidos = ['Obsoleto', 'Quebra', 'Venda', 'Doação', 'Sinistro'];
   const colWidth = printableWidth / motivosValidos.length;
 
   motivosValidos.forEach((opcao, index) => {
     const xPos = marginX + (index * colWidth) + 3;
-    
-    // Desenha o quadrado do checkbox
+
     doc.setDrawColor(120, 120, 120);
     doc.setLineWidth(0.3);
     doc.rect(xPos, currentY - 3, 4, 4);
 
-    // Marca com 'X' caso coincida com o motivo selecionado
     if (motivo && String(motivo).toLowerCase().trim() === opcao.toLowerCase().trim()) {
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(9.5);
-      doc.setTextColor(185, 28, 28); // Vermelho corporativo no preenchimento
+      doc.setTextColor(185, 28, 28);
       doc.text('X', xPos + 0.8, currentY + 0.2);
     }
 
-    // Texto de cada motivo
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(50, 50, 50);
@@ -100,7 +88,7 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
 
   currentY += 10;
 
-  // --- 3. SEÇÃO: TABELA DE DADOS ---
+  // TABELA DE DADOS
   doc.setFillColor(242, 242, 242);
   doc.rect(marginX, currentY, printableWidth, 7, 'F');
   doc.setFont('Helvetica', 'bold');
@@ -110,7 +98,6 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
 
   currentY += 10;
 
-  // Extrai e formata os atributos do item
   const formatField = (val) => val || 'N/A';
   const formatIncorporacao = (dateVal) => {
     if (!dateVal) return 'N/A';
@@ -132,16 +119,16 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
     body: tableRows,
     startY: currentY,
     theme: 'grid',
-    headStyles: { 
-      fillColor: [185, 28, 28], // Vermelho institucional da Videplast
-      textColor: [255, 255, 255], 
+    headStyles: {
+      fillColor: [185, 28, 28],
+      textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 8.5,
       halign: 'center'
     },
-    bodyStyles: { 
-      font: 'Helvetica', 
-      fontSize: 8.5, 
+    bodyStyles: {
+      font: 'Helvetica',
+      fontSize: 8.5,
       cellPadding: 4,
       textColor: [50, 50, 50]
     },
@@ -156,7 +143,7 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
 
   currentY = doc.lastAutoTable.finalY + 8;
 
-  // --- 4. SEÇÃO: OBSERVAÇÕES E DETALHAMENTO ---
+  // OBSERVAÇÕES E DETALHAMENTO --
   doc.setFillColor(242, 242, 242);
   doc.rect(marginX, currentY, printableWidth, 7, 'F');
   doc.setFont('Helvetica', 'bold');
@@ -166,7 +153,6 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
 
   currentY += 10;
 
-  // Caixa para observações
   const boxHeight = 22;
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.3);
@@ -186,7 +172,7 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
 
   currentY += boxHeight + 10;
 
-  // --- 5. SEÇÃO: AUTORIZAÇÕES E ASSINATURAS ---
+  // AUTORIZAÇÕES E ASSINATURAS
   doc.setFillColor(242, 242, 242);
   doc.rect(marginX, currentY, printableWidth, 7, 'F');
   doc.setFont('Helvetica', 'bold');
@@ -196,12 +182,11 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
 
   currentY += 22;
 
-  // Dimensões dos campos de assinaturas
   const sigWidth = 72;
   const xLeft = marginX + 8;
   const xRight = pageWidth - marginX - sigWidth - 8;
 
-  // Assinatura 1: Responsável
+  // Responsável
   doc.setDrawColor(120, 120, 120);
   doc.setLineWidth(0.4);
   doc.line(xLeft, currentY, xLeft + sigWidth, currentY);
@@ -214,7 +199,7 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
   doc.setTextColor(100, 100, 100);
   doc.text('(Nome legível e Assinatura)', xLeft + (sigWidth / 2), currentY + 8, { align: 'center' });
 
-  // Assinatura 2: Autorização Diretor/Gerente
+  // Autorização Diretor/Gerente
   doc.setLineWidth(0.4);
   doc.line(xRight, currentY, xRight + sigWidth, currentY);
   doc.setFont('Helvetica', 'normal');
@@ -228,7 +213,7 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
 
   currentY += 22;
 
-  // Linha 2 de Assinaturas (Controle de Patrimônio e Data)
+  // Controle de Patrimônio e Data
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(40, 40, 40);
@@ -241,7 +226,6 @@ export const gerarPdfBaixa = (item, motivo, observacoes = '') => {
   doc.setTextColor(50, 50, 50);
   doc.text('Visto Controle de Patrimônio', xRight + (sigWidth / 2), currentY - 0.5, { align: 'center' });
 
-  // Salva o PDF com o nome padronizado
   const codPatrimonio = item.codigo_imobilizado || item.codigo_inventario || 'Ativo';
   const nomeArquivo = `SBBI_${codPatrimonio}.pdf`;
   doc.save(nomeArquivo);
