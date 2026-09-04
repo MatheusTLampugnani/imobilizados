@@ -23,7 +23,7 @@ export const locationsData = {
   "ADM": [
     "SALA REU 01",
     "SALA REU 02",
-    "SALA RE 03",
+    "SALA REU 03",
     "SALA TREINAMENTO"
   ],
   "PCP": [
@@ -76,7 +76,7 @@ export const locationsData = {
     "SALA ARQUIVO",
     "AREA PROD AUDITI"
   ],
-  "SERVIÇOS GERAIS":[
+  "SERVIÇOS GERAIS": [
     "SERVIÇOS GERAIS"
   ],
   "PESQUISA E DESENVOLVIMENTO": [
@@ -103,7 +103,7 @@ export const locationsData = {
     "BAIXA IMOB",
     "NAO ENCONTRADO"
   ],
-  "MAQUINAS":[
+  "MAQUINAS": [
     "IMP MÁQ 109",
     "IMP MÁQ 111",
     "IMP MÁQ 115",
