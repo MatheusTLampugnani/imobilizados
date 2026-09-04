@@ -132,6 +132,7 @@ app.get('/api/imobilizado', async (req, res) => {
         searchPromises.push(searchByText('codigo_inventario', codigoFormatado));
         searchPromises.push(searchByText('numero_serie', codigoFormatado));
         searchPromises.push(searchByText('centro_custo', codigoFormatado));
+        searchPromises.push(searchByText('local', codigoFormatado));
 
         const isNumeric = /^\d+$/.test(codigoFormatado);
         if (isNumeric) {

@@ -28,7 +28,7 @@ const InputArea = ({ codigo, setCodigo, onConsultar, onLimpar, isLoading }) => {
         <InputGroup size="lg" className="shadow-sm">
           <Form.Control
             type="text"
-            placeholder="Digite o código do ativo..."
+            placeholder="Digite o código, descrição, série, local..."
             value={codigo}
             onChange={(e) => setCodigo(e.target.value)}
             aria-label="Código do imobilizado"
