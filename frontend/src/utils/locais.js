@@ -24,7 +24,8 @@ export const locationsData = {
     "SALA REU 01",
     "SALA REU 02",
     "SALA REU 03",
-    "SALA TREINAMENTO"
+    "SALA TREINAMENTO",
+    "SALA GERENCIA JOSUE"
   ],
   "PCP": [
     "SALA SUP PCP",
