@@ -141,12 +141,14 @@ h1, .h1 {
 
 .login-page {
   min-height: 100vh;
+  width: 100%;
   background-color: #f4f6f9;
   background-image: radial-gradient(#e2e2e2 1px, transparent 1px);
   background-size: 20px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 .login-card {

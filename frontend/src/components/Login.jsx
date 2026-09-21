@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Form, Button, Spinner, Alert, Container } from 'react-bootstrap';
-import axios from 'axios';
-import { API_URL } from '../apiConfig';
+import api from '../lib/api';
 import logoVideplast from '../assets/videplast-brand.png'; 
 
 const LoginScreen = ({ onLoginSuccess }) => {
@@ -11,16 +10,20 @@ const LoginScreen = ({ onLoginSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!cracha) return;
+    if (!cracha.trim()) return;
 
     setLoading(true);
     setError('');
 
     try {
-      const response = await axios.post(`${API_URL}/login`, { cracha });
-      onLoginSuccess(response.data.user);
+      const response = await api.post('/login', { cracha: cracha.trim() });
+      if (response.data?.user) {
+        onLoginSuccess(response.data.user);
+      } else {
+        throw new Error('Usuário não retornado pelo servidor.');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro de conexão ou crachá inválido.');
+      setError(err.response?.data?.message || err.message || 'Erro de conexão ou crachá inválido.');
     } finally {
       setLoading(false);
     }
@@ -28,7 +31,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
 
   return (
     <div className="login-page">
-      <Container className="d-flex justify-content-center">
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
         <Card style={{ width: '100%', maxWidth: '420px' }} className="login-card fade-in-up">
           <Card.Body className="p-5">
             
