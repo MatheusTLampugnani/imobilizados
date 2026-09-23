@@ -1,0 +1,17 @@
+services:
+  imobilizados:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: imobilizados-app
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./backend/.env
+    networks:
+      - web-proxy
+
+networks:
+  web-proxy:
+    external: true

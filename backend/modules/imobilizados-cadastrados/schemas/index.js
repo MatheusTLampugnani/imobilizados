@@ -7,6 +7,7 @@ const criarCadastradoSchema = z.object({
     user: z.union([z.string(), z.number()]).transform(v => String(v).trim()),
     numero_serie: z.string().optional().nullable(),
     local: z.string().optional().nullable(),
+    observacao: z.string().optional().nullable(),
 });
 
 const editarCadastradoSchema = z.object({
@@ -14,6 +15,7 @@ const editarCadastradoSchema = z.object({
     numero_serie: z.string().optional().nullable(),
     centro_custo: z.string().optional(),
     local: z.string().optional().nullable(),
+    observacao: z.string().optional().nullable(),
 });
 
 const listarCadastradosSchema = z.object({

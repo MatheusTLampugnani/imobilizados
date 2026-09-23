@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner, Row, Col, InputGroup } from 'react-bootstrap';
-import { BoxSeam, UpcScan, GeoAlt, ListTask, PersonBadge } from 'react-bootstrap-icons'; 
+import { BoxSeam, UpcScan, GeoAlt, ListTask, PersonBadge, ChatLeftText } from 'react-bootstrap-icons'; 
 import axios from 'axios';
 import { API_URL } from '../apiConfig';
 import { locationsData } from '../utils/locais';
@@ -9,6 +9,7 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal
   const [description, setDescription] = useState('');
   const [inventoryCode, setInventoryCode] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
+  const [observacao, setObservacao] = useState('');
   const [selectedSector, setSelectedSector] = useState('');
   const [selectedSubLocal, setSelectedSubLocal] = useState('');
   const [availableSubLocals, setAvailableSubLocals] = useState([]);
@@ -21,6 +22,7 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal
       setSelectedSector('');
       setSelectedSubLocal('');
       setAvailableSubLocals([]);
+      setObservacao('');
       setError('');
       setIsLoading(false);
     }
@@ -56,7 +58,8 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal
         centro_custo: centroCusto,
         user: user || 'Sistema',
         numero_serie: serialNumber,
-        local: finalLocalString 
+        local: finalLocalString,
+        observacao: observacao.trim() || null
       };
 
       const response = await axios.post(`${API_URL}/imobilizado`, payload);
@@ -79,6 +82,7 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal
   const handleClose = () => {
     setDescription('');
     setSerialNumber('');
+    setObservacao('');
     setError('');
     setIsLoading(false);
     onClose();
@@ -177,6 +181,23 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal
                     ))}
                   </Form.Select>
                </InputGroup>
+            </Col>
+
+            <Col md={12} className="mt-2">
+              <Form.Group className="mb-2">
+                <Form.Label className="fw-bold text-secondary small">OBSERVAÇÕES</Form.Label>
+                <InputGroup>
+                  <InputGroup.Text className="bg-light"><ChatLeftText /></InputGroup.Text>
+                  <Form.Control
+                    as="textarea"
+                    rows={2}
+                    value={observacao}
+                    onChange={(e) => setObservacao(e.target.value)}
+                    placeholder="Opcional: Alguma observação ou detalhe do item..."
+                    disabled={isLoading}
+                  />
+                </InputGroup>
+              </Form.Group>
             </Col>
           </Row>
         </div>

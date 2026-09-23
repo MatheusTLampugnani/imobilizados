@@ -107,7 +107,7 @@ async function buscarInventoryItem(codigoFormatado) {
 /**
  * Cria um novo imobilizado na tabela de cadastrados.
  */
-async function criarImobilizado({ descricao, codigo_inventario, centro_custo, user, numero_serie, local }) {
+async function criarImobilizado({ descricao, codigo_inventario, centro_custo, user, numero_serie, local, observacao }) {
     const invCodeClean = formatarValor(codigo_inventario);
 
     const { data: existeOficial } = await supabase
@@ -134,16 +134,22 @@ async function criarImobilizado({ descricao, codigo_inventario, centro_custo, us
         throw err;
     }
 
+    const insertPayload = {
+        descricao,
+        codigo_inventario: invCodeClean,
+        numero_serie: numero_serie || null,
+        centro_custo,
+        local: local || null,
+        cracha: user,
+    };
+
+    if (observacao !== undefined && observacao !== null) {
+        insertPayload.observacao = observacao;
+    }
+
     const { data, error } = await supabase
         .from('imobilizados_cadastrados')
-        .insert([{
-            descricao,
-            codigo_inventario: invCodeClean,
-            numero_serie: numero_serie || null,
-            centro_custo,
-            local: local || null,
-            cracha: user,
-        }])
+        .insert([insertPayload])
         .select()
         .single();
 
