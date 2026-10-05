@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Spinner, Alert, Accordion, Table, Button } from 'react-bootstrap';
 import { PencilSquare } from 'react-bootstrap-icons';
 import EditInventoryModal from './EditInventoryModal';
 
-const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser }) => {
+const ITENS_POR_PAGINA = 50;
+
+const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser, titulo }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editType, setEditType] = useState('inventory');
+  const [limiteExibidos, setLimiteExibidos] = useState(ITENS_POR_PAGINA);
+
+  // Listas grandes (ex.: materiais sem local) travam o navegador se tudo for desenhado de uma vez.
+  useEffect(() => { setLimiteExibidos(ITENS_POR_PAGINA); }, [resultado?.itens]);
 
   const handleEditClick = (item, type) => {
     setEditingItem(item);
@@ -85,11 +91,11 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
     <>
       <Card className="mt-4 shadow-sm border-0">
         <Card.Header as="h5" className="bg-danger text-white">
-          IMOBILIZADOS ENCONTRADOS
+          {titulo || 'IMOBILIZADOS ENCONTRADOS'}
         </Card.Header>
         <Card.Body>
           <Accordion defaultActiveKey={resultado.itens[0]?.id?.toString()} alwaysOpen className="mt-2">
-            {resultado.itens.map((item) => (
+            {resultado.itens.slice(0, limiteExibidos).map((item) => (
               <Accordion.Item eventKey={item.id?.toString()} key={item.id}>
                 <Accordion.Header>
                   <div style={{ whiteSpace: 'normal', lineHeight: '1.4', marginRight: '10px' }}>
@@ -170,6 +176,13 @@ const ResultsDisplay = ({ isLoading, error, resultado, onRefresh, currentUser })
               </Accordion.Item>
             ))}
           </Accordion>
+          {resultado.itens.length > limiteExibidos && (
+            <div className="text-center mt-3">
+              <Button variant="outline-danger" onClick={() => setLimiteExibidos(limite => limite + ITENS_POR_PAGINA)}>
+                Mostrar mais ({limiteExibidos} de {resultado.itens.length})
+              </Button>
+            </div>
+          )}
         </Card.Body>
       </Card>
 
