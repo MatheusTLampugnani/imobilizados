@@ -13,6 +13,7 @@ export function useImobilizados(currentUser) {
     const [filters, setFilters] = useState({ serie: '', subn: '', centroCusto: '', local: '' });
     const [filteredItems, setFilteredItems] = useState([]);
     const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
+    const [modoSemLocal, setModoSemLocal] = useState(false);
 
     useEffect(() => {
         if (!resultado) return;
@@ -59,6 +60,7 @@ export function useImobilizados(currentUser) {
 
         setIsLoading(true);
         setError('');
+        setModoSemLocal(false);
         handleResetFilters();
 
         try {
@@ -77,6 +79,29 @@ export function useImobilizados(currentUser) {
         }
     }
 
+    async function handleBuscarSemLocal() {
+        if (isLoading) return;
+
+        setIsLoading(true);
+        setError('');
+        setCodigo('');
+        setModoSemLocal(true);
+        handleResetFilters();
+
+        try {
+            const unidade = currentUser?.unidade || '';
+            const isAdmin = currentUser?.isAdmin || false;
+            const response = await api.get(`/imobilizado/sem-local?unidadeUsuario=${unidade}&isAdmin=${isAdmin}`);
+            setResultado(response.data);
+            if (!response.data?.itens?.length) setError('Nenhum material com local em branco ou não informado.');
+        } catch (err) {
+            setResultado(null);
+            setError(err.response?.data?.message || 'Erro ao conectar ao servidor.');
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     function handleFilterChange(newFilters) { setFilters(newFilters); }
 
     function handleResetFilters() {
@@ -90,10 +115,12 @@ export function useImobilizados(currentUser) {
         setCodigo('');
         setResultado(null);
         setError('');
+        setModoSemLocal(false);
     }
 
     function refreshData() {
-        if (codigo) handleCodeSearch(codigo);
+        if (modoSemLocal) handleBuscarSemLocal();
+        else if (codigo) handleCodeSearch(codigo);
     }
 
     return {
@@ -102,7 +129,9 @@ export function useImobilizados(currentUser) {
         isLoading,
         error,
         filters, filteredItems, sortConfig,
+        modoSemLocal,
         handleCodeSearch,
+        handleBuscarSemLocal,
         handleFilterChange,
         handleResetFilters,
         handleSortChange,

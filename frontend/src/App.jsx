@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Row, Col, Container, Button } from 'react-bootstrap';
-import { ShieldLock, BoxArrowRight, PersonCircle } from 'react-bootstrap-icons';
+import { ShieldLock, BoxArrowRight, PersonCircle, GeoAlt } from 'react-bootstrap-icons';
 
 // Hooks de domínio
 import { useAuth } from './modules/auth/hooks/useAuth';
@@ -35,7 +35,9 @@ function App() {
         isLoading: isSearchLoading,
         error,
         filters, filteredItems, sortConfig,
+        modoSemLocal,
         handleCodeSearch,
+        handleBuscarSemLocal,
         handleFilterChange,
         handleResetFilters,
         handleSortChange,
@@ -99,6 +101,23 @@ function App() {
                 {view === 'home' && (
                     <>
                         <InputArea codigo={codigo} setCodigo={setCodigo} onConsultar={handleCodeSearch} onLimpar={handleClearSearch} isLoading={isSearchLoading} />
+
+                        <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+                            <Button variant="outline-dark" size="sm" onClick={handleBuscarSemLocal} disabled={isSearchLoading} className="d-flex align-items-center gap-2 shadow-sm" title="Listar materiais com o campo Local em branco ou não informado">
+                                <GeoAlt size={14} />
+                                Materiais sem local
+                            </Button>
+                            {modoSemLocal && resultado?.itens?.length > 0 && (
+                                <>
+                                    <span className="badge bg-danger fs-6">
+                                        {resultado.itens.length} {resultado.itens.length === 1 ? 'material sem local' : 'materiais sem local'}
+                                    </span>
+                                    <Button variant="link" size="sm" className="text-secondary p-0" onClick={handleClearSearch}>
+                                        Limpar
+                                    </Button>
+                                </>
+                            )}
+                        </div>
 
                         {resultado?.itens?.length > 0 && (
                             <FilterControls filters={filters} onFilterChange={handleFilterChange} onResetFilters={handleResetFilters} sortConfig={sortConfig} onSortChange={handleSortChange} itemsCount={filteredItems.length} />

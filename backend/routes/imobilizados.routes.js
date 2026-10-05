@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const {
     buscarImobilizadoSchema,
+    listarSemLocalSchema,
     inventoryItemSchema,
     criarImobilizadoSchema,
     updateInventarioSchema,
@@ -8,6 +9,7 @@ const {
     updateSerialSchema,
     updateLocalSchema,
     buscarImobilizado,
+    listarSemLocal,
     buscarInventoryItem,
     criarImobilizado,
     buscarCCsDaUnidade,
@@ -47,6 +49,32 @@ router.get('/', async (req, res) => {
         return res.status(200).json(resultado);
     } catch (err) {
         console.error('Erro na busca de imobilizado:', err);
+        return res.status(500).json({ message: `Erro no banco de dados: ${err.message}` });
+    }
+});
+
+// GET /api/imobilizado/sem-local — itens com local em branco ou "Não informado"
+router.get('/sem-local', async (req, res) => {
+    const parsed = listarSemLocalSchema.safeParse(req.query);
+    if (!parsed.success) {
+        return res.status(400).json({ message: getZodErrorMessage(parsed.error) });
+    }
+
+    const { unidadeUsuario, isAdmin } = parsed.data;
+
+    try {
+        let listaCCs = null;
+        if (!isAdmin && unidadeUsuario) {
+            listaCCs = await buscarCCsDaUnidade(unidadeUsuario);
+            if (listaCCs.length === 0) {
+                return res.status(404).json({ message: `A unidade ${unidadeUsuario} não possui Centros de Custo vinculados.` });
+            }
+        }
+
+        const resultado = await listarSemLocal({ listaCCs });
+        return res.status(200).json(resultado);
+    } catch (err) {
+        console.error('Erro ao listar itens sem local:', err);
         return res.status(500).json({ message: `Erro no banco de dados: ${err.message}` });
     }
 });
