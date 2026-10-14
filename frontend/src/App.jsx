@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Row, Col, Container, Button } from 'react-bootstrap';
-import { ShieldLock, BoxArrowRight, PersonCircle } from 'react-bootstrap-icons';
+import { Row, Col, Container, Button, Alert } from 'react-bootstrap';
+import { ShieldLock, BoxArrowRight, PersonCircle, ClipboardCheck } from 'react-bootstrap-icons';
 
 // Hooks de domínio
 import { useAuth } from './modules/auth/hooks/useAuth';
@@ -50,12 +50,16 @@ function App() {
         inventario, setInventario,
         inventarioCentroCusto,
         inventarioLocal,
+        inventarioIniciadoEm,
+        inventarioPendente,
         expectedItems,
         showDivergenceReport,
         showAddItemModal, setShowAddItemModal,
         itemCodeToAdd,
         isLoading: isInventarioLoading,
         handleStartInventory,
+        handleResumeInventory,
+        handleDiscardInventory,
         handleAddItemToInventory,
         handleConfirmAddItem,
         handleRemoveItem,
@@ -75,6 +79,12 @@ function App() {
 
     const showStatus = (type, message) => setStatusModal({ show: true, type, message });
     const handleCloseStatus = () => setStatusModal(prev => ({ ...prev, show: false }));
+
+    const confirmarDescarte = () => {
+        if (window.confirm(`Descartar o inventário do Centro de Custo ${inventarioCentroCusto}? Os ${inventario.length} itens lidos serão apagados deste aparelho e não poderão ser recuperados.`)) {
+            handleDiscardInventory();
+        }
+    };
 
     return (
         <div className="app-wrapper">
@@ -100,6 +110,23 @@ function App() {
 
                 {view === 'home' && (
                     <>
+                        {inventarioPendente && (
+                            <Alert variant="warning" className="d-flex flex-column flex-md-row align-items-md-center gap-2 shadow-sm">
+                                <div className="me-md-auto d-flex align-items-center gap-2">
+                                    <ClipboardCheck size={20} className="flex-shrink-0" />
+                                    <span>
+                                        <strong>Inventário em andamento</strong> — Centro de Custo {inventarioCentroCusto}:{' '}
+                                        {inventario.length} {inventario.length === 1 ? 'item lido' : 'itens lidos'}
+                                        {inventarioIniciadoEm && ` (iniciado em ${new Date(inventarioIniciadoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })})`}.
+                                    </span>
+                                </div>
+                                <div className="d-flex gap-2">
+                                    <Button variant="danger" size="sm" onClick={handleResumeInventory}>Continuar inventário</Button>
+                                    <Button variant="outline-secondary" size="sm" onClick={confirmarDescarte}>Descartar</Button>
+                                </div>
+                            </Alert>
+                        )}
+
                         <InputArea codigo={codigo} setCodigo={setCodigo} onConsultar={handleCodeSearch} onLimpar={handleClearSearch} isLoading={isSearchLoading} />
 
                         {resultado?.itens?.length > 0 && (
@@ -115,8 +142,8 @@ function App() {
                                 </Button>
                             </Col>
                             <Col xs={6} md>
-                                <Button variant="outline-danger" size="md" className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2" onClick={() => { setView('iniciar_inventario'); }}>
-                                    Iniciar Inventário
+                                <Button variant="outline-danger" size="md" className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2" onClick={() => { if (inventarioPendente) handleResumeInventory(); else setView('iniciar_inventario'); }}>
+                                    {inventarioPendente ? 'Continuar Inventário' : 'Iniciar Inventário'}
                                 </Button>
                             </Col>
                             <Col xs={6} md>

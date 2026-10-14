@@ -39,6 +39,12 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
     setStatusFeedback({ ...statusFeedback, show: false });
   };
 
+  const handleClearAll = () => {
+    if (window.confirm(`Apagar todos os ${inventario.length} itens lidos desta contagem? Esta ação não pode ser desfeita.`)) {
+      setInventario([]);
+    }
+  };
+
   return (
     <>
       <Modal show={true} onHide={onClose} centered size="xl" backdrop="static">
@@ -46,7 +52,10 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           <Modal.Title>Inventário de Ativos - Centro de Custo {inventarioCentroCusto}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          
+          <p className="small text-muted mb-2">
+            A contagem fica salva neste aparelho: se fechar a janela, atualizar a página ou sair do sistema, use <strong>Continuar inventário</strong> na tela inicial.
+          </p>
+
           <ListGroup variant="flush">
             {inventario.length > 0 ? (
               inventario.map((item) => (
@@ -85,7 +94,7 @@ const Inventory = ({ inventario, setInventario, onClose, onAddItem, inventarioCe
           </ListGroup>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={() => setInventario([])} disabled={inventario.length === 0}>
+          <Button variant="outline-secondary" onClick={handleClearAll} disabled={inventario.length === 0}>
             <Trash /> Limpar Tudo
           </Button>
           <Button variant="danger" onClick={() => setIsScanning(true)}>

@@ -1,53 +1,90 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../../lib/api';
 
+// O inventário em andamento fica no localStorage, separado por crachá: sobrevive a F5,
+// a fechar a janela, a sair do sistema e a fechar o navegador, até ser finalizado ou descartado.
+const chaveInventario = (cracha) => `imobilizados.inventario.${cracha}`;
+
+function lerInventarioSalvo(cracha) {
+    try {
+        const salvo = localStorage.getItem(chaveInventario(cracha));
+        if (salvo) return JSON.parse(salvo);
+
+        // Migra a contagem que versões anteriores guardavam só no sessionStorage da aba.
+        const antigo = JSON.parse(sessionStorage.getItem('appState') || '{}');
+        if (antigo.inventarioCentroCusto && antigo.inventario?.length > 0) {
+            return {
+                centroCusto: antigo.inventarioCentroCusto,
+                local: antigo.inventarioLocal || '',
+                usuario: antigo.inventarioUsuario || cracha,
+                itens: antigo.inventario,
+                iniciadoEm: null,
+            };
+        }
+    } catch (e) {
+        console.error('Erro ao restaurar inventário:', e);
+    }
+    return null;
+}
+
 /**
  * Hook de gerenciamento do modo inventário.
  * Gerencia itens coletados, itens esperados, adição, remoção e finalização.
  */
 export function useInventario(currentUser) {
+    const cracha = currentUser?.cracha ? String(currentUser.cracha) : '';
     const [inventarioAtivo, setInventarioAtivo] = useState(false);
     const [inventario, setInventario] = useState([]);
     const [inventarioCentroCusto, setInventarioCentroCusto] = useState('');
     const [inventarioUsuario, setInventarioUsuario] = useState('');
     const [inventarioLocal, setInventarioLocal] = useState('');
+    const [inventarioIniciadoEm, setInventarioIniciadoEm] = useState(null);
+    const [carregadoPara, setCarregadoPara] = useState(null);
     const [expectedItems, setExpectedItems] = useState([]);
     const [showDivergenceReport, setShowDivergenceReport] = useState(false);
     const [showAddItemModal, setShowAddItemModal] = useState(false);
     const [itemCodeToAdd, setItemCodeToAdd] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Restaura inventário do sessionStorage
+    // Restaura o inventário em andamento do crachá logado
     useEffect(() => {
-        try {
-            const saved = sessionStorage.getItem('appState');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                setInventario(parsed.inventario || []);
-                setInventarioCentroCusto(parsed.inventarioCentroCusto || '');
-                setInventarioUsuario(parsed.inventarioUsuario || '');
-                setInventarioLocal(parsed.inventarioLocal || '');
-            }
-        } catch (e) {
-            console.error('Erro ao restaurar inventário:', e);
-        }
-    }, []);
+        if (!cracha) return;
+        const salvo = lerInventarioSalvo(cracha);
+        setInventario(salvo?.itens || []);
+        setInventarioCentroCusto(salvo?.centroCusto || '');
+        setInventarioUsuario(salvo?.usuario || '');
+        setInventarioLocal(salvo?.local || '');
+        setInventarioIniciadoEm(salvo?.iniciadoEm || null);
+        setCarregadoPara(cracha);
+    }, [cracha]);
 
-    // Persiste inventário no sessionStorage
+    // Persiste a cada leitura (só depois de restaurar, para não sobrescrever o que estava salvo)
     useEffect(() => {
+        if (!cracha || carregadoPara !== cracha) return;
         try {
-            const current = JSON.parse(sessionStorage.getItem('appState') || '{}');
-            sessionStorage.setItem('appState', JSON.stringify({
-                ...current,
-                inventario,
-                inventarioCentroCusto,
-                inventarioUsuario,
-                inventarioLocal,
-            }));
+            if (inventarioCentroCusto) {
+                localStorage.setItem(chaveInventario(cracha), JSON.stringify({
+                    centroCusto: inventarioCentroCusto,
+                    local: inventarioLocal,
+                    usuario: inventarioUsuario,
+                    itens: inventario,
+                    iniciadoEm: inventarioIniciadoEm,
+                }));
+            } else {
+                localStorage.removeItem(chaveInventario(cracha));
+            }
+            const antigo = JSON.parse(sessionStorage.getItem('appState') || '{}');
+            if ('inventario' in antigo) {
+                delete antigo.inventario;
+                delete antigo.inventarioCentroCusto;
+                delete antigo.inventarioUsuario;
+                delete antigo.inventarioLocal;
+                sessionStorage.setItem('appState', JSON.stringify(antigo));
+            }
         } catch (e) {
             console.error('Erro ao salvar inventário:', e);
         }
-    }, [inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal]);
+    }, [cracha, carregadoPara, inventario, inventarioCentroCusto, inventarioUsuario, inventarioLocal, inventarioIniciadoEm]);
 
     const fetchExpectedItems = useCallback(async (cc) => {
         if (!cc) return;
@@ -65,6 +102,7 @@ export function useInventario(currentUser) {
             setInventarioCentroCusto(cc);
             setInventarioUsuario(currentUser.cracha);
             setInventarioLocal(localFisico);
+            setInventarioIniciadoEm(new Date().toISOString());
             setInventarioAtivo(true);
             fetchExpectedItems(cc);
             setInventario([]);
@@ -72,6 +110,22 @@ export function useInventario(currentUser) {
         } catch {
             return false;
         }
+    }
+
+    // Reabre um inventário restaurado (após F5, fechar a janela ou sair do sistema)
+    function handleResumeInventory() {
+        setInventarioAtivo(true);
+        fetchExpectedItems(inventarioCentroCusto);
+    }
+
+    function limparInventario() {
+        setInventarioAtivo(false);
+        setInventario([]);
+        setExpectedItems([]);
+        setInventarioCentroCusto('');
+        setInventarioUsuario('');
+        setInventarioLocal('');
+        setInventarioIniciadoEm(null);
     }
 
     async function handleAddItemToInventory(codeToAdd) {
@@ -154,11 +208,19 @@ export function useInventario(currentUser) {
         const itemsToSave = inventario.filter(item => item.pendingSave && item.rawNewData);
 
         if (itemsToSave.length > 0) {
-            try {
-                await Promise.all(itemsToSave.map(item => api.post('/imobilizado', item.rawNewData)));
+            const resultados = await Promise.allSettled(itemsToSave.map(item => api.post('/imobilizado', item.rawNewData)));
+            // Marca os que foram gravados, para não cadastrá-los de novo se o inventário for retomado
+            const salvos = new Set(itemsToSave.filter((_, i) => resultados[i].status === 'fulfilled').map(item => item.id));
+            if (salvos.size > 0) {
+                setInventario(prev => prev.map(item => (
+                    salvos.has(item.id) ? { ...item, pendingSave: false, CentroCustoNome: 'Novo (Salvo)' } : item
+                )));
+            }
+            const falhas = itemsToSave.length - salvos.size;
+            if (falhas === 0) {
                 onSuccess?.(`${itemsToSave.length} novos itens cadastrados com sucesso!`);
-            } catch {
-                onError?.('Houve um erro ao salvar alguns itens novos.');
+            } else {
+                onError?.(`${falhas} de ${itemsToSave.length} itens novos não foram salvos. Eles continuam na contagem como pendentes.`);
             }
         } else {
             onSuccess?.('Inventário finalizado com sucesso!');
@@ -170,19 +232,12 @@ export function useInventario(currentUser) {
 
     function handleFinishAndReset() {
         setShowDivergenceReport(false);
-        setInventarioAtivo(false);
-        setInventario([]);
-        setExpectedItems([]);
-        setInventarioCentroCusto('');
-        setInventarioLocal('');
-        const current = JSON.parse(sessionStorage.getItem('appState') || '{}');
-        sessionStorage.setItem('appState', JSON.stringify({
-            ...current,
-            inventario: [],
-            inventarioCentroCusto: '',
-            inventarioLocal: '',
-        }));
+        limparInventario();
     }
+
+    // Existe contagem guardada que não está aberta na tela
+    const inventarioPendente = !inventarioAtivo && !showDivergenceReport
+        && Boolean(inventarioCentroCusto) && inventario.length > 0;
 
     return {
         inventarioAtivo, setInventarioAtivo,
@@ -190,12 +245,16 @@ export function useInventario(currentUser) {
         inventarioCentroCusto,
         inventarioUsuario,
         inventarioLocal,
+        inventarioIniciadoEm,
+        inventarioPendente,
         expectedItems,
         showDivergenceReport, setShowDivergenceReport,
         showAddItemModal, setShowAddItemModal,
         itemCodeToAdd,
         isLoading,
         handleStartInventory,
+        handleResumeInventory,
+        handleDiscardInventory: limparInventario,
         handleAddItemToInventory,
         handleConfirmAddItem,
         handleRemoveItem,
