@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Row, Col, Container, Button, Alert } from 'react-bootstrap';
+import { Row, Col, Container, Button, Alert, Spinner } from 'react-bootstrap';
 import { ShieldLock, BoxArrowRight, PersonCircle, ClipboardCheck } from 'react-bootstrap-icons';
 
 // Hooks de domínio
@@ -27,7 +27,7 @@ import AdminLogs from './components/AdminLogs';
 import './App.css';
 
 function App() {
-    const { currentUser, handleLogin, handleLogout } = useAuth();
+    const { currentUser, verificandoPortal, handleLogin, handleLogout } = useAuth();
 
     const {
         codigo, setCodigo,
@@ -74,6 +74,14 @@ function App() {
     const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
 
     if (!currentUser) {
+        if (verificandoPortal) {
+            return (
+                <div className="d-flex flex-column justify-content-center align-items-center gap-2" style={{ minHeight: '100vh' }}>
+                    <Spinner animation="border" variant="danger" />
+                    <span className="small text-muted">Entrando com o seu login do Portal...</span>
+                </div>
+            );
+        }
         return <LoginScreen onLoginSuccess={handleLogin} />;
     }
 
@@ -99,7 +107,7 @@ function App() {
                         <span className="d-none d-md-inline">Alterações</span>
                     </Button>
                 )}
-                <Button variant="outline-danger" size="sm" onClick={handleLogout} className="d-flex align-items-center gap-2" title="Sair do Sistema">
+                <Button variant="outline-danger" size="sm" onClick={handleLogout} className="d-flex align-items-center gap-2" title="Sair (encerra também o login do Portal)">
                     <BoxArrowRight size={16} />
                     <span className="d-none d-md-inline">Sair</span>
                 </Button>
