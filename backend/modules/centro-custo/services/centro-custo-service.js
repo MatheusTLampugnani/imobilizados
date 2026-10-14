@@ -16,6 +16,25 @@ async function validarCentroCusto(cc) {
 }
 
 /**
+ * Confere se um Centro de Custo existe: primeiro no cadastro de centros de custo
+ * (traz o nome do setor), depois em algum item da base de imobilizados.
+ * @param {string} cc
+ * @returns {{ existe: boolean, setor: string }}
+ */
+async function consultarCentroCusto(cc) {
+    const { data, error } = await supabase
+        .from('centro_de_custo')
+        .select('centro_custo, setores')
+        .ilike('centro_custo', cc)
+        .limit(1);
+
+    if (error) throw error;
+    if (data && data.length > 0) return { existe: true, setor: data[0].setores || '' };
+
+    return { existe: await validarCentroCusto(cc), setor: '' };
+}
+
+/**
  * Busca o nome (setores) de uma lista de centros de custo.
  * @param {string[]} codes
  * @returns {Record<string, string>} Mapa { codigo: nomeSetor }
@@ -50,4 +69,4 @@ async function buscarSetorPorCC(cc) {
     return data ? data.setores : '';
 }
 
-module.exports = { validarCentroCusto, buscarSetoresPorCCs, buscarSetorPorCC };
+module.exports = { validarCentroCusto, consultarCentroCusto, buscarSetoresPorCCs, buscarSetorPorCC };
