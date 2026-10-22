@@ -20,6 +20,7 @@ const criarImobilizadoSchema = z.object({
         .refine(v => v.length > 0, { message: 'Usuário é obrigatório.' }),
     numero_serie: z.string().optional().nullable(),
     local: z.string().optional().nullable(),
+    observacao: z.string().optional().nullable(),
 });
 
 const updateInventarioSchema = z.object({

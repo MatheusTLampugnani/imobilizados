@@ -34,6 +34,7 @@ async function gerarRelatorioExcel({ start_date, end_date, centro_custo, baixas_
         { header: 'Centro de Custo', key: 'centro_custo', width: 15 },
         { header: 'Local', key: 'local', width: 15 },
         { header: 'Usuário', key: 'cracha', width: 15 },
+        { header: 'Observações', key: 'observacao', width: 25 },
     ];
 
     worksheet.getRow(1).font = { bold: true };

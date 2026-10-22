@@ -31,6 +31,9 @@ async function listarCadastrados({ start_date, end_date, centro_custo, termo, ba
             `local.ilike.%${termo}%`,
             `numero_serie.ilike.%${termo}%`,
         ];
+        if (!baixas_only) {
+            orConditions.push(`observacao.ilike.%${termo}%`);
+        }
         if (isNumeric) {
             orConditions.push(`codigo_inventario.eq.${termo}`);
             if (!baixas_only) orConditions.push(`cracha.eq.${termo}`);
@@ -58,12 +61,27 @@ async function excluirCadastrado(id) {
  * Edita um imobilizado cadastrado pelo ID.
  */
 async function editarCadastrado(id, campos) {
+    const updatePayload = {};
+    for (const [key, val] of Object.entries(campos)) {
+        if (val !== undefined) {
+            updatePayload[key] = val;
+        }
+    }
+
     const { data, error } = await supabase
         .from('imobilizados_cadastrados')
-        .update(campos)
+        .update(updatePayload)
         .eq('id', id)
         .select();
-    if (error) throw error;
+
+    if (error) {
+        if (error.message && error.message.includes('observacao')) {
+            const friendlyErr = new Error("A coluna 'observacao' ainda não existe no banco de dados. Execute o script em 'backend/migrations/add_observacao_column.sql' no Supabase.");
+            friendlyErr.statusCode = 400;
+            throw friendlyErr;
+        }
+        throw error;
+    }
     return data;
 }
 

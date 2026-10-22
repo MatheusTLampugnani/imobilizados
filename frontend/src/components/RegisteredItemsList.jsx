@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DataTable from 'react-data-table-component';
 import { Modal, Button, Spinner, Alert, Form, Row, Col, InputGroup, Card, Pagination, Accordion } from 'react-bootstrap';
-import { Calendar, Building, Search, FileEarmarkSpreadsheet, PencilSquare, Trash, ListCheck, CardText, GeoAlt, Hash, ExclamationTriangle, FileEarmarkPdf, ChevronDown, ChevronUp } from 'react-bootstrap-icons';
+import { Calendar, Building, Search, FileEarmarkSpreadsheet, PencilSquare, Trash, ListCheck, CardText, GeoAlt, Hash, ExclamationTriangle, FileEarmarkPdf, ChevronDown, ChevronUp, ChatLeftText } from 'react-bootstrap-icons';
 import { API_URL } from '../apiConfig';
 import { locationsData } from '../utils/locais';
 import SbbiModal from './SbbiModal';
@@ -171,7 +171,8 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
       descricao: row.descricao,
       numero_serie: row.numero_serie,
       centro_custo: row.centro_custo,
-      local: row.local
+      local: row.local,
+      observacao: row.observacao || row.obs || ''
     });
     setShowEditModal(true);
   };
@@ -213,7 +214,8 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert("Erro ao salvar alterações.");
+      const msg = err.response?.data?.message || "Erro ao salvar alterações.";
+      alert(msg);
     }
   };
 
@@ -539,6 +541,11 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
                                   <div className="text-muted small fw-bold mb-1 text-uppercase">Responsável</div>
                                   <div className="text-dark fw-bold">{item.cracha || item.usuario_atualizacao || item.usuario || item.responsavel || '-'}</div>
                                 </Col>
+
+                                <Col md={3} sm={6} className="mb-3">
+                                  <div className="text-muted small fw-bold mb-1 text-uppercase">Observações</div>
+                                  <div className="text-dark fw-bold" style={{ wordBreak: 'break-word' }}>{item.observacao || item.obs || '-'}</div>
+                                </Col>
                               </Row>
                             </div>
                           )}
@@ -650,6 +657,20 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
                     <option key={idx} value={sub}>{sub}</option>
                   ))}
                 </Form.Select>
+              </InputGroup>
+            </Form.Group>
+
+            <Form.Group className="mb-2 mt-3">
+              <Form.Label className="small fw-bold text-secondary">OBSERVAÇÕES</Form.Label>
+              <InputGroup>
+                <InputGroup.Text className="bg-light"><ChatLeftText /></InputGroup.Text>
+                <Form.Control
+                  as="textarea"
+                  rows={2}
+                  placeholder="Observações adicionais sobre o item..."
+                  value={editForm.observacao || ''}
+                  onChange={(e) => setEditForm({ ...editForm, observacao: e.target.value })}
+                />
               </InputGroup>
             </Form.Group>
           </Form>
