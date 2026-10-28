@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Row, Col, Container, Button } from 'react-bootstrap';
-import { ShieldLock, BoxArrowRight, PersonCircle } from 'react-bootstrap-icons';
+import { Row, Col, Container, Button, Alert, Spinner } from 'react-bootstrap';
+import { ShieldLock, BoxArrowRight, PersonCircle, ClipboardCheck } from 'react-bootstrap-icons';
 
 // Hooks de domínio
 import { useAuth } from './modules/auth/hooks/useAuth';
@@ -27,7 +27,7 @@ import AdminLogs from './components/AdminLogs';
 import './App.css';
 
 function App() {
-    const { currentUser, handleLogin, handleLogout } = useAuth();
+    const { currentUser, verificandoPortal, handleLogin, handleLogout } = useAuth();
 
     const {
         codigo, setCodigo,
@@ -35,7 +35,9 @@ function App() {
         isLoading: isSearchLoading,
         error,
         filters, filteredItems, sortConfig,
+        modoSemLocal,
         handleCodeSearch,
+        handleBuscarSemLocal,
         handleFilterChange,
         handleResetFilters,
         handleSortChange,
@@ -48,12 +50,16 @@ function App() {
         inventario, setInventario,
         inventarioCentroCusto,
         inventarioLocal,
+        inventarioIniciadoEm,
+        inventarioPendente,
         expectedItems,
         showDivergenceReport,
         showAddItemModal, setShowAddItemModal,
         itemCodeToAdd,
         isLoading: isInventarioLoading,
         handleStartInventory,
+        handleResumeInventory,
+        handleDiscardInventory,
         handleAddItemToInventory,
         handleConfirmAddItem,
         handleRemoveItem,
@@ -68,11 +74,25 @@ function App() {
     const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
 
     if (!currentUser) {
+        if (verificandoPortal) {
+            return (
+                <div className="d-flex flex-column justify-content-center align-items-center gap-2" style={{ minHeight: '100vh' }}>
+                    <Spinner animation="border" variant="danger" />
+                    <span className="small text-muted">Entrando com o seu login do Portal...</span>
+                </div>
+            );
+        }
         return <LoginScreen onLoginSuccess={handleLogin} />;
     }
 
     const showStatus = (type, message) => setStatusModal({ show: true, type, message });
     const handleCloseStatus = () => setStatusModal(prev => ({ ...prev, show: false }));
+
+    const confirmarDescarte = () => {
+        if (window.confirm(`Descartar o inventário do Centro de Custo ${inventarioCentroCusto}? Os ${inventario.length} itens lidos serão apagados deste aparelho e não poderão ser recuperados.`)) {
+            handleDiscardInventory();
+        }
+    };
 
     return (
         <div className="app-wrapper">
@@ -87,7 +107,7 @@ function App() {
                         <span className="d-none d-md-inline">Alterações</span>
                     </Button>
                 )}
-                <Button variant="outline-danger" size="sm" onClick={handleLogout} className="d-flex align-items-center gap-2" title="Sair do Sistema">
+                <Button variant="outline-danger" size="sm" onClick={handleLogout} className="d-flex align-items-center gap-2" title="Sair (encerra também o login do Portal)">
                     <BoxArrowRight size={16} />
                     <span className="d-none d-md-inline">Sair</span>
                 </Button>
@@ -98,33 +118,55 @@ function App() {
 
                 {view === 'home' && (
                     <>
+                        {inventarioPendente && (
+                            <Alert variant="warning" className="d-flex flex-column flex-md-row align-items-md-center gap-2 shadow-sm">
+                                <div className="me-md-auto d-flex align-items-center gap-2">
+                                    <ClipboardCheck size={20} className="flex-shrink-0" />
+                                    <span>
+                                        <strong>Inventário em andamento</strong> — Centro de Custo {inventarioCentroCusto}:{' '}
+                                        {inventario.length} {inventario.length === 1 ? 'item lido' : 'itens lidos'}
+                                        {inventarioIniciadoEm && ` (iniciado em ${new Date(inventarioIniciadoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })})`}.
+                                    </span>
+                                </div>
+                                <div className="d-flex gap-2">
+                                    <Button variant="danger" size="sm" onClick={handleResumeInventory}>Continuar inventário</Button>
+                                    <Button variant="outline-secondary" size="sm" onClick={confirmarDescarte}>Descartar</Button>
+                                </div>
+                            </Alert>
+                        )}
+
                         <InputArea codigo={codigo} setCodigo={setCodigo} onConsultar={handleCodeSearch} onLimpar={handleClearSearch} isLoading={isSearchLoading} />
 
                         {resultado?.itens?.length > 0 && (
                             <FilterControls filters={filters} onFilterChange={handleFilterChange} onResetFilters={handleResetFilters} sortConfig={sortConfig} onSortChange={handleSortChange} itemsCount={filteredItems.length} />
                         )}
 
-                        <ResultsDisplay isLoading={isSearchLoading} error={error} resultado={resultado ? { ...resultado, itens: filteredItems } : null} onRefresh={refreshData} currentUser={currentUser} />
+                        <ResultsDisplay isLoading={isSearchLoading} error={error} resultado={resultado ? { ...resultado, itens: filteredItems } : null} onRefresh={refreshData} currentUser={currentUser} titulo={modoSemLocal ? `MATERIAIS SEM LOCAL (${filteredItems.length})` : undefined} />
 
                         <Row className="g-2 my-3">
-                            <Col xs={6} md={3}>
+                            <Col xs={6} md>
                                 <Button variant="danger" size="md" className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2" onClick={() => setShowReportModal(true)}>
                                     Gerar Relatórios
                                 </Button>
                             </Col>
-                            <Col xs={6} md={3}>
-                                <Button variant="outline-danger" size="md" className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2" onClick={() => { setView('iniciar_inventario'); }}>
-                                    Iniciar Inventário
+                            <Col xs={6} md>
+                                <Button variant="outline-danger" size="md" className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2" onClick={() => { if (inventarioPendente) handleResumeInventory(); else setView('iniciar_inventario'); }}>
+                                    {inventarioPendente ? 'Continuar Inventário' : 'Iniciar Inventário'}
                                 </Button>
                             </Col>
-                            <Col xs={6} md={3}>
+                            <Col xs={6} md>
                                 <Button variant="secondary" size="md" className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2" onClick={() => { setViewBaixasOnly(false); setShowRegisteredList(true); }}>
                                     Ver Cadastrados
                                 </Button>
                             </Col>
-                            <Col xs={6} md={3}>
+                            <Col xs={6} md>
                                 <Button variant="warning" size="md" className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2 text-dark fw-bold" onClick={() => { setViewBaixasOnly(true); setShowRegisteredList(true); }}>
                                     Ver Baixas
+                                </Button>
+                            </Col>
+                            <Col xs={12} md>
+                                <Button variant="outline-secondary" size="md" className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2" onClick={handleBuscarSemLocal} disabled={isSearchLoading} title="Listar materiais com o campo Local em branco ou não informado">
+                                    Sem Local
                                 </Button>
                             </Col>
                         </Row>

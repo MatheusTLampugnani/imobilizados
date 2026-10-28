@@ -6,6 +6,11 @@ const buscarImobilizadoSchema = z.object({
     isAdmin: z.string().optional().transform(v => v === 'true'),
 });
 
+const listarSemLocalSchema = z.object({
+    unidadeUsuario: z.string().optional().default(''),
+    isAdmin: z.string().optional().transform(v => v === 'true'),
+});
+
 const inventoryItemSchema = z.object({
     codigo: z.string().trim().min(1, { message: 'Nenhum código foi fornecido.' }),
 });
@@ -51,6 +56,7 @@ const updateLocalSchema = z.object({
 
 module.exports = {
     buscarImobilizadoSchema,
+    listarSemLocalSchema,
     inventoryItemSchema,
     criarImobilizadoSchema,
     updateInventarioSchema,

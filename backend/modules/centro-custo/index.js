@@ -1,3 +1,3 @@
-const { validarCentroCusto, buscarSetoresPorCCs, buscarSetorPorCC } = require('./services/centro-custo-service');
+const { validarCentroCusto, consultarCentroCusto, buscarSetoresPorCCs, buscarSetorPorCC } = require('./services/centro-custo-service');
 
-module.exports = { validarCentroCusto, buscarSetoresPorCCs, buscarSetorPorCC };
+module.exports = { validarCentroCusto, consultarCentroCusto, buscarSetoresPorCCs, buscarSetorPorCC };

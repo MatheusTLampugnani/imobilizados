@@ -335,6 +335,11 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
         </Modal.Header>
 
         <Modal.Body className="bg-light">
+          {baixasOnly && (
+            <Alert variant="info" className="small py-2 shadow-sm">
+              Lista para consulta e emissão da SBBI. Para corrigir um item baixado, pesquise-o na tela inicial e use o lápis do campo desejado: a alteração fica registrada na auditoria.
+            </Alert>
+          )}
           <Accordion className="mb-3 border-0 shadow-sm">
             <Accordion.Item eventKey="0" className="border-0">
               <Accordion.Header>
@@ -462,16 +467,20 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
 
                               <Col xs={12} md={2} className="d-flex justify-content-center justify-content-md-end px-0 mt-2 mt-md-0">
                                 <div className="d-flex gap-2 w-100 justify-content-center justify-content-md-end" onClick={(e) => e.stopPropagation()}>
-                                  <Button
-                                    variant="light"
-                                    size="sm"
-                                    className="border shadow-sm flex-grow-1 flex-md-grow-0"
-                                    onClick={() => handleEditClick(item)}
-                                    title="Editar"
-                                    style={{ color: '#004085' }}
-                                  >
-                                    <PencilSquare />
-                                  </Button>
+                                  {/* Baixas vêm da base oficial (tabela imobilizados): editar/excluir aqui atingiria
+                                      outro registro da tabela de cadastrados. Correções vão pela consulta, com auditoria. */}
+                                  {!baixasOnly && (
+                                    <Button
+                                      variant="light"
+                                      size="sm"
+                                      className="border shadow-sm flex-grow-1 flex-md-grow-0"
+                                      onClick={() => handleEditClick(item)}
+                                      title="Editar"
+                                      style={{ color: '#004085' }}
+                                    >
+                                      <PencilSquare />
+                                    </Button>
+                                  )}
                                   <Button
                                     variant="light"
                                     size="sm"
@@ -485,16 +494,18 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
                                   >
                                     <FileEarmarkPdf />
                                   </Button>
-                                  <Button
-                                    variant="light"
-                                    size="sm"
-                                    className="border shadow-sm flex-grow-1 flex-md-grow-0"
-                                    onClick={() => confirmDelete(item)}
-                                    title="Excluir"
-                                    style={{ color: '#c62828' }}
-                                  >
-                                    <Trash />
-                                  </Button>
+                                  {!baixasOnly && (
+                                    <Button
+                                      variant="light"
+                                      size="sm"
+                                      className="border shadow-sm flex-grow-1 flex-md-grow-0"
+                                      onClick={() => confirmDelete(item)}
+                                      title="Excluir"
+                                      style={{ color: '#c62828' }}
+                                    >
+                                      <Trash />
+                                    </Button>
+                                  )}
                                 </div>
                               </Col>
                             </Row>

@@ -131,11 +131,32 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
     setIsUpdating(true);
     setError('');
 
+    const valorFinal = editType === 'cost_center' ? newValue.trim().toUpperCase() : newValue;
+
+    // CC digitado errado vai direto para a base oficial: confere no cadastro antes de gravar
+    if (editType === 'cost_center') {
+      try {
+        const { data } = await axios.get(`${API_URL}/centro-custo/consultar/${encodeURIComponent(valorFinal)}`);
+        if (!data.existe && !window.confirm(`O centro de custo ${valorFinal} não foi encontrado no cadastro nem em outros itens. Confira o código.\n\nDeseja gravar mesmo assim?`)) {
+          setIsUpdating(false);
+          return;
+        }
+      } catch (err) {
+        if (err.response?.status === 400) {
+          setError('Centro de custo inválido: use só letras e números (ex.: 1005ADMI03).');
+          setViewState('error');
+          setIsUpdating(false);
+          return;
+        }
+        // Falha na consulta não impede a alteração (a conferência é só um aviso)
+      }
+    }
+
     try {
       const payload = {
         itemId: item.id,
         user: cracha,
-        [config.payloadKey]: newValue
+        [config.payloadKey]: valorFinal
       };
 
       await axios.put(`${API_URL}${config.endpoint}`, payload);
@@ -143,7 +164,7 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
       setViewState('success');
       
       setTimeout(() => {
-        onUpdateSuccess(item.id, editType, newValue);
+        onUpdateSuccess(item.id, editType, valorFinal);
         resetModal();
       }, 1500);
       
@@ -225,7 +246,7 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
                           <Form.Control
                               type="text"
                               value={newValue}
-                              onChange={(e) => setNewValue(e.target.value)}
+                              onChange={(e) => setNewValue(editType === 'cost_center' ? e.target.value.toUpperCase() : e.target.value)}
                               placeholder={`Digite ${config.label.toLowerCase()}`}
                               autoFocus
                           />

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 
 const CcInputModal = ({ show, onClose, onConfirm }) => {
@@ -6,8 +6,6 @@ const CcInputModal = ({ show, onClose, onConfirm }) => {
   const [localFisico, setLocalFisico] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const localInputRef = useRef(null);
 
   const handleConfirm = async () => {
     const cleanCc = cc.trim();
@@ -39,14 +37,7 @@ const CcInputModal = ({ show, onClose, onConfirm }) => {
   };
 
   const handleCcKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      localInputRef.current?.focus();
-    }
-  };
-
-  const handleLocalKeyDown = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isLoading) {
       e.preventDefault();
       handleConfirm();
     }
