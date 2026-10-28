@@ -4,6 +4,11 @@ import { ExclamationTriangleFill, BoxArrowUpRight, BookmarkStar } from 'react-bo
 import api from '../lib/api';
 import logoVideplast from '../assets/videplast-brand.png';
 
+// Endereço oficial do sistema (servidor da Videplast). O aviso de mudança aparece só para quem ainda abre
+// pelo endereço antigo; no endereço oficial ele não aparece.
+const ENDERECO_OFICIAL = 'https://imobilizados.tailbba2c4.ts.net/';
+const noEnderecoAntigo = window.location.origin !== new URL(ENDERECO_OFICIAL).origin;
+
 const LoginScreen = ({ onLoginSuccess }) => {
   const [cracha, setCracha] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,9 +37,9 @@ const LoginScreen = ({ onLoginSuccess }) => {
 
   return (
     <div className="login-page">
-      {/* Modal de Migração de Link - Estático e Não Fechável */}
+      {/* Aviso de mudança de endereço: só no endereço antigo (estático e não fechável) */}
       <Modal
-        show={true}
+        show={noEnderecoAntigo}
         backdrop="static"
         keyboard={false}
         centered
@@ -73,14 +78,14 @@ const LoginScreen = ({ onLoginSuccess }) => {
             </div>
             <div className="mt-2">
               <span className="migration-url-text text-danger">
-                https://imobilizados.tailbba2c4.ts.net/
+                {ENDERECO_OFICIAL}
               </span>
             </div>
           </div>
 
           <Button
             as="a"
-            href="https://imobilizados.tailbba2c4.ts.net/"
+            href={ENDERECO_OFICIAL}
             className="w-100 py-3 btn-lg d-flex align-items-center justify-content-center gap-2 shadow text-white btn-migration-cta"
             style={{
               fontSize: '1rem',
