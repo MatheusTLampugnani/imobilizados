@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Container, Button, Alert, Spinner } from 'react-bootstrap';
-import { ShieldLock, BoxArrowRight, PersonCircle, ClipboardCheck } from 'react-bootstrap-icons';
+import { ShieldLock, BoxArrowRight, PersonCircle, ClipboardCheck, QrCode } from 'react-bootstrap-icons';
 
 // Hooks de domínio
 import { useAuth } from './modules/auth/hooks/useAuth';
@@ -23,6 +23,7 @@ import DivergenceReport from './components/DivergenceReport';
 import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import RegisteredItemsList from './components/RegisteredItemsList';
 import AdminLogs from './components/AdminLogs';
+import EtiquetasLocaisModal from './components/EtiquetasLocaisModal';
 
 import './App.css';
 
@@ -36,8 +37,10 @@ function App() {
         error,
         filters, filteredItems, sortConfig,
         modoSemLocal,
+        localAtual,
         handleCodeSearch,
         handleBuscarSemLocal,
+        handleBuscarPorLocal,
         handleFilterChange,
         handleResetFilters,
         handleSortChange,
@@ -72,6 +75,19 @@ function App() {
     const [showRegisteredList, setShowRegisteredList] = useState(false);
     const [viewBaixasOnly, setViewBaixasOnly] = useState(false);
     const [statusModal, setStatusModal] = useState({ show: false, type: 'success', message: '' });
+    const [showEtiquetas, setShowEtiquetas] = useState(false);
+
+    // QR code colado na sala: abre o sistema em ?local=SETOR - AMBIENTE e mostra os itens daquele local
+    // (o Portal de Acesso devolve para o mesmo endereço depois do login)
+    const localDaUrl = useRef(new URLSearchParams(window.location.search).get('local'));
+    useEffect(() => {
+        if (!currentUser || !localDaUrl.current) return;
+        const local = localDaUrl.current;
+        localDaUrl.current = null;
+        handleBuscarPorLocal(local);
+        // Só quando o usuário entra
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUser]);
 
     if (!currentUser) {
         if (verificandoPortal) {
@@ -87,6 +103,14 @@ function App() {
 
     const showStatus = (type, message) => setStatusModal({ show: true, type, message });
     const handleCloseStatus = () => setStatusModal(prev => ({ ...prev, show: false }));
+
+    // Ao sair da lista do local (outra busca, Limpar), tira o ?local= do endereço para não voltar nele ao recarregar
+    const sairDoLocalNaUrl = () => {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has('local')) return;
+        url.searchParams.delete('local');
+        window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    };
 
     const confirmarDescarte = () => {
         if (window.confirm(`Descartar o inventário do Centro de Custo ${inventarioCentroCusto}? Os ${inventario.length} itens lidos serão apagados deste aparelho e não poderão ser recuperados.`)) {
@@ -105,6 +129,12 @@ function App() {
                     <Button variant="dark" size="sm" onClick={() => setView('admin_logs')} className="d-flex align-items-center gap-2 shadow-sm" title="Acessar Auditoria e Logs">
                         <ShieldLock size={14} />
                         <span className="d-none d-md-inline">Alterações</span>
+                    </Button>
+                )}
+                {view === 'home' && (
+                    <Button variant="outline-dark" size="sm" onClick={() => setShowEtiquetas(true)} className="d-flex align-items-center gap-2 shadow-sm bg-white" title="Imprimir as etiquetas com QR code dos locais">
+                        <QrCode size={14} />
+                        <span className="d-none d-md-inline">Etiquetas QR</span>
                     </Button>
                 )}
                 <Button variant="outline-danger" size="sm" onClick={handleLogout} className="d-flex align-items-center gap-2" title="Sair (encerra também o login do Portal)">
@@ -135,13 +165,21 @@ function App() {
                             </Alert>
                         )}
 
-                        <InputArea codigo={codigo} setCodigo={setCodigo} onConsultar={handleCodeSearch} onLimpar={handleClearSearch} isLoading={isSearchLoading} />
+                        <InputArea codigo={codigo} setCodigo={setCodigo} onConsultar={(...args) => { sairDoLocalNaUrl(); return handleCodeSearch(...args); }} onLimpar={() => { sairDoLocalNaUrl(); handleClearSearch(); }} isLoading={isSearchLoading} />
+
+                        {localAtual && !isSearchLoading && (
+                            <Alert variant="info" className="mt-3 mb-0 small shadow-sm">
+                                <strong>Itens que pertencem a {localAtual}.</strong> Confira se estão aqui. Se algum item mudou de lugar, use o lápis em <strong>LOCAL</strong>.
+                                Se ele não existe mais, só com certeza (e com a assinatura), mude o local para <strong>BAIXA</strong>.
+                            </Alert>
+                        )}
 
                         {resultado?.itens?.length > 0 && (
                             <FilterControls filters={filters} onFilterChange={handleFilterChange} onResetFilters={handleResetFilters} sortConfig={sortConfig} onSortChange={handleSortChange} itemsCount={filteredItems.length} />
                         )}
 
-                        <ResultsDisplay isLoading={isSearchLoading} error={error} resultado={resultado ? { ...resultado, itens: filteredItems } : null} onRefresh={refreshData} currentUser={currentUser} titulo={modoSemLocal ? `MATERIAIS SEM LOCAL (${filteredItems.length})` : undefined} />
+                        <ResultsDisplay isLoading={isSearchLoading} error={error} resultado={resultado ? { ...resultado, itens: filteredItems } : null} onRefresh={refreshData} currentUser={currentUser}
+                            titulo={modoSemLocal ? `MATERIAIS SEM LOCAL (${filteredItems.length})` : localAtual ? `ITENS DO LOCAL ${localAtual} (${filteredItems.length})` : undefined} />
 
                         <Row className="g-2 my-3">
                             <Col xs={6} md>
@@ -165,7 +203,7 @@ function App() {
                                 </Button>
                             </Col>
                             <Col xs={12} md>
-                                <Button variant="outline-secondary" size="md" className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2" onClick={handleBuscarSemLocal} disabled={isSearchLoading} title="Listar materiais com o campo Local em branco ou não informado">
+                                <Button variant="outline-secondary" size="md" className="w-100 h-100 d-flex align-items-center justify-content-center text-center py-2" onClick={() => { sairDoLocalNaUrl(); handleBuscarSemLocal(); }} disabled={isSearchLoading} title="Listar materiais com o campo Local em branco ou não informado">
                                     Sem Local
                                 </Button>
                             </Col>
@@ -206,6 +244,8 @@ function App() {
             <AddNotFoundItemModal show={showAddItemModal} onClose={() => setShowAddItemModal(false)} onConfirm={handleConfirmAddItem} itemCode={itemCodeToAdd} defaultLocal={inventarioLocal} centroCusto={inventarioCentroCusto} user={currentUser?.cracha} />
 
             <RegisteredItemsList show={showRegisteredList} onClose={() => setShowRegisteredList(false)} baixasOnly={viewBaixasOnly} />
+
+            <EtiquetasLocaisModal show={showEtiquetas} onClose={() => setShowEtiquetas(false)} />
 
             <StatusModal show={statusModal.show} type={statusModal.type} message={statusModal.message} onClose={handleCloseStatus} />
 

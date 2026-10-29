@@ -119,6 +119,38 @@ async function listarSemLocal({ listaCCs }) {
 }
 
 /**
+ * Lista os imobilizados de um local exato ("SETOR - AMBIENTE"), para a página aberta pelo QR code da sala.
+ * Busca em páginas porque o Supabase devolve no máximo 1000 linhas por consulta.
+ */
+async function listarPorLocal({ local, listaCCs }) {
+    const TAMANHO_PAGINA = 1000;
+    const itens = [];
+
+    for (let inicio = 0; ; inicio += TAMANHO_PAGINA) {
+        let query = supabase
+            .from('imobilizados')
+            .select('*')
+            .eq('local', local)
+            .order('id', { ascending: true })
+            .range(inicio, inicio + TAMANHO_PAGINA - 1);
+        if (listaCCs) query = query.in('centro_custo', listaCCs);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        itens.push(...(data || []));
+        if (!data || data.length < TAMANHO_PAGINA) break;
+    }
+
+    const codes = [...new Set(itens.map(i => i.centro_custo).filter(Boolean))];
+    const centroCustoMap = await buscarSetoresPorCCs(codes);
+
+    return {
+        codigo_imobilizado: null,
+        itens: itens.map(item => mapearItem(item, centroCustoMap)),
+    };
+}
+
+/**
  * Busca um item específico por código de inventário ou número de série (para o modo inventário).
  */
 async function buscarInventoryItem(codigoFormatado) {
@@ -292,6 +324,7 @@ async function atualizarLocal({ itemId, newLocal, user }) {
 module.exports = {
     buscarImobilizado,
     listarSemLocal,
+    listarPorLocal,
     buscarInventoryItem,
     criarImobilizado,
     buscarCCsDaUnidade,
