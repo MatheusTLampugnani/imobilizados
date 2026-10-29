@@ -39,7 +39,7 @@ export const locationsData = {
     "AREA REFEITORIO",
     "AREA COZINHA",
     "VESTIARIO FEMININO",
-    "VESTIARIO MASCULINO"
+    "VESTIARIO MASCULINO", "VESTIARIOS"
   ],
   "MANUTENÇÃO": [
     "SALA TRE 04",
