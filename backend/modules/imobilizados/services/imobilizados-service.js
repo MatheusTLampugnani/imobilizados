@@ -119,10 +119,11 @@ async function listarSemLocal({ listaCCs }) {
 }
 
 /**
- * Lista os imobilizados de um local exato ("SETOR - AMBIENTE"), para a página aberta pelo QR code da sala.
+ * Lista os imobilizados de um local exato (o código curto, ex.: CLICHERIA PROD, e o nome longo dele),
+ * para a página aberta pelo QR code da sala.
  * Busca em páginas porque o Supabase devolve no máximo 1000 linhas por consulta.
  */
-async function listarPorLocal({ local, listaCCs }) {
+async function listarPorLocal({ locais, listaCCs }) {
     const TAMANHO_PAGINA = 1000;
     const itens = [];
 
@@ -130,7 +131,7 @@ async function listarPorLocal({ local, listaCCs }) {
         let query = supabase
             .from('imobilizados')
             .select('*')
-            .eq('local', local)
+            .in('local', locais)
             .order('id', { ascending: true })
             .range(inicio, inicio + TAMANHO_PAGINA - 1);
         if (listaCCs) query = query.in('centro_custo', listaCCs);

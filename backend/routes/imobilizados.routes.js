@@ -88,7 +88,7 @@ router.get('/por-local', async (req, res) => {
         return res.status(400).json({ message: getZodErrorMessage(parsed.error) });
     }
 
-    const { local, unidadeUsuario, isAdmin } = parsed.data;
+    const { local, tambem, unidadeUsuario, isAdmin } = parsed.data;
 
     try {
         let listaCCs = null;
@@ -99,7 +99,7 @@ router.get('/por-local', async (req, res) => {
             }
         }
 
-        const resultado = await listarPorLocal({ local, listaCCs });
+        const resultado = await listarPorLocal({ locais: [local, tambem].filter(Boolean), listaCCs });
         return res.status(200).json(resultado);
     } catch (err) {
         console.error('Erro ao listar itens do local:', err);

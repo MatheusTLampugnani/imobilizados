@@ -13,6 +13,8 @@ const listarSemLocalSchema = z.object({
 
 const listarPorLocalSchema = z.object({
     local: z.string().trim().min(1, { message: 'Nenhum local foi informado.' }),
+    // nome longo do mesmo local ("SETOR - AMBIENTE"), para achar também os itens gravados antes dos códigos curtos
+    tambem: z.string().trim().optional().default(''),
     unidadeUsuario: z.string().optional().default(''),
     isAdmin: z.string().optional().transform(v => v === 'true'),
 });
@@ -30,7 +32,8 @@ const criarImobilizadoSchema = z.object({
         .transform(v => String(v).trim())
         .refine(v => v.length > 0, { message: 'Usuário é obrigatório.' }),
     numero_serie: z.string().optional().nullable(),
-    local: z.string().optional().nullable(),
+    // o campo local do SAP tem 15 caracteres: a tela grava o código curto do local
+    local: z.string().trim().max(15, { message: 'O local pode ter no máximo 15 caracteres.' }).optional().nullable(),
     observacao: z.string().optional().nullable(),
 });
 
@@ -56,7 +59,8 @@ const updateSerialSchema = z.object({
 
 const updateLocalSchema = z.object({
     itemId: z.union([z.string(), z.number()]).transform(v => String(v)),
-    newLocal: z.string().trim().min(1, { message: 'Local inválido.' }),
+    newLocal: z.string().trim().min(1, { message: 'Local inválido.' })
+        .max(15, { message: 'O local pode ter no máximo 15 caracteres (o campo do SAP tem 15).' }),
     user: z.string().optional(),
 });
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import { QrCode } from 'react-bootstrap-icons';
-import { locationsData } from '../utils/locais';
+import { locationsData, montarLocal } from '../utils/locais';
 
 // Endereço oficial do sistema: o QR code sempre aponta para ele (abre no Wi-Fi da empresa e no 4G)
 const ENDERECO_OFICIAL = 'https://imobilizados.tailbba2c4.ts.net/';
@@ -25,13 +25,15 @@ async function carregarPdfMake() {
 }
 
 function etiqueta(setor, ambiente) {
+  const codigo = montarLocal(setor, ambiente); // é o que fica gravado no campo local dos itens
   return {
     stack: [
       { text: 'VIDEPLAST • IMOBILIZADOS RIO VERDE', fontSize: 8, color: '#888888', alignment: 'center', margin: [0, 0, 0, 6] },
       { text: setor, fontSize: 14, bold: true, alignment: 'center' },
-      { text: ambiente, fontSize: 19, bold: true, color: '#dc3545', alignment: 'center', margin: [0, 2, 0, 10] },
-      { qr: linkDoLocal(`${setor} - ${ambiente}`), fit: 140, eccLevel: 'M', alignment: 'center' },
-      { text: 'Aponte a câmera do celular para ver os itens deste local', fontSize: 8, alignment: 'center', margin: [0, 10, 0, 0] },
+      { text: ambiente, fontSize: 19, bold: true, color: '#dc3545', alignment: 'center', margin: [0, 2, 0, 8] },
+      { qr: linkDoLocal(codigo), fit: 135, eccLevel: 'M', alignment: 'center' },
+      { text: `Local no sistema: ${codigo}`, fontSize: 9, bold: true, alignment: 'center', margin: [0, 6, 0, 0] },
+      { text: 'Aponte a câmera do celular para ver os itens deste local', fontSize: 8, alignment: 'center', margin: [0, 4, 0, 0] },
     ],
     margin: [6, 16, 6, 10],
   };

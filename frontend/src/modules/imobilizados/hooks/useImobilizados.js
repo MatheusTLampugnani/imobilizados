@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../../lib/api';
+import { nomeDoLocal } from '../../../utils/locais';
 
 /**
  * Hook de busca de imobilizados.
@@ -119,7 +120,10 @@ export function useImobilizados(currentUser) {
         try {
             const unidade = currentUser?.unidade || '';
             const isAdmin = currentUser?.isAdmin || false;
-            const response = await api.get(`/imobilizado/por-local?local=${encodeURIComponent(local)}&unidadeUsuario=${unidade}&isAdmin=${isAdmin}`);
+            // o QR traz o código curto; o nome longo acha também itens gravados no formato antigo
+            const nomeLongo = nomeDoLocal(local);
+            const tambem = nomeLongo !== local ? `&tambem=${encodeURIComponent(nomeLongo)}` : '';
+            const response = await api.get(`/imobilizado/por-local?local=${encodeURIComponent(local)}${tambem}&unidadeUsuario=${unidade}&isAdmin=${isAdmin}`);
             setResultado(response.data);
             if (!response.data?.itens?.length) setError(`Nenhum item cadastrado no local ${local}.`);
         } catch (err) {

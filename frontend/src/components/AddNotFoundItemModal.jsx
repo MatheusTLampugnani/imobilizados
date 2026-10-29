@@ -3,7 +3,7 @@ import { Modal, Button, Form, Alert, Spinner, Row, Col, InputGroup } from 'react
 import { BoxSeam, UpcScan, GeoAlt, ListTask, PersonBadge, ChatLeftText } from 'react-bootstrap-icons'; 
 import axios from 'axios';
 import { API_URL } from '../apiConfig';
-import { locationsData } from '../utils/locais';
+import { locationsData, montarLocal } from '../utils/locais';
 
 const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal, centroCusto, user }) => {
   const [description, setDescription] = useState('');
@@ -49,7 +49,7 @@ const AddNotFoundItemModal = ({ show, onClose, onConfirm, itemCode, defaultLocal
     setIsLoading(true);
     setError('');
 
-    const finalLocalString = `${selectedSector} - ${selectedSubLocal}`;
+    const finalLocalString = montarLocal(selectedSector, selectedSubLocal); // código curto (até 15 caracteres)
 
     try {
       const payload = {

@@ -164,3 +164,71 @@ export const locationsData = {
     "REF MÁQ 315"
   ]
 };
+
+// Código gravado no campo "local": até 15 caracteres e sem acento (o campo do SAP tem 15 caracteres).
+// A tela continua mostrando Setor e Ambiente. O código é o próprio ambiente sem acento, menos nestes:
+const CODIGOS_ESPECIAIS = {
+  'IMPRESSÃO - SALA DE RESIDUOS': 'SALA RESIDUOS',
+  'ADM - SALA GERENCIA JOSUE': 'GERENCIA JOSUE',
+  'ADM - BARREIRA DE PRODUÇÃO': 'BARREIRA PROD',
+  'RH - SALA DE CONVENCIA': 'SALA CONVIVENC',
+  'RH - VESTIARIO FEMININO': 'VESTIARIO FEM',
+  'RH - VESTIARIO MASCULINO': 'VESTIARIO MASC',
+  'MANUTENÇÃO - PCM': 'MANUT PCM',
+  'MANUTENÇÃO - GERAL': 'MANUTENCAO',
+  'MANUTENÇÃO - GERADOR': 'MANUT GERADOR',
+  'MANUTENÇÃO - COORDENAÇÃO': 'MANUT COORDENA',
+  'MANUTENÇÃO - COMPRESSOR DE AR': 'COMPRESSOR AR',
+  'ALMOXARIFADO - SALA ADM': 'ALMOX ADM',
+  'ALMOXARIFADO - SALA ESTOQUE': 'ALMOX ESTOQUE',
+  'ALMOXARIFADO - SALA ESTOQUE 2': 'ALMOX ESTOQUE 2',
+  'TI - SALA SERVIDOR': 'TI SERVIDOR',
+  'TI - SALA ADM': 'TI ADM',
+  'TI - GERAL': 'TI GERAL',
+  'EXPEDIÇÃO - SALA ADM': 'EXPEDICAO ADM',
+  'APARAS - AREA PRODUTIVA': 'CENTRAL APARAS',
+  'MATERIA PRIMA - SALA ADM': 'MAT PRIMA ADM',
+  'MATERIA PRIMA - TUBETES': 'MAT PRIMA TUBET',
+  'CONTROLE DE QUALIDADE - SALA ADM': 'QUALIDADE ADM',
+  'CONTROLE DE QUALIDADE - SALA LABORATORIO': 'LABORATORIO',
+  'CONTROLE DE QUALIDADE - SALA ARQUIVO': 'CQ SALA ARQUIVO',
+  'CONTROLE DE QUALIDADE - AREA PROD AUDITI': 'CQ AUDITORIA',
+  'PESQUISA E DESENVOLVIMENTO - SALA ADM': 'P&D ADM',
+  'ARTES - SALA ADM': 'ARTES ADM',
+  'GUARITA - GERAL': 'GUARITA',
+  'FATURAMENTO - SALA ARQUIVO': 'FAT ARQUIVO',
+  'ALPHA CLICHERIA - GERAL': 'ALPHA CLICHERIA',
+  'CLICHERIA - SALA CLI ADM': 'CLICHERIA ADM',
+  'CLICHERIA - AREA PROD COLG': 'CLICHERIA PROD',
+};
+
+export const TAMANHO_MAXIMO_LOCAL = 15;
+const semAcento = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+/** Código a gravar para um setor + ambiente da tela (ex.: CLICHERIA + AREA PROD COLG -> CLICHERIA PROD). */
+export function montarLocal(setor, ambiente) {
+  if (!setor || !ambiente) return '';
+  return CODIGOS_ESPECIAIS[`${setor} - ${ambiente}`] || semAcento(ambiente).slice(0, TAMANHO_MAXIMO_LOCAL);
+}
+
+// Do código (ou do formato antigo "SETOR - AMBIENTE") de volta para setor e ambiente
+const PARA_SETOR_AMBIENTE = {};
+for (const [setor, ambientes] of Object.entries(locationsData)) {
+  for (const ambiente of ambientes) {
+    PARA_SETOR_AMBIENTE[montarLocal(setor, ambiente)] = { setor, ambiente };
+    PARA_SETOR_AMBIENTE[`${setor} - ${ambiente}`] = { setor, ambiente };
+  }
+}
+
+/** Setor e ambiente de um local gravado; se não for uma opção da tela, tenta achar só o setor. */
+export function separarLocal(local) {
+  const texto = String(local || '').trim();
+  if (PARA_SETOR_AMBIENTE[texto]) return PARA_SETOR_AMBIENTE[texto];
+  return { setor: Object.keys(locationsData).find(s => texto.includes(s)) || '', ambiente: '' };
+}
+
+/** Nome completo para mostrar (ex.: CLICHERIA PROD -> CLICHERIA - AREA PROD COLG). */
+export function nomeDoLocal(local) {
+  const { setor, ambiente } = separarLocal(local);
+  return ambiente ? `${setor} - ${ambiente}` : String(local || '');
+}

@@ -5,7 +5,7 @@ import axios from 'axios';
 import { API_URL } from '../apiConfig';
 import imgSuccess from '../assets/verificado.png';
 import imgError from '../assets/cruz.png';
-import { locationsData } from '../utils/locais';
+import { locationsData, montarLocal, separarLocal } from '../utils/locais';
 
 const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, currentUser }) => {
   const [newValue, setNewValue] = useState('');
@@ -70,18 +70,9 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
         setError('');
 
         if (editType === 'local') {
-            let currentSector = '';
-            let currentSub = '';
-            const localAtual = item?.Local || '';
+            // O local gravado é o código curto (ou o formato antigo "SETOR - AMBIENTE"): volta para setor e ambiente
+            const { setor: currentSector, ambiente: currentSub } = separarLocal(item?.Local || '');
 
-            if (localAtual.includes(' - ')) {
-                const parts = localAtual.split(' - ');
-                currentSector = parts[0];
-                currentSub = parts.slice(1).join(' - ');
-            } else {
-                currentSector = Object.keys(locationsData).find(key => localAtual.includes(key)) || '';
-            }
-            
             setEditSector(currentSector);
             setEditSubLocal(currentSub);
             setEditSubLocalOptions(currentSector ? locationsData[currentSector] : []);
@@ -95,7 +86,7 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
       if (sector && locationsData[sector]) {
           setEditSubLocalOptions(locationsData[sector]);
           setEditSubLocal('');
-          setNewValue(`${sector} - `);
+          setNewValue('');
       } else {
           setEditSubLocalOptions([]);
           setEditSubLocal('');
@@ -106,7 +97,7 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
   const handleSubLocalChange = (e) => {
       const sub = e.target.value;
       setEditSubLocal(sub);
-      setNewValue(`${editSector} - ${sub}`);
+      setNewValue(montarLocal(editSector, sub)); // grava o código curto (até 15 caracteres)
   };
 
   const handleUpdate = async () => {
@@ -239,6 +230,9 @@ const EditInventoryModal = ({ show, onClose, item, editType, onUpdateSuccess, cu
                                   ))}
                               </Form.Select>
                           </InputGroup>
+                          {editSector && editSubLocal && (
+                              <Form.Text>Será gravado como <strong>{montarLocal(editSector, editSubLocal)}</strong></Form.Text>
+                          )}
                       </Form.Group>
                   ) : (
                       <Form.Group className="mb-3">

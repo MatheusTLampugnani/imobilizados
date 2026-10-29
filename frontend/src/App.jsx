@@ -24,6 +24,7 @@ import AddNotFoundItemModal from './components/AddNotFoundItemModal';
 import RegisteredItemsList from './components/RegisteredItemsList';
 import AdminLogs from './components/AdminLogs';
 import EtiquetasLocaisModal from './components/EtiquetasLocaisModal';
+import { nomeDoLocal } from './utils/locais';
 
 import './App.css';
 
@@ -169,7 +170,7 @@ function App() {
 
                         {localAtual && !isSearchLoading && (
                             <Alert variant="info" className="mt-3 mb-0 small shadow-sm">
-                                <strong>Itens que pertencem a {localAtual}.</strong> Confira se estão aqui. Se algum item mudou de lugar, use o lápis em <strong>LOCAL</strong>.
+                                <strong>Itens que pertencem a {nomeDoLocal(localAtual)}</strong> (no sistema: {localAtual}). Confira se estão aqui. Se algum item mudou de lugar, use o lápis em <strong>LOCAL</strong>.
                                 Se ele não existe mais, só com certeza (e com a assinatura), mude o local para <strong>BAIXA</strong>.
                             </Alert>
                         )}
