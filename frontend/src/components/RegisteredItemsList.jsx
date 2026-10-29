@@ -4,7 +4,7 @@ import DataTable from 'react-data-table-component';
 import { Modal, Button, Spinner, Alert, Form, Row, Col, InputGroup, Card, Pagination, Accordion } from 'react-bootstrap';
 import { Calendar, Building, Search, FileEarmarkSpreadsheet, PencilSquare, Trash, ListCheck, CardText, GeoAlt, Hash, ExclamationTriangle, FileEarmarkPdf, ChevronDown, ChevronUp, ChatLeftText } from 'react-bootstrap-icons';
 import { API_URL } from '../apiConfig';
-import { locationsData } from '../utils/locais';
+import { locationsData, montarLocal, separarLocal } from '../utils/locais';
 import SbbiModal from './SbbiModal';
 
 const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
@@ -152,16 +152,8 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
   const handleEditClick = (row) => {
     setEditingItem(row);
 
-    let currentSector = '';
-    let currentSub = '';
-
-    if (row.local && row.local.includes(' - ')) {
-      const parts = row.local.split(' - ');
-      currentSector = parts[0];
-      currentSub = parts.slice(1).join(' - ');
-    } else if (row.local) {
-      currentSector = Object.keys(locationsData).find(key => row.local.includes(key)) || '';
-    }
+    // O local gravado é o código curto (ou o formato antigo "SETOR - AMBIENTE"): volta para setor e ambiente
+    const { setor: currentSector, ambiente: currentSub } = separarLocal(row.local || '');
 
     setEditSector(currentSector);
     setEditSubLocal(currentSub);
@@ -171,7 +163,7 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
       descricao: row.descricao,
       numero_serie: row.numero_serie,
       centro_custo: row.centro_custo,
-      local: row.local,
+      local: currentSub ? montarLocal(currentSector, currentSub) : row.local, // formato antigo vira o código curto
       observacao: row.observacao || row.obs || ''
     });
     setShowEditModal(true);
@@ -184,7 +176,7 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
     if (sector && locationsData[sector]) {
       setEditSubLocalOptions(locationsData[sector]);
       setEditSubLocal('');
-      setEditForm(prev => ({ ...prev, local: `${sector} - ` }));
+      setEditForm(prev => ({ ...prev, local: '' }));
     } else {
       setEditSubLocalOptions([]);
       setEditSubLocal('');
@@ -195,7 +187,7 @@ const RegisteredItemsList = ({ show, onClose, baixasOnly }) => {
   const handleEditSubLocalChange = (e) => {
     const sub = e.target.value;
     setEditSubLocal(sub);
-    setEditForm(prev => ({ ...prev, local: `${editSector} - ${sub}` }));
+    setEditForm(prev => ({ ...prev, local: montarLocal(editSector, sub) })); // código curto (até 15 caracteres)
   };
 
   const handleSaveEdit = async () => {

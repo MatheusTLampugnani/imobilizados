@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../../lib/api';
+import { nomeDoLocal } from '../../../utils/locais';
 
 /**
  * Hook de busca de imobilizados.
@@ -14,6 +15,7 @@ export function useImobilizados(currentUser) {
     const [filteredItems, setFilteredItems] = useState([]);
     const [sortConfig, setSortConfig] = useState({ field: 'Descrição', order: 'asc' });
     const [modoSemLocal, setModoSemLocal] = useState(false);
+    const [localAtual, setLocalAtual] = useState(null); // local aberto pelo QR code da sala (?local=...)
 
     useEffect(() => {
         if (!resultado) return;
@@ -61,6 +63,7 @@ export function useImobilizados(currentUser) {
         setIsLoading(true);
         setError('');
         setModoSemLocal(false);
+        setLocalAtual(null);
         handleResetFilters();
 
         try {
@@ -86,6 +89,7 @@ export function useImobilizados(currentUser) {
         setError('');
         setCodigo('');
         setModoSemLocal(true);
+        setLocalAtual(null);
         handleResetFilters();
 
         try {
@@ -94,6 +98,34 @@ export function useImobilizados(currentUser) {
             const response = await api.get(`/imobilizado/sem-local?unidadeUsuario=${unidade}&isAdmin=${isAdmin}`);
             setResultado(response.data);
             if (!response.data?.itens?.length) setError('Nenhum material com local em branco ou não informado.');
+        } catch (err) {
+            setResultado(null);
+            setError(err.response?.data?.message || 'Erro ao conectar ao servidor.');
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    // Itens de um local exato ("SETOR - AMBIENTE"): é o que o QR code colado na sala abre
+    async function handleBuscarPorLocal(local) {
+        if (isLoading || !local) return;
+
+        setIsLoading(true);
+        setError('');
+        setCodigo('');
+        setModoSemLocal(false);
+        setLocalAtual(local);
+        handleResetFilters();
+
+        try {
+            const unidade = currentUser?.unidade || '';
+            const isAdmin = currentUser?.isAdmin || false;
+            // o QR traz o código curto; o nome longo acha também itens gravados no formato antigo
+            const nomeLongo = nomeDoLocal(local);
+            const tambem = nomeLongo !== local ? `&tambem=${encodeURIComponent(nomeLongo)}` : '';
+            const response = await api.get(`/imobilizado/por-local?local=${encodeURIComponent(local)}${tambem}&unidadeUsuario=${unidade}&isAdmin=${isAdmin}`);
+            setResultado(response.data);
+            if (!response.data?.itens?.length) setError(`Nenhum item cadastrado no local ${local}.`);
         } catch (err) {
             setResultado(null);
             setError(err.response?.data?.message || 'Erro ao conectar ao servidor.');
@@ -116,10 +148,12 @@ export function useImobilizados(currentUser) {
         setResultado(null);
         setError('');
         setModoSemLocal(false);
+        setLocalAtual(null);
     }
 
     function refreshData() {
         if (modoSemLocal) handleBuscarSemLocal();
+        else if (localAtual) handleBuscarPorLocal(localAtual);
         else if (codigo) handleCodeSearch(codigo);
     }
 
@@ -130,8 +164,10 @@ export function useImobilizados(currentUser) {
         error,
         filters, filteredItems, sortConfig,
         modoSemLocal,
+        localAtual,
         handleCodeSearch,
         handleBuscarSemLocal,
+        handleBuscarPorLocal,
         handleFilterChange,
         handleResetFilters,
         handleSortChange,

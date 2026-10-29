@@ -1,6 +1,7 @@
 const {
     buscarImobilizadoSchema,
     listarSemLocalSchema,
+    listarPorLocalSchema,
     inventoryItemSchema,
     criarImobilizadoSchema,
     updateInventarioSchema,
@@ -12,6 +13,7 @@ const {
 const {
     buscarImobilizado,
     listarSemLocal,
+    listarPorLocal,
     buscarInventoryItem,
     criarImobilizado,
     buscarCCsDaUnidade,
@@ -25,6 +27,7 @@ module.exports = {
     // Schemas
     buscarImobilizadoSchema,
     listarSemLocalSchema,
+    listarPorLocalSchema,
     inventoryItemSchema,
     criarImobilizadoSchema,
     updateInventarioSchema,
@@ -34,6 +37,7 @@ module.exports = {
     // Services
     buscarImobilizado,
     listarSemLocal,
+    listarPorLocal,
     buscarInventoryItem,
     criarImobilizado,
     buscarCCsDaUnidade,
