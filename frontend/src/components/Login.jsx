@@ -7,7 +7,10 @@ import logoVideplast from '../assets/videplast-brand.png';
 // Endereço oficial do sistema (servidor da Videplast). O aviso de mudança aparece só para quem ainda abre
 // pelo endereço antigo; no endereço oficial ele não aparece.
 const ENDERECO_OFICIAL = 'https://imobilizados.tailbba2c4.ts.net/';
-const noEnderecoAntigo = window.location.origin !== new URL(ENDERECO_OFICIAL).origin;
+// No servidor da Videplast o sistema fica em /imobilizados/, pelo endereço oficial ou pelo IP da rede
+// (ex.: http://192.168.1.106/imobilizados/, que funciona mesmo quando o endereço da internet cai).
+const noEnderecoAntigo = window.location.origin !== new URL(ENDERECO_OFICIAL).origin
+  && !window.location.pathname.startsWith('/imobilizados/');
 
 const LoginScreen = ({ onLoginSuccess }) => {
   const [cracha, setCracha] = useState('');
