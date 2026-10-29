@@ -3,8 +3,9 @@ import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import { QrCode } from 'react-bootstrap-icons';
 import { locationsData, montarLocal } from '../utils/locais';
 
-// Endereço oficial do sistema: o QR code sempre aponta para ele (abre no Wi-Fi da empresa e no 4G)
-const ENDERECO_OFICIAL = 'https://imobilizados.tailbba2c4.ts.net/';
+// Endereço oficial do sistema: o QR code sempre aponta para ele (abre no Wi-Fi da empresa e no 4G).
+// No servidor o sistema fica em /imobilizados/ (a raiz do endereço é o Portal de Aplicações).
+const ENDERECO_OFICIAL = 'https://imobilizados.tailbba2c4.ts.net/imobilizados/';
 // BAIXA não é lugar: não ganha etiqueta
 const SETORES_SEM_ETIQUETA = ['BAIXA'];
 
